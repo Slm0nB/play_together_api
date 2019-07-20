@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29025.244
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameCalendarApi.Web", "GameCalendarApi.Web\GameCalendarApi.Web.csproj", "{03201CBA-818F-4CB1-93E7-16A8DDA8601E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameCalendarApi.Domain", "GameCalendarApi.Domain\GameCalendarApi.Domain.csproj", "{2CF78809-DD86-42BD-9CE7-0B8180FA4BEE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{03201CBA-818F-4CB1-93E7-16A8DDA8601E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03201CBA-818F-4CB1-93E7-16A8DDA8601E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03201CBA-818F-4CB1-93E7-16A8DDA8601E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03201CBA-818F-4CB1-93E7-16A8DDA8601E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2CF78809-DD86-42BD-9CE7-0B8180FA4BEE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2CF78809-DD86-42BD-9CE7-0B8180FA4BEE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2CF78809-DD86-42BD-9CE7-0B8180FA4BEE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2CF78809-DD86-42BD-9CE7-0B8180FA4BEE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B6DC0FBC-A15A-41B1-B1B0-E0083E2AFF06}
+	EndGlobalSection
+EndGlobal
