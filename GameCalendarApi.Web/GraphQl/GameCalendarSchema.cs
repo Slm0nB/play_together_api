@@ -9,9 +9,10 @@ namespace GameCalendarApi.Web.GraphQl
 {
     public class GameCalendarSchema : Schema
     {
-    public GameCalendarSchema(IDependencyResolver resolver) : base(resolver)
-    {
-        Query = resolver.Resolve<GameCalendarQuery>();
+        public GameCalendarSchema(IDependencyResolver resolver) : base(resolver)
+        {
+            Query = resolver.Resolve<GameCalendarQuery>();
+            Mutation = resolver.Resolve<GameCalendarMutation>();
+        }
     }
-}
 }
