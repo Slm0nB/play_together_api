@@ -24,6 +24,7 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <VersionPrefix>1.0.0</VersionPrefix>
+    <PackageId>GameCalendarApi</PackageId>
   </PropertyGroup>
 
 </Project>
