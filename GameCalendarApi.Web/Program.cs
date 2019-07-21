@@ -19,6 +19,12 @@ namespace GameCalendarApi.Web
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
+                .UseKestrel(n =>
+                {
+                    n.AddServerHeader = false;
+                })
+                .UseContentRoot(Directory.GetCurrentDirectory())
+                .UseIISIntegration()
                 .UseStartup<Startup>();
     }
 }

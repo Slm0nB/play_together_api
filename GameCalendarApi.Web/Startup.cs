@@ -43,6 +43,16 @@ namespace GameCalendarApi.Web
                 .AddGraphTypes(ServiceLifetime.Scoped);
 
             services
+                .AddCors(options =>
+                {
+                    options.AddPolicy("CorsPolicy",
+                        builder => builder.AllowAnyOrigin()
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        /*.AllowCredentials()*/);
+                });
+
+            services
                 .AddMvc()
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
                 .AddJsonOptions(options => options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore);
@@ -61,11 +71,11 @@ namespace GameCalendarApi.Web
             }
 
             app.UseHttpsRedirection();
+            app.UseCors("CorsPolicy");
 
             app.UseGraphQL<GameCalendarSchema>();
-            app.UseGraphQLPlayground(options: new GraphQLPlaygroundOptions());
+            app.UseGraphQLPlayground(options: new GraphQLPlaygroundOptions() { Path = "/" });
 
-            app.UseHttpsRedirection();
             app.UseMvc();
         }
     }
