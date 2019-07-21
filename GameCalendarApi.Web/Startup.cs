@@ -10,6 +10,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
+using GraphQL;
+using GraphQL.Server;
+using GraphQL.Server.Ui.Playground;
+using Newtonsoft.Json;
+using GameCalendarApi.Domain;
+using GameCalendarApi.Web.GraphQl;
 
 namespace GameCalendarApi.Web
 {
@@ -25,7 +32,20 @@ namespace GameCalendarApi.Web
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            // services.AddDbContext<CalendarDbContext>(opt => opt.UseNpgsql(Environment.GetEnvironmentVariable("GameCalendarConnectionString")));
+            services.AddDbContext<GameCalendarDbContext>();
+
+            services.AddScoped<IDependencyResolver>(s => new FuncDependencyResolver(s.GetRequiredService));
+            services.AddScoped<GameCalendarSchema>();
+
+            services
+                .AddGraphQL(o => { o.ExposeExceptions = false; })
+                .AddGraphTypes(ServiceLifetime.Scoped);
+
+            services
+                .AddMvc()
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
+                .AddJsonOptions(options => options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -39,6 +59,11 @@ namespace GameCalendarApi.Web
             {
                 app.UseHsts();
             }
+
+            app.UseHttpsRedirection();
+
+            app.UseGraphQL<GameCalendarSchema>();
+            app.UseGraphQLPlayground(options: new GraphQLPlaygroundOptions());
 
             app.UseHttpsRedirection();
             app.UseMvc();
