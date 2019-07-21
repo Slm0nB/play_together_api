@@ -33,8 +33,7 @@ namespace GameCalendarApi.Web.GraphQl
                     var inputEvent = context.GetArgument<Event>("event");
 
                     // wtf deserialization doesnt work?
-                    var tmp2 = (context.Arguments["event"] as IDictionary<string, object>);
-                    var tmp = tmp2?["authorId"] as string;
+                    var tmp = (context.Arguments["event"] as IDictionary<string, object>)?["authorId"] as string;
                     var authorId = inputEvent.CreatedByUserId == Guid.Empty && !string.IsNullOrEmpty(tmp)
                         ? Guid.Parse(tmp)
                         : inputEvent.CreatedByUserId;
