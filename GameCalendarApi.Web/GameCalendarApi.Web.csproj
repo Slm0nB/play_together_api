@@ -21,4 +21,9 @@
     <ProjectReference Include="..\GameCalendarApi.Domain\GameCalendarApi.Domain.csproj" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <VersionPrefix>1.0.0</VersionPrefix>
+  </PropertyGroup>
+
 </Project>
