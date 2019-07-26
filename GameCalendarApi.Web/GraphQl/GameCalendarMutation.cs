@@ -38,7 +38,8 @@ namespace GameCalendarApi.Web.GraphQl
                         ? Guid.Parse(tmp)
                         : inputEvent.CreatedByUserId;
 
-                    var newEvent = new Event {
+                    var newEvent = new Event
+                    {
                         EventId = Guid.NewGuid(),
                         Title = inputEvent.Title,
                         CreatedDate = DateTime.Now,

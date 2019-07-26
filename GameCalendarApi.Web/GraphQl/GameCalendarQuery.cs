@@ -32,6 +32,8 @@ namespace GameCalendarApi.Web.GraphQl
     {
         public GameCalendarQuery(GameCalendarDbContext db)
         {
+            Name = "Query";
+
             Field<ListGraphType<EventType>>(
                "events",
                 arguments: new QueryArguments(
@@ -39,7 +41,8 @@ namespace GameCalendarApi.Web.GraphQl
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many events to skip" },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return" }
                 ),
-               resolve: context => {
+               resolve: context =>
+               {
                    IQueryable<Event> query = db.Events;
 
                    var id = context.GetArgument<string>("id");
@@ -55,7 +58,7 @@ namespace GameCalendarApi.Web.GraphQl
                    }
 
                    var take = context.GetArgument<int>("take");
-                   if(take > 0 )
+                   if (take > 0)
                    {
                        query = query.Take(take);
                    }
@@ -63,6 +66,7 @@ namespace GameCalendarApi.Web.GraphQl
                    return query;
                }
            );
+
             Field<ListGraphType<UserType>>(
                "users",
                arguments: new QueryArguments(
@@ -70,11 +74,12 @@ namespace GameCalendarApi.Web.GraphQl
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many users to skip" },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many users to return" }
                 ),
-               resolve: context => {
+               resolve: context =>
+               {
                    IQueryable<User> query = db.Users;
 
                    var id = context.GetArgument<string>("id");
-                   if(Guid.TryParse(id, out var uid))
+                   if (Guid.TryParse(id, out var uid))
                    {
                        query = query.Where(n => n.UserId == uid);
                    }
@@ -94,6 +99,7 @@ namespace GameCalendarApi.Web.GraphQl
                    return query;
                }
            );
+
             Field<UserType>(
                "me",
                resolve: context => db.Users.FirstOrDefault() // todo: check the claim on the user context and return the correct user, or null
