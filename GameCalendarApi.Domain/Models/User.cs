@@ -13,5 +13,9 @@ namespace GameCalendarApi.Domain
         [MaxLength(50)]
         [MinLength(5)]
         public string DisplayName { get; set; }
+
+        public string Email { get; set; }
+
+        public string PasswordHash { get; set; }
     }
 }

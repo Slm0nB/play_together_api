@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using GraphQL.Types;
 using GameCalendarApi.Domain;
 
@@ -19,7 +18,7 @@ namespace GameCalendarApi.Web.GraphQl
             }
         }
 
-        public GameCalendarMutation(GameCalendarDbContext db)
+        public GameCalendarMutation(GameCalendarDbContext db, SecurityService securityService)
         {
             Name = "Mutation";
 
@@ -49,7 +48,43 @@ namespace GameCalendarApi.Web.GraphQl
                     db.SaveChanges();
 
                     return newEvent;
-                });
+                }
+            );
+
+            Field<UserType>(
+                "createUser",
+                arguments: new QueryArguments(
+                    new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "displayName" },
+                    new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "email" },
+                    new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "password" }
+                ),
+                resolve: context =>
+                {
+                    var displayName = context.GetArgument<string>("displayName");
+                    var email = context.GetArgument<string>("email");
+                    var password = context.GetArgument<string>("password");
+
+                    // todo: validation
+
+                    var userExists = db.Users.Any(n => n.Email == email);
+                    if (userExists)
+                        throw new ApplicationException();
+
+                    var passwordHash = securityService.CreatePasswordHash(password);
+
+                    var newUser = new User
+                    {
+                        DisplayName = displayName,
+                        Email = email,
+                        PasswordHash = passwordHash
+                    };
+
+                    db.Users.Add(newUser);
+                    db.SaveChanges();
+
+                    return newUser;
+                }
+            );
         }
     }
 }

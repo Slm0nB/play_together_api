@@ -11,6 +11,7 @@ namespace GameCalendarApi.Web.GraphQl
         {
             Field("id", x => x.UserId, type: typeof(IdGraphType)).Description("Id property from the user object.");
             Field(x => x.DisplayName).Description("DisplayName property from the user object.");
+            Field(x => x.Email).Description("Email property from the user object.");
         }
     }
 
