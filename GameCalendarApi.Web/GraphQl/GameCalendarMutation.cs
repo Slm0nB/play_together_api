@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using GraphQL.Types;
 using GameCalendarApi.Services;
@@ -18,25 +19,26 @@ namespace GameCalendarApi.Web.GraphQl
 
             FieldAsync<EventType>(
                 "createEvent",
+                description: "Create a new event. This requires the caller to be authorized.",
                 arguments: new QueryArguments(
-                    new QueryArgument<NonNullGraphType<EventInputType>> { Name = "event" }
+                    new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "title" }
                 ),
                 resolve: async context =>
                 {
-                    var inputEvent = context.GetArgument<Event>("event");
+                    var principal = context.UserContext as ClaimsPrincipal;
+                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+                    if (!Guid.TryParse(userIdClaim, out var userId))
+                        return null;
 
-                    // wtf deserialization doesnt work?
-                    var tmp = (context.Arguments["event"] as IDictionary<string, object>)?["authorId"] as string;
-                    var authorId = inputEvent.CreatedByUserId == Guid.Empty && !string.IsNullOrEmpty(tmp)
-                        ? Guid.Parse(tmp)
-                        : inputEvent.CreatedByUserId;
+                    if(!await db.Users.AnyAsync(n => n.UserId == userId))
+                        return null;
 
                     var newEvent = new Event
                     {
                         EventId = Guid.NewGuid(),
-                        Title = inputEvent.Title,
+                        Title = context.GetArgument<string>("title"),
                         CreatedDate = DateTime.Now,
-                        CreatedByUserId = authorId
+                        CreatedByUserId = userId
                     };
                     db.Events.Add(newEvent);
                     await db.SaveChangesAsync();
@@ -47,6 +49,7 @@ namespace GameCalendarApi.Web.GraphQl
 
             FieldAsync<UserType>(
                 "createUser",
+                description: "Create a new user. This will fail if the emali is already in use.",
                 arguments: new QueryArguments(
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "displayName" },
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "email" },
@@ -62,7 +65,7 @@ namespace GameCalendarApi.Web.GraphQl
 
                     var userExists = await db.Users.AnyAsync(n => n.Email == email);
                     if (userExists)
-                        throw new ApplicationException();
+                        return null;
 
                     var passwordHash = authenticationService.CreatePasswordHash(password);
 
@@ -82,6 +85,7 @@ namespace GameCalendarApi.Web.GraphQl
 
             FieldAsync<TokenResponseType>(
                 "authenticate",
+                description: "Request an access- and refresh-token for a user.",
                 arguments: new QueryArguments(
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "email" },
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "password" }

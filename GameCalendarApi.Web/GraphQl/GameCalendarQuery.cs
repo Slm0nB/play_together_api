@@ -82,6 +82,7 @@ namespace GameCalendarApi.Web.GraphQl
 
             FieldAsync<UserType>(
                "me",
+               description: "The details of the authorized user.",
                resolve: async context =>
                {
                    var principal = context.UserContext as ClaimsPrincipal;
