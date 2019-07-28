@@ -42,8 +42,11 @@ namespace GameCalendarApi.Web
             services.AddScoped<IDependencyResolver>(s => new FuncDependencyResolver(s.GetRequiredService));
             services.AddScoped<GameCalendarSchema>();
             services
-                .AddGraphQL(o => { o.ExposeExceptions = false; })
-                .AddGraphTypes(ServiceLifetime.Scoped);
+                .AddGraphQL(options => {
+                    options.ExposeExceptions = false;
+                })
+                .AddGraphTypes(ServiceLifetime.Scoped)
+                .AddUserContextBuilder(httpContext => httpContext.User);
 
             services
                 .AddCors(options =>
@@ -91,6 +94,8 @@ namespace GameCalendarApi.Web
 
             app.UseHttpsRedirection();
             app.UseCors("CorsPolicy");
+
+            app.UseAuthentication();
 
             app.UseGraphQL<GameCalendarSchema>();
             app.UseGraphQLPlayground(options: new GraphQLPlaygroundOptions() { Path = "/" });

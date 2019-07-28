@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq;
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 using GraphQL.Types;
 using GameCalendarApi.Domain;
 using GameCalendarApi.Web.GraphQl.Types;
@@ -12,14 +14,14 @@ namespace GameCalendarApi.Web.GraphQl
         {
             Name = "Query";
 
-            Field<ListGraphType<EventType>>(
+            FieldAsync<ListGraphType<EventType>>(
                "events",
                 arguments: new QueryArguments(
                    new QueryArgument<StringGraphType> { Name = "id", Description = "Id of the event" },
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many events to skip" },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return" }
                 ),
-               resolve: context =>
+               resolve: async context =>
                {
                    IQueryable<Event> query = db.Events;
 
@@ -41,18 +43,18 @@ namespace GameCalendarApi.Web.GraphQl
                        query = query.Take(take);
                    }
 
-                   return query;
+                   return await query.ToListAsync();
                }
            );
 
-            Field<ListGraphType<UserType>>(
+            FieldAsync<ListGraphType<UserType>>(
                "users",
                arguments: new QueryArguments(
                    new QueryArgument<StringGraphType> { Name = "id", Description = "Id of the user" },
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many users to skip" },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many users to return" }
                 ),
-               resolve: context =>
+               resolve: async context =>
                {
                    IQueryable<User> query = db.Users;
 
@@ -74,13 +76,22 @@ namespace GameCalendarApi.Web.GraphQl
                        query = query.Take(take);
                    }
 
-                   return query;
+                   return await query.ToListAsync();
                }
            );
 
-            Field<UserType>(
+            FieldAsync<UserType>(
                "me",
-               resolve: context => db.Users.FirstOrDefault() // todo: check the claim on the user context and return the correct user, or null
+               resolve: async context =>
+               {
+                   var principal = context.UserContext as ClaimsPrincipal;
+                   var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+                   if (Guid.TryParse(userIdClaim, out var userId))
+                   {
+                       return await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
+                   }
+                   return null;
+               }
            );
         }
     }
