@@ -1,33 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
 using GraphQL.Types;
+using GameCalendarApi.Services;
 using GameCalendarApi.Domain;
+using GameCalendarApi.Web.Models;
+using GameCalendarApi.Web.GraphQl.Types;
 
 namespace GameCalendarApi.Web.GraphQl
 {
     public class GameCalendarMutation : ObjectGraphType
     {
-        public class EventInputType : InputObjectGraphType<Event>
-        {
-            public EventInputType()
-            {
-                Name = "EventInput";
-                Field(x => x.Title);
-                Field<Guid>("authorId", x => x.CreatedByUserId, type: typeof(IdGraphType), nullable: false);
-            }
-        }
-
-        public GameCalendarMutation(GameCalendarDbContext db, SecurityService securityService)
+        public GameCalendarMutation(GameCalendarDbContext db, AuthenticationService authenticationService)
         {
             Name = "Mutation";
 
-            Field<EventType>(
+            FieldAsync<EventType>(
                 "createEvent",
                 arguments: new QueryArguments(
                     new QueryArgument<NonNullGraphType<EventInputType>> { Name = "event" }
                 ),
-                resolve: context =>
+                resolve: async context =>
                 {
                     var inputEvent = context.GetArgument<Event>("event");
 
@@ -45,20 +39,20 @@ namespace GameCalendarApi.Web.GraphQl
                         CreatedByUserId = authorId
                     };
                     db.Events.Add(newEvent);
-                    db.SaveChanges();
+                    await db.SaveChangesAsync();
 
                     return newEvent;
                 }
             );
 
-            Field<UserType>(
+            FieldAsync<UserType>(
                 "createUser",
                 arguments: new QueryArguments(
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "displayName" },
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "email" },
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "password" }
                 ),
-                resolve: context =>
+                resolve: async context =>
                 {
                     var displayName = context.GetArgument<string>("displayName");
                     var email = context.GetArgument<string>("email");
@@ -66,11 +60,11 @@ namespace GameCalendarApi.Web.GraphQl
 
                     // todo: validation
 
-                    var userExists = db.Users.Any(n => n.Email == email);
+                    var userExists = await db.Users.AnyAsync(n => n.Email == email);
                     if (userExists)
                         throw new ApplicationException();
 
-                    var passwordHash = securityService.CreatePasswordHash(password);
+                    var passwordHash = authenticationService.CreatePasswordHash(password);
 
                     var newUser = new User
                     {
@@ -80,9 +74,30 @@ namespace GameCalendarApi.Web.GraphQl
                     };
 
                     db.Users.Add(newUser);
-                    db.SaveChanges();
+                    await db.SaveChangesAsync();
 
                     return newUser;
+                }
+            );
+
+            FieldAsync<TokenResponseType>(
+                "authenticate",
+                arguments: new QueryArguments(
+                    new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "email" },
+                    new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "password" }
+                ),
+                resolve: async context =>
+                {
+                    var requestDto = new TokenRequestModel
+                    {
+                        Grant_type = "password",
+                        Username = context.GetArgument<string>("email"),
+                        Password = context.GetArgument<string>("password")
+                    };
+
+                    var response = await authenticationService.RequestTokenAsync(requestDto);
+
+                    return response;
                 }
             );
         }

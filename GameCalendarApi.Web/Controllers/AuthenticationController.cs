@@ -7,19 +7,18 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using GameCalendarApi.Web.Models;
 using GameCalendarApi.Domain;
+using GameCalendarApi.Services;
 
 namespace GameCalendarApi.Web.Controllers
 {
     [ApiController]
     public class AuthenticationController : ControllerBase
     {
-        private readonly GameCalendarDbContext _dbContext;
-        private readonly SecurityService _securityService;
+        private readonly AuthenticationService _authenticationService;
 
-        public AuthenticationController(GameCalendarDbContext dbContext, SecurityService securityService)
+        public AuthenticationController(AuthenticationService securityService)
         {
-            _dbContext = dbContext;
-            _securityService = securityService;
+            _authenticationService = securityService;
         }
 
         [AllowAnonymous]
@@ -29,50 +28,13 @@ namespace GameCalendarApi.Web.Controllers
         {
             IActionResult response = Unauthorized();
 
-            switch (dto?.Grant_type?.ToLowerInvariant())
+            if (dto != null)
             {
-                case "password":
-                case "username_password":
-                    {
-                        var user = await _dbContext.AuthenticateUserAsync(dto.Username, dto.Password);
-                        if (user != null)
-                        {
-                            var refreshToken = await _dbContext.CreateRefreshTokenForUserAsync(user.UserId);
-                            var refreshTokenString = refreshToken.Token.ToString("N");
-                            var accessTokenString = _securityService.BuildJwt(user);
-
-                            response = Ok(new TokenResponseModel
-                            {
-                                Access_token = accessTokenString,
-                                Refresh_token = refreshTokenString
-                            });
-                        }
-                    }
-                    break;
-
-                case "refresh_token":
-                    {
-                        if (dto.Refresh_token.HasValue)
-                        {
-                            var refreshToken = await _dbContext.RefreshTokens.FirstOrDefaultAsync(n => n.Token == dto.Refresh_token.Value);
-                            if (refreshToken != null)
-                            {
-                                var user = await _dbContext.Users.FirstOrDefaultAsync(n => n.UserId == refreshToken.UserId);
-                                if (user != null)
-                                {
-                                    var accessTokenString = _securityService.BuildJwt(user);
-                                    response = Ok(new TokenResponseModel
-                                    {
-                                        Access_token = accessTokenString
-                                    });
-                                }
-                            }
-                        }
-                    }
-                    break;
-
-                case "api_key":
-                    throw new NotImplementedException();
+                var tokenResponse = await _authenticationService.RequestTokenAsync(dto);
+                if (tokenResponse != null)
+                {
+                    response = Ok(tokenResponse);
+                }
             }
 
             return response;

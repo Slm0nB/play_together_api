@@ -18,6 +18,7 @@ using GraphQL.Server.Ui.Playground;
 using Newtonsoft.Json;
 using GameCalendarApi.Domain;
 using GameCalendarApi.Web.GraphQl;
+using GameCalendarApi.Services;
 
 namespace GameCalendarApi.Web
 {
@@ -33,7 +34,7 @@ namespace GameCalendarApi.Web
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<SecurityService>();
+            services.AddScoped<AuthenticationService>();
 
             // services.AddDbContext<CalendarDbContext>(opt => opt.UseNpgsql(Environment.GetEnvironmentVariable("GameCalendarConnectionString")));
             services.AddDbContext<GameCalendarDbContext>();
