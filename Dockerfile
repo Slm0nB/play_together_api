@@ -5,4 +5,4 @@ COPY ./publish .
 
 EXPOSE 80
 
-ENTRYPOINT ["dotnet", "GameCalendarApi.Web.dll"]'''
+ENTRYPOINT ["dotnet", "PlayTogetherApi.Web.dll"]'''
