@@ -12,13 +12,17 @@ namespace PlayTogetherApi.Web.GraphQl.Types
         public EventType(PlayTogetherDbContext db)
         {
             Field("id", x => x.EventId, type: typeof(IdGraphType)).Description("Id property from the event object.");
-            Field(x => x.CreatedDate, type: typeof(IdGraphType)).Description("CreatedDate property from the event object.");
-            Field(x => x.EventDate, type: typeof(IdGraphType)).Description("EventDate property from the event object.");
+            Field(x => x.CreatedDate, type: typeof(NonNullGraphType<DateGraphType>)).Description("CreatedDate property from the event object.");
+            Field(x => x.EventDate, type: typeof(DateGraphType)).Description("EventDate property from the event object.");
             Field(x => x.Title).Description("Title property from the event object.");
-            Field(x => x.Description).Description("Description property from the event object.");
+            Field(x => x.Description, type: typeof(StringGraphType)).Description("Description property from the event object.");
 
-            Field<ListGraphType<UserType>>("author",
-                resolve: x => db.Users.Where(n => n.UserId == x.Source.CreatedByUserId)
+            Field<UserType>("author",
+                resolve: x => x.Source.CreatedByUser ?? db.Users.FirstOrDefault(n => n.UserId == x.Source.CreatedByUserId)
+            );
+
+            Field<GameType>("game",
+                resolve: x => x.Source.Game ?? db.Games.FirstOrDefault(n => n.GameId == x.Source.GameId)
             );
         }
     }
