@@ -10,6 +10,7 @@ namespace PlayTogetherApi.Domain
     {
         public DbSet<Event> Events { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<Game> Games { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         public PlayTogetherDbContext()

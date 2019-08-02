@@ -7,7 +7,7 @@ namespace PlayTogetherApi.Domain
     public class Game
     {
         [Key]
-        public Guid GaneId { get; set; } = Guid.NewGuid();
+        public Guid GameId { get; set; } = Guid.NewGuid();
 
         [MaxLength(50)]
         [MinLength(5)]
