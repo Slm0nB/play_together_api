@@ -35,9 +35,7 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     var newEvent = new Event
                     {
-                        EventId = Guid.NewGuid(),
                         Title = context.GetArgument<string>("title"),
-                        CreatedDate = DateTime.Now,
                         CreatedByUserId = userId
                     };
                     db.Events.Add(newEvent);

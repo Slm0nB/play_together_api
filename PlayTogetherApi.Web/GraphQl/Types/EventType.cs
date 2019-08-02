@@ -13,7 +13,9 @@ namespace PlayTogetherApi.Web.GraphQl.Types
         {
             Field("id", x => x.EventId, type: typeof(IdGraphType)).Description("Id property from the event object.");
             Field(x => x.CreatedDate, type: typeof(IdGraphType)).Description("CreatedDate property from the event object.");
+            Field(x => x.EventDate, type: typeof(IdGraphType)).Description("EventDate property from the event object.");
             Field(x => x.Title).Description("Title property from the event object.");
+            Field(x => x.Description).Description("Description property from the event object.");
 
             Field<ListGraphType<UserType>>("author",
                 resolve: x => db.Users.Where(n => n.UserId == x.Source.CreatedByUserId)
