@@ -12,8 +12,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
         public EventType(PlayTogetherDbContext db)
         {
             Field("id", x => x.EventId, type: typeof(IdGraphType)).Description("Id property from the event object.");
-            Field(x => x.CreatedDate, type: typeof(NonNullGraphType<DateGraphType>)).Description("CreatedDate property from the event object.");
-            Field(x => x.EventDate, type: typeof(DateGraphType)).Description("EventDate property from the event object.");
+            Field(x => x.CreatedDate, type: typeof(NonNullGraphType<DateTimeGraphType>)).Description("CreatedDate property from the event object.");
+            Field(x => x.EventDate, type: typeof(DateTimeGraphType)).Description("EventDate property from the event object.");
             Field(x => x.Title).Description("Title property from the event object.");
             Field(x => x.Description, type: typeof(StringGraphType)).Description("Description property from the event object.");
 

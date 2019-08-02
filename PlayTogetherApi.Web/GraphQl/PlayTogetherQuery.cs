@@ -19,8 +19,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 arguments: new QueryArguments(
                    new QueryArgument<StringGraphType> { Name = "id", Description = "Id of the event." },
                    new QueryArgument<StringGraphType> { Name = "search", Description = "Search term applied to the title or description." },
-                   new QueryArgument<StringGraphType> { Name = "fromDate", Description = "Date before the event." },
-                   new QueryArgument<StringGraphType> { Name = "toDate", Description = "Date after the event." },
+                   new QueryArgument<DateTimeGraphType> { Name = "beforeDate", Description = "Event occurs before or on this datetime." },
+                   new QueryArgument<DateTimeGraphType> { Name = "afterDate", Description = "Event occurs on or after this datetime." },
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many events to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return." }
                 ),
@@ -41,16 +41,16 @@ namespace PlayTogetherApi.Web.GraphQl
                        query = query.Where(n => n.Title.ToLower().Contains(search) || n.Description.ToLower().Contains(search)); // todo: verify sql isnt retarded
                    }
 
-                   var fromDate = context.GetArgument<DateTime>("fromDate");
-                   if (fromDate != default(DateTime))
+                   var afterDate = context.GetArgument<DateTime>("afterDate");
+                   if (afterDate != default(DateTime))
                    {
-                       query = query.Where(n => n.EventDate >= fromDate);
+                       query = query.Where(n => n.EventDate >= afterDate);
                    }
 
-                   var toDate = context.GetArgument<DateTime>("toDate");
-                   if (toDate != default(DateTime))
+                   var beforeDate = context.GetArgument<DateTime>("beforeDate");
+                   if (beforeDate != default(DateTime))
                    {
-                       query = query.Where(n => n.EventDate <= toDate);
+                       query = query.Where(n => n.EventDate <= beforeDate);
                    }
 
                    var skip = context.GetArgument<int>("skip");

@@ -21,7 +21,10 @@ namespace PlayTogetherApi.Web.GraphQl
                 "createEvent",
                 description: "Create a new event. This requires the caller to be authorized.",
                 arguments: new QueryArguments(
-                    new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "title" }
+                    new QueryArgument<NonNullGraphType<DateGraphType>> { Name = "date" },
+                    new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "title" },
+                    new QueryArgument<StringGraphType> { Name = "description" },
+                    new QueryArgument<IdGraphType> { Name = "game" }
                 ),
                 resolve: async context =>
                 {
@@ -36,7 +39,10 @@ namespace PlayTogetherApi.Web.GraphQl
                     var newEvent = new Event
                     {
                         Title = context.GetArgument<string>("title"),
-                        CreatedByUserId = userId
+                        CreatedByUserId = userId,
+                        EventDate = context.GetArgument<DateTime>("date"),
+                        Description = context.GetArgument<string>("description"),
+                        GameId = context.GetArgument<Guid?>("game")
                     };
                     db.Events.Add(newEvent);
                     await db.SaveChangesAsync();
@@ -47,7 +53,7 @@ namespace PlayTogetherApi.Web.GraphQl
 
             FieldAsync<UserType>(
                 "createUser",
-                description: "Create a new user. This will fail if the emali is already in use.",
+                description: "Create a new user. This will fail if the email is already in use.",
                 arguments: new QueryArguments(
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "displayName" },
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "email" },
@@ -83,7 +89,7 @@ namespace PlayTogetherApi.Web.GraphQl
 
             FieldAsync<TokenResponseType>(
                 "authenticate",
-                description: "Request an access- and refresh-token for a user.",
+                description: "Request an access- and/or refresh-token for a user.",
                 arguments: new QueryArguments(
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "email" },
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "password" }
