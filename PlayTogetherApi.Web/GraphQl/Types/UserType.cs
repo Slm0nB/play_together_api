@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using GraphQL.Types;
+using Microsoft.EntityFrameworkCore;
 using PlayTogetherApi.Domain;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
@@ -19,6 +20,21 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 // todo: filter options
                 resolve: x => db.Events.Where(n => n.CreatedByUserId == x.Source.UserId)
             );
+
+            FieldAsync<ListGraphType<EventType>>("signups",
+                resolve: async context =>
+                {
+                    var userId = context.Source.UserId;
+                    var events = await db.UserEventSignups
+                        .Where(n => n.UserId == userId)
+                        .Include(n => n.Event)
+                        .OrderBy(n => n.SignupDate)
+                        .Select(n => n.Event)
+                        .ToListAsync();
+                    return events;
+                }
+            );
+
         }
     }
 }

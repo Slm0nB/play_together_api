@@ -11,6 +11,7 @@ namespace PlayTogetherApi.Domain
         public DbSet<Event> Events { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Game> Games { get; set; }
+        public DbSet<UserEventSignup> UserEventSignups { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         public PlayTogetherDbContext()
@@ -21,6 +22,12 @@ namespace PlayTogetherApi.Domain
         public PlayTogetherDbContext(DbContextOptions<PlayTogetherDbContext> options) : base(options)
         {
 
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<UserEventSignup>()
+                .HasKey(t => new { t.UserId, t.EventId });
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

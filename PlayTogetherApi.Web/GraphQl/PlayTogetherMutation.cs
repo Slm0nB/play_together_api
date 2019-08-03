@@ -17,6 +17,68 @@ namespace PlayTogetherApi.Web.GraphQl
         {
             Name = "Mutation";
 
+            FieldAsync<BooleanGraphType>(
+                "joinEvent",
+                description: "Add the currently logged in user to an event.",
+                arguments: new QueryArguments(
+                    new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "event" }
+                ),
+                resolve: async context =>
+                {
+                    var principal = context.UserContext as ClaimsPrincipal;
+                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+                    if (!Guid.TryParse(userIdClaim, out var userId))
+                        return false;
+                    if (!await db.Users.AnyAsync(n => n.UserId == userId))
+                        return false;
+
+                    if (!context.HasArgument("event"))
+                        return false;
+                    var eventId = context.GetArgument<Guid>("event");
+                    if (!await db.Events.AnyAsync(n => n.EventId == eventId))
+                        return false;
+
+                    var signup = new UserEventSignup {
+                        EventId = eventId,
+                        UserId = userId
+                    };
+                    db.UserEventSignups.Add(signup);
+                    await db.SaveChangesAsync();
+
+                    return true;
+                }
+            );
+
+            FieldAsync<BooleanGraphType>(
+                "leaveEvent",
+                description: "Remove the currently logged in user from an event.",
+                arguments: new QueryArguments(
+                    new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "event" }
+                ),
+                resolve: async context =>
+                {
+                    var principal = context.UserContext as ClaimsPrincipal;
+                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+                    if (!Guid.TryParse(userIdClaim, out var userId))
+                        return false;
+                    if (!await db.Users.AnyAsync(n => n.UserId == userId))
+                        return false;
+
+                    if (!context.HasArgument("event"))
+                        return false;
+                    var eventId = context.GetArgument<Guid>("event");
+
+                    var signup = await db.UserEventSignups.FirstOrDefaultAsync(n => n.EventId == eventId && n.UserId == userId);
+                    if (signup == null)
+                        return false;
+
+                    db.UserEventSignups.Remove(signup);
+                    await db.SaveChangesAsync();
+
+                    return true;
+                }
+            );
+
             FieldAsync<EventType>(
                 "createEvent",
                 description: "Create a new event. This requires the caller to be authorized.",

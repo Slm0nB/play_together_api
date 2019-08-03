@@ -17,5 +17,7 @@ namespace PlayTogetherApi.Domain
         public string Email { get; set; }
 
         public string PasswordHash { get; set; }
+
+        public ICollection<UserEventSignup> Signups { get; } = new List<UserEventSignup>();
     }
 }

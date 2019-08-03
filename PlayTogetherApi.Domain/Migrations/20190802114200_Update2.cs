@@ -57,7 +57,7 @@ namespace PlayTogetherApi.Domain.Migrations
                 table: "Events");
 
             migrationBuilder.DropTable(
-                name: "Game");
+                name: "Games");
 
             migrationBuilder.DropIndex(
                 name: "IX_Events_GameId",
