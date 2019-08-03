@@ -88,20 +88,27 @@ namespace PlayTogetherApi.Web.GraphQl
             );
 
             FieldAsync<TokenResponseType>(
-                "authenticate",
-                description: "Request an access- and/or refresh-token for a user.",
+                "token",
+                description: "Request authorization tokens for a user, based on email/password or a refresh token.",
                 arguments: new QueryArguments(
-                    new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "email" },
-                    new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "password" }
+                    new QueryArgument<StringGraphType> { Name = "email" },
+                    new QueryArgument<StringGraphType> { Name = "password" },
+                    new QueryArgument<StringGraphType> { Name = "refreshToken" }
                 ),
                 resolve: async context =>
                 {
-                    var requestDto = new TokenRequestModel
-                    {
-                        Grant_type = "password",
-                        Username = context.GetArgument<string>("email"),
-                        Password = context.GetArgument<string>("password")
-                    };
+                    var requestDto = context.HasArgument("refreshToken")
+                        ? new TokenRequestModel
+                            {
+                                Grant_type = "refresh_token",
+                                Refresh_token = context.GetArgument<Guid>("refreshToken")
+                            }
+                        : new TokenRequestModel
+                            {
+                                Grant_type = "password",
+                                Username = context.GetArgument<string>("email"),
+                                Password = context.GetArgument<string>("password")
+                            };
 
                     var response = await authenticationService.RequestTokenAsync(requestDto);
 
