@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
@@ -12,13 +13,26 @@ namespace PlayTogetherApi.Web.GraphQl.Types
     {
         public UserType(PlayTogetherDbContext db)
         {
-            Field("id", x => x.UserId, type: typeof(IdGraphType)).Description("Id property from the user object.");
-            Field(x => x.DisplayName).Description("DisplayName property from the user object.");
-            Field(x => x.Email).Description("Email property from the user object.");
+            Field("id", user => user.UserId, type: typeof(IdGraphType)).Description("Id property from the user object.");
+            Field(user => user.DisplayName).Description("DisplayName property from the user object.");
+            Field(user => user.Email).Description("Email property from the user object.");
+
+            Field<StringGraphType>("avatar",
+                arguments: new QueryArguments(
+                    new QueryArgument<IntGraphType> { Name = "width", DefaultValue = 128 }
+                ),
+                resolve: context =>
+                {
+                    var width = context.GetArgument<int>("width", 128);
+                    var hash = md5(context.Source.Email);
+                    return $"http://gravatar.com/avatar/{hash}?s={width}&d=mm";
+                },
+                description: "Url of the avatar image."
+            );
 
             Field<ListGraphType<EventType>>("events",
                 // todo: filter options
-                resolve: x => db.Events.Where(n => n.CreatedByUserId == x.Source.UserId)
+                resolve: context => db.Events.Where(n => n.CreatedByUserId == context.Source.UserId)
             );
 
             FieldAsync<ListGraphType<EventType>>("signups",
@@ -34,7 +48,16 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                     return events;
                 }
             );
+        }
 
+        private string md5(string text)
+        {
+            using (var md5 = System.Security.Cryptography.MD5.Create())
+            {
+                var hashedBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(text));
+                var hash = BitConverter.ToString(hashedBytes).Replace("-", "").ToLower();
+                return hash;
+            }
         }
     }
 }
