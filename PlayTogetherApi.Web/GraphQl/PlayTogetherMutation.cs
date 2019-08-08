@@ -113,6 +113,72 @@ namespace PlayTogetherApi.Web.GraphQl
                 }
             );
 
+            FieldAsync<EventType>(
+                "updateEvent",
+                description: "Update an event. This requires the caller to be authorized, and be the creator of the event.",
+                arguments: new QueryArguments(
+                    new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "id", Description = "The ID of the event." },
+                    new QueryArgument<DateGraphType> { Name = "date" },
+                    new QueryArgument<StringGraphType> { Name = "title" },
+                    new QueryArgument<StringGraphType> { Name = "description" },
+                    new QueryArgument<IdGraphType> { Name = "game" }
+                ),
+                resolve: async context =>
+                {
+                    var principal = context.UserContext as ClaimsPrincipal;
+                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+                    if (!Guid.TryParse(userIdClaim, out var userId))
+                        return null;
+
+                    if (!await db.Users.AnyAsync(n => n.UserId == userId))
+                        return null;
+
+                    var eventId = context.GetArgument<Guid>("id");
+                    var editedEvent = await db.Events.FirstOrDefaultAsync(n => n.EventId == eventId);
+                    if (editedEvent == null || editedEvent.CreatedByUserId != userId)
+                        return null;
+
+                    if (context.HasArgument("date"))
+                    {
+                        var date = context.GetArgument<DateTime>("date");
+                        if (date != default(DateTime))
+                        {
+                            editedEvent.EventDate = date;
+                        }
+                    }
+
+                    var title = context.GetArgument<string>("title");
+                    if (!string.IsNullOrEmpty(title))
+                    {
+                        editedEvent.Title = title;
+                    }
+
+                    var description = context.GetArgument<string>("description");
+                    if (!string.IsNullOrEmpty(description))
+                    {
+                        editedEvent.Description = description;
+                    }
+
+                    if (context.HasArgument("game"))
+                    {
+                        var gameId = context.GetArgument<Guid>("game");
+                        if (gameId != default(Guid))
+                        {
+                            var gameExists = await db.Games.AnyAsync(n => n.GameId == gameId);
+                            if (gameExists)
+                                return null;
+
+                            editedEvent.GameId = gameId;
+                        }
+                    }
+
+                    db.Events.Update(editedEvent);
+                    await db.SaveChangesAsync();
+
+                    return editedEvent;
+                }
+            );
+
             FieldAsync<UserType>(
                 "createUser",
                 description: "Create a new user. This will fail if the email is already in use.",
@@ -146,6 +212,52 @@ namespace PlayTogetherApi.Web.GraphQl
                     await db.SaveChangesAsync();
 
                     return newUser;
+                }
+            );
+
+            FieldAsync<UserType>(
+                "updateUser",
+                description: "Update the currently logged in user.",
+                arguments: new QueryArguments(
+                    new QueryArgument<StringGraphType> { Name = "displayName" },
+                    new QueryArgument<StringGraphType> { Name = "email" },
+                    new QueryArgument<StringGraphType> { Name = "password" }
+                ),
+                resolve: async context =>
+                {
+                    var principal = context.UserContext as ClaimsPrincipal;
+                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+                    if (!Guid.TryParse(userIdClaim, out var userId))
+                        return null;
+
+                    var editedUser = await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
+                    if(editedUser == null)
+                        return null;
+
+                    var displayName = context.GetArgument<string>("displayName");
+                    if(!string.IsNullOrEmpty(displayName))
+                    {
+                        editedUser.DisplayName = displayName;
+                    }
+
+                    var email = context.GetArgument<string>("email");
+                    if(!string.IsNullOrEmpty(email))
+                    {
+                        // todo: validation
+                        editedUser.Email = email;
+                    }
+
+                    var password = context.GetArgument<string>("password");
+                    if(!string.IsNullOrEmpty(password))
+                    {
+                        // todo: validation
+                        editedUser.PasswordHash = authenticationService.CreatePasswordHash(password);
+                    }
+
+                    db.Users.Update(editedUser);
+                    await db.SaveChangesAsync();
+
+                    return editedUser;
                 }
             );
 
