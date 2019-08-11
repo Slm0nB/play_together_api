@@ -35,17 +35,16 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 resolve: context => db.Events.Where(n => n.CreatedByUserId == context.Source.UserId)
             );
 
-            FieldAsync<ListGraphType<EventType>>("signups",
+            FieldAsync<ListGraphType<UserEventSignupType>>("signups",
                 resolve: async context =>
                 {
                     var userId = context.Source.UserId;
-                    var events = await db.UserEventSignups
+                    var signups = await db.UserEventSignups
                         .Where(n => n.UserId == userId)
                         .Include(n => n.Event)
                         .OrderBy(n => n.SignupDate)
-                        .Select(n => n.Event)
                         .ToListAsync();
-                    return events;
+                    return signups;
                 }
             );
         }

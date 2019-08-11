@@ -21,7 +21,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 "joinEvent",
                 description: "Add the currently logged in user to an event.",
                 arguments: new QueryArguments(
-                    new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "event" }
+                    new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "event" },
+                    new QueryArgument<UserEventStatusType> { Name = "status", DefaultValue = UserEventStatus.AcceptedInvitation }
                 ),
                 resolve: async context =>
                 {
@@ -40,7 +41,8 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     var signup = new UserEventSignup {
                         EventId = eventId,
-                        UserId = userId
+                        UserId = userId,
+                        Status = context.GetArgument<UserEventStatus>("status")
                     };
                     db.UserEventSignups.Add(signup);
                     await db.SaveChangesAsync();

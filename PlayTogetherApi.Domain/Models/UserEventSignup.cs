@@ -4,6 +4,15 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PlayTogetherApi.Domain
 {
+    public enum UserEventStatus
+    {
+        Invited = 1,
+        TentativeAcceptedInvitation = 2,
+        AcceptedInvitation = 3,
+        Approved = 4,
+        Cancelled = 5
+    }
+
     public class UserEventSignup
     {
         public Event Event{ get; set; } = null;
@@ -15,5 +24,7 @@ namespace PlayTogetherApi.Domain
         public Guid UserId { get; set; }
 
         public DateTime SignupDate { get; set; } = DateTime.Now;
+
+        public UserEventStatus Status { get; set; }
     }
 }
