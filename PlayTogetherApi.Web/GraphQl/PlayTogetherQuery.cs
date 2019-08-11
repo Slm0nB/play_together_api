@@ -152,7 +152,7 @@ namespace PlayTogetherApi.Web.GraphQl
                }
            );
 
-            FieldAsync<UserType>(
+            FieldAsync<SelfUserType>(
                "me",
                description: "The details of the authorized user.",
                resolve: async context =>

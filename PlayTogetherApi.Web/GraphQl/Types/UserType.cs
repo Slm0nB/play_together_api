@@ -15,7 +15,6 @@ namespace PlayTogetherApi.Web.GraphQl.Types
         {
             Field("id", user => user.UserId, type: typeof(IdGraphType)).Description("Id property from the user object.");
             Field(user => user.DisplayName).Description("DisplayName property from the user object.");
-            Field(user => user.Email).Description("Email property from the user object.");
 
             Field<StringGraphType>("avatar",
                 arguments: new QueryArguments(
