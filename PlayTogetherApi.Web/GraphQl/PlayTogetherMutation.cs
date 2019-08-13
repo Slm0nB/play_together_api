@@ -85,6 +85,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 "createEvent",
                 description: "Create a new event. This requires the caller to be authorized.",
                 arguments: new QueryArguments(
+                    new QueryArgument<NonNullGraphType<DateGraphType>> { Name = "startdate" },
+                    new QueryArgument<NonNullGraphType<DateGraphType>> { Name = "enddate" },
                     new QueryArgument<NonNullGraphType<DateGraphType>> { Name = "date" },
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "title" },
                     new QueryArgument<StringGraphType> { Name = "description" },
@@ -104,7 +106,8 @@ namespace PlayTogetherApi.Web.GraphQl
                     {
                         Title = context.GetArgument<string>("title"),
                         CreatedByUserId = userId,
-                        EventDate = context.GetArgument<DateTime>("date"),
+                        EventDate = context.GetArgument<DateTime>("startdate"),
+                        EventEndDate = context.GetArgument<DateTime>("enddate"),
                         Description = context.GetArgument<string>("description"),
                         GameId = context.GetArgument<Guid?>("game")
                     };
@@ -120,7 +123,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 description: "Update an event. This requires the caller to be authorized, and be the creator of the event.",
                 arguments: new QueryArguments(
                     new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "id", Description = "The ID of the event." },
-                    new QueryArgument<DateGraphType> { Name = "date" },
+                    new QueryArgument<DateGraphType> { Name = "startdate" },
+                    new QueryArgument<DateGraphType> { Name = "enddate" },
                     new QueryArgument<StringGraphType> { Name = "title" },
                     new QueryArgument<StringGraphType> { Name = "description" },
                     new QueryArgument<IdGraphType> { Name = "game" }
@@ -140,12 +144,21 @@ namespace PlayTogetherApi.Web.GraphQl
                     if (editedEvent == null || editedEvent.CreatedByUserId != userId)
                         return null;
 
-                    if (context.HasArgument("date"))
+                    if (context.HasArgument("startdate"))
                     {
-                        var date = context.GetArgument<DateTime>("date");
-                        if (date != default(DateTime))
+                        var date = context.GetArgument<DateTime>("startdate");
+                        if (date != default)
                         {
                             editedEvent.EventDate = date;
+                        }
+                    }
+
+                    if (context.HasArgument("enddate"))
+                    {
+                        var date = context.GetArgument<DateTime>("enddate");
+                        if (date != default)
+                        {
+                            editedEvent.EventEndDate = date;
                         }
                     }
 

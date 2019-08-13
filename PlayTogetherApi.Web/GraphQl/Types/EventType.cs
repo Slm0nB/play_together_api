@@ -13,10 +13,12 @@ namespace PlayTogetherApi.Web.GraphQl.Types
         public EventType(PlayTogetherDbContext db)
         {
             Field("id", x => x.EventId, type: typeof(IdGraphType)).Description("Id property from the event object.");
-            Field(x => x.CreatedDate, type: typeof(NonNullGraphType<DateTimeGraphType>)).Description("CreatedDate property from the event object.");
-            Field(x => x.EventDate, type: typeof(DateTimeGraphType)).Description("EventDate property from the event object.");
-            Field(x => x.Title).Description("Title property from the event object.");
-            Field(x => x.Description, type: typeof(StringGraphType)).Description("Description property from the event object.");
+            Field(x => x.CreatedDate, type: typeof(NonNullGraphType<DateTimeGraphType>)).Description("When the event was created.");
+            Field<DateTimeGraphType>("startDate", resolve: context => context.Source.EventDate, description: "When the event starts.");
+            Field<DateTimeGraphType>("endDate", resolve: context => context.Source.EventEndDate, description: "When the event ends.");
+            Field(x => x.EventEndDate, type: typeof(DateTimeGraphType)).Description("When the event ends.");
+            Field(x => x.Title).Description("Title of the event.");
+            Field(x => x.Description, type: typeof(StringGraphType)).Description("Description of the event.");
 
             FieldAsync<UserType>("author",
                 resolve: async context => context.Source.CreatedByUser ?? await db.Users.FirstOrDefaultAsync(n => n.UserId == context.Source.CreatedByUserId)

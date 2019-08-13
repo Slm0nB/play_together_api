@@ -26,6 +26,7 @@ namespace PlayTogetherApi.Domain
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 
         public DateTime EventDate { get; set; }
+        public DateTime EventEndDate { get; set; }
 
         public string Description { get; set; }
 
