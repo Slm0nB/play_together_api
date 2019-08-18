@@ -194,6 +194,42 @@ namespace PlayTogetherApi.Web.GraphQl
                 }
             );
 
+            FieldAsync<BooleanGraphType>(
+                "deleteEvent",
+                description: "Delete an event.  This can only be done by the creator of the event, and requires the caller to be authorized.",
+                arguments: new QueryArguments(
+                    new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "id", Description = "The ID of the event." }
+                ),
+                resolve: async context =>
+                {
+                    var principal = context.UserContext as ClaimsPrincipal;
+                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+                    if (!Guid.TryParse(userIdClaim, out var userId))
+                    {
+                        context.Errors.Add(new ExecutionError("Unauthorized"));
+                        return null;
+                    }
+
+                    var eventId = context.GetArgument<Guid>("id");
+                    var dbEvent = await db.Events.FirstOrDefaultAsync(n => n.EventId == eventId);
+                    if(dbEvent == null)
+                    {
+                        context.Errors.Add(new ExecutionError("Event doesn't exist."));
+                        return false;
+                    }
+                    if (dbEvent.CreatedByUserId != userId)
+                    {
+                        context.Errors.Add(new ExecutionError("Event not created by user."));
+                        return false;
+                    }
+
+                    db.Events.Remove(dbEvent);
+                    await db.SaveChangesAsync();
+
+                    return true;
+                }
+            );
+
             FieldAsync<UserType>(
                 "createUser",
                 description: "Create a new user. This will fail if the email is already in use.",
