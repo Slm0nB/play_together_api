@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using GraphQL;
 using GraphQL.Types;
 using PlayTogetherApi.Services;
 using PlayTogetherApi.Domain;
@@ -78,6 +79,57 @@ namespace PlayTogetherApi.Web.GraphQl
                     await db.SaveChangesAsync();
 
                     return true;
+                }
+            );
+
+            FieldAsync<UserEventSignupType>(
+                "updateSignup",
+                description: "Update the current or any users signup state for an event. This requires the caller to be authorized.",
+                arguments: new QueryArguments(
+                    new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "event", Description = "Id of the event to update the status for." },
+                    new QueryArgument<NonNullGraphType<UserEventStatusType>> { Name = "status", Description = "The new status." },
+                    new QueryArgument<IdGraphType> { Name = "user", Description = "Id of the user, for event-owners changing the status of signsup to their event." }
+                ),
+                resolve: async context =>
+                {
+                    var principal = context.UserContext as ClaimsPrincipal;
+                    var claimText = principal?.Claims?.FirstOrDefault(n => n.Type == "userid")?.Value;
+                    Guid authenticatedUserId = Guid.Empty;
+                    if (string.IsNullOrEmpty(claimText) || !Guid.TryParse(claimText, out authenticatedUserId))
+                    {
+                        context.Errors.Add(new ExecutionError("Authorization."));
+                        return false;
+                    }
+
+                    var eventId = context.GetArgument<Guid>("event");
+                    var eventDto = await db.Events.FirstOrDefaultAsync(n => n.EventId == eventId);
+                    if (eventDto == null)
+                    {
+                        context.Errors.Add(new ExecutionError("Event doesn't exist."));
+                        return null;
+                    }
+
+                    var userId = context.GetArgument<Guid>("user", authenticatedUserId);
+                    if (userId != authenticatedUserId && eventDto.CreatedByUserId != authenticatedUserId)
+                    {
+                        context.Errors.Add(new ExecutionError("Must be the creator of the event to modify other users signups."));
+                        return null;
+                    }
+
+                    var signup = await db.UserEventSignups.FirstOrDefaultAsync(n => n.EventId == eventId && n.UserId == userId);
+                    if (signup == null)
+                    {
+                        // todo: consider just creating a signup instead?
+
+                        context.Errors.Add(new ExecutionError("No signup found."));
+                        return null;
+                    }
+
+                    signup.Status = context.GetArgument<UserEventStatus>("status");
+
+                    await db.SaveChangesAsync();
+
+                    return signup;
                 }
             );
 
