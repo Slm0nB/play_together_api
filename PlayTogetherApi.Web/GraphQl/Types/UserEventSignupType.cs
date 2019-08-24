@@ -13,7 +13,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
     {
         public UserEventSignupType(PlayTogetherDbContext db)
         {
-            Field("date", signup => signup.SignupDate, type: typeof(DateGraphType)).Description("Signup/invitation date.");
+            Field("date", signup => signup.SignupDate, type: typeof(DateTimeGraphType)).Description("Signup/invitation date.");
             Field("status", signup => signup.Status, type: typeof(UserEventStatusType)).Description("Status of the signup/invitation.");
 
             FieldAsync<EventType>("event", resolve: async context => {
