@@ -110,8 +110,7 @@ namespace PlayTogetherApi.Web.GraphQl
                }
            );
 
-
-            FieldAsync<ListGraphType<GameType>>(
+            Field<GameCollectionType>(
                "games",
                arguments: new QueryArguments(
                    new QueryArgument<StringGraphType> { Name = "id", Description = "Id of the game." },
@@ -119,7 +118,7 @@ namespace PlayTogetherApi.Web.GraphQl
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many games to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many games to return." }
                 ),
-               resolve: async context =>
+               resolve: context =>
                {
                    IQueryable<Game> query = db.Games;
 
@@ -148,7 +147,7 @@ namespace PlayTogetherApi.Web.GraphQl
                        query = query.Take(take);
                    }
 
-                   return await query.ToListAsync();
+                   return query;
                }
            );
 
