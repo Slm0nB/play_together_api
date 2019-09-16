@@ -37,6 +37,8 @@ namespace PlayTogetherApi.Web
         {
             services.AddScoped<AuthenticationService>();
 
+            services.AddSingleton<SubscriptionObservables>();
+
             services.AddDbContext<PlayTogetherDbContext>(opt => opt.UseNpgsql(Environment.GetEnvironmentVariable("PlayTogetherConnectionString")));
 
             services.AddScoped<IDependencyResolver>(s => new FuncDependencyResolver(s.GetRequiredService));
@@ -97,6 +99,8 @@ namespace PlayTogetherApi.Web
 
             app.UseAuthentication();
 
+            app.UseWebSockets();
+            app.UseGraphQLWebSockets<PlayTogetherSchema>();
             app.UseGraphQL<PlayTogetherSchema>();
             app.UseGraphQLPlayground(options: new GraphQLPlaygroundOptions() { Path = "/" });
 

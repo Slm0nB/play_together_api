@@ -14,7 +14,7 @@ namespace PlayTogetherApi.Web.GraphQl
 {
     public class PlayTogetherMutation : ObjectGraphType
     {
-        public PlayTogetherMutation(PlayTogetherDbContext db, AuthenticationService authenticationService)
+        public PlayTogetherMutation(PlayTogetherDbContext db, AuthenticationService authenticationService, SubscriptionObservables observables)
         {
             Name = "Mutation";
 
@@ -240,6 +240,8 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     db.Events.Update(editedEvent);
                     await db.SaveChangesAsync();
+
+                    observables.EventStream.OnNext(editedEvent);
 
                     return editedEvent;
                 }

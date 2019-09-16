@@ -13,6 +13,7 @@ namespace PlayTogetherApi.Web.GraphQl
         {
             Query = resolver.Resolve<PlayTogetherQuery>();
             Mutation = resolver.Resolve<PlayTogetherMutation>();
+            Subscription = resolver.Resolve<PlayTogetherSubscription>();
         }
     }
 }
