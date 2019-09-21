@@ -14,7 +14,7 @@ namespace PlayTogetherApi.Web.GraphQl
         {
             Name = "Query";
 
-            FieldAsync<ListGraphType<EventType>>(
+            Field<EventCollectionType>(
                "events",
                 arguments: new QueryArguments(
                    new QueryArgument<StringGraphType> { Name = "id", Description = "Id of the event." },
@@ -24,7 +24,7 @@ namespace PlayTogetherApi.Web.GraphQl
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many events to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return." }
                 ),
-               resolve: async context =>
+               resolve: context =>
                {
                    IQueryable<Event> query = db.Events;
 
@@ -65,11 +65,11 @@ namespace PlayTogetherApi.Web.GraphQl
                        query = query.Take(take);
                    }
 
-                   return await query.ToListAsync();
+                   return query;
                }
            );
 
-            FieldAsync<ListGraphType<UserType>>(
+            Field<UserCollectionType>(
                "users",
                arguments: new QueryArguments(
                    new QueryArgument<StringGraphType> { Name = "id", Description = "Id of the user." },
@@ -77,7 +77,7 @@ namespace PlayTogetherApi.Web.GraphQl
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many users to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many users to return." }
                 ),
-               resolve: async context =>
+               resolve: context =>
                {
                    IQueryable<User> query = db.Users;
 
@@ -106,7 +106,7 @@ namespace PlayTogetherApi.Web.GraphQl
                        query = query.Take(take);
                    }
 
-                   return await query.ToListAsync();
+                   return query;
                }
            );
 
