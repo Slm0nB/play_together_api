@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using GraphQL.Types;
 using PlayTogetherApi.Domain;
 using PlayTogetherApi.Web.GraphQl.Types;
+using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl
 {
@@ -65,7 +66,11 @@ namespace PlayTogetherApi.Web.GraphQl
                        query = query.Take(take);
                    }
 
-                   return query;
+                   return new EventCollectionModel
+                   {
+                       EventsQuery = query,
+                       TotalEventsQuery = db.Events
+                   };
                }
            );
 

@@ -6,18 +6,19 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using GraphQL.Types;
 using PlayTogetherApi.Domain;
+using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class EventCollectionType : ObjectGraphType<IQueryable<Event>>
+    public class EventCollectionType : ObjectGraphType<EventCollectionModel>
     {
         public EventCollectionType(PlayTogetherDbContext db, IConfiguration config)
         {
             FieldAsync<IntGraphType>("total",
-                description: "The total number of events created",
+                description: "The total number of events available",
                 resolve: async context =>
                 {
-                    var total = await db.Events.CountAsync();
+                    var total = await context.Source.TotalEventsQuery.CountAsync();
                     return total;
                 }
             );
@@ -26,13 +27,13 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 description: "The number of events selected by the query",
                 resolve: async context =>
                 {
-                    var count = await context.Source.CountAsync();
+                    var count = await context.Source.EventsQuery.CountAsync();
                     return count;
                 }
             );
 
             FieldAsync<ListGraphType<EventType>>("items",
-                resolve: async context => await context.Source.ToListAsync());
+                resolve: async context => await context.Source.EventsQuery.ToListAsync());
         }
     }
 }
