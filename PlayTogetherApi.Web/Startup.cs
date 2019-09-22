@@ -47,6 +47,7 @@ namespace PlayTogetherApi.Web
                 .AddGraphQL(options => {
                     options.ExposeExceptions = false;
                 })
+                .AddWebSockets()
                 .AddGraphTypes(ServiceLifetime.Scoped)
                 .AddUserContextBuilder(httpContext => httpContext.User);
 
