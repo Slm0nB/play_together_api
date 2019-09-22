@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using GraphQL.Types;
 using PlayTogetherApi.Domain;
+using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
@@ -17,14 +18,14 @@ namespace PlayTogetherApi.Web.GraphQl.Types
             Field(game => game.Title);
             Field("image", game => config.GetValue<string>("AssetPath") + game.ImagePath, type: typeof(StringGraphType));
 
-            FieldAsync<ListGraphType<EventType>>("events",
+            Field<EventCollectionType>("events",
                 arguments: new QueryArguments(
                    new QueryArgument<DateTimeGraphType> { Name = "beforeDate", Description = "Event occurs before or on this datetime." },
                    new QueryArgument<DateTimeGraphType> { Name = "afterDate", Description = "Event occurs on or after this datetime." },
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many events to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return." }
                 ),
-                resolve: async context =>
+                resolve: context =>
                 {
                     var query = db.Events.Where(n => n.GameId == context.Source.GameId);
 
@@ -52,7 +53,11 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                         query = query.Take(take);
                     }
 
-                    return await query.ToListAsync();
+                    return new EventCollectionModel
+                    {
+                        EventsQuery = query,
+                        TotalEventsQuery = db.Events.Where(n => n.GameId == context.Source.GameId)
+                    };
                 }
             );
         }

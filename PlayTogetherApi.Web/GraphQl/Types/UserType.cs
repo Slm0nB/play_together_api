@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
 using PlayTogetherApi.Domain;
+using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
@@ -29,14 +30,14 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 description: "Url of the avatar image."
             );
 
-            FieldAsync<ListGraphType<EventType>>("events",
+            Field<EventCollectionType>("events",
                 arguments: new QueryArguments(
                    new QueryArgument<DateTimeGraphType> { Name = "beforeDate", Description = "Event occurs before or on this datetime." },
                    new QueryArgument<DateTimeGraphType> { Name = "afterDate", Description = "Event occurs on or after this datetime." },
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many events to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return." }
                 ),
-                resolve: async context => {
+                resolve: context => {
                     var query = db.Events.Where(n => n.CreatedByUserId == context.Source.UserId);
 
                     var afterDate = context.GetArgument<DateTime>("afterDate");
@@ -63,51 +64,58 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                         query = query.Take(take);
                     }
 
-                    return await query.ToListAsync();
+                    return new EventCollectionModel
+                    {
+                        EventsQuery = query,
+                        TotalEventsQuery = db.Events.Where(n => n.CreatedByUserId == context.Source.UserId)
+                    };
                 }
             );
 
-            FieldAsync<ListGraphType<UserEventSignupType>>("signups",
+            Field<UserEventSignupCollectionType>("signups",
                 arguments: new QueryArguments(
                    new QueryArgument<DateTimeGraphType> { Name = "beforeDate", Description = "Event occurs before or on this datetime." },
                    new QueryArgument<DateTimeGraphType> { Name = "afterDate", Description = "Event occurs on or after this datetime." },
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many events to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return." }
                 ),
-                resolve: async context =>
+                resolve: context =>
                 {
                     var userId = context.Source.UserId;
-                    var signups = await db.UserEventSignups
+                    IQueryable<UserEventSignup> signups = db.UserEventSignups
                         .Where(n => n.UserId == userId)
                         .Include(n => n.Event)
-                        .OrderBy(n => n.SignupDate)
-                        .ToListAsync();
+                        .OrderBy(n => n.SignupDate);
 
                     var afterDate = context.GetArgument<DateTime>("afterDate");
                     if (afterDate != default(DateTime))
                     {
-                        signups = signups.Where(n => n.Event.EventEndDate >= afterDate).ToList();
+                        signups = signups.Where(n => n.Event.EventEndDate >= afterDate);
                     }
 
                     var beforeDate = context.GetArgument<DateTime>("beforeDate");
                     if (beforeDate != default(DateTime))
                     {
-                        signups = signups.Where(n => n.Event.EventDate <= beforeDate).ToList();
+                        signups = signups.Where(n => n.Event.EventDate <= beforeDate);
                     }
 
                     var skip = context.GetArgument<int>("skip");
                     if (skip > 0)
                     {
-                        signups = signups.Skip(skip).ToList();
+                        signups = signups.Skip(skip);
                     }
 
                     var take = context.GetArgument<int>("take");
                     if (take > 0)
                     {
-                        signups = signups.Take(take).ToList();
+                        signups = signups.Take(take);
                     }
 
-                    return signups;
+                    return new UserEventSignupCollectionModel
+                    {
+                        SignupsQuery = signups,
+                        TotalSignupsQuery = db.UserEventSignups.Where(n => n.UserId == context.Source.UserId)
+                    };
                 }
             );
         }
