@@ -30,19 +30,26 @@ namespace PlayTogetherApi.Web.GraphQl
                 // todo: add arguments for filtering
                 Name = "changedEvents",
                 Type = typeof(EventBaseType),
-                Resolver = new FuncFieldResolver<Event>(ResolveMessage),
-                Subscriber = new EventStreamResolver<Event>(SubscribeAll)
+                Resolver = new FuncFieldResolver<Event>(context => context.Source as Event),
+                Subscriber = new EventStreamResolver<Event>(context => observables.EventStream.AsObservable())
             });
-        }
 
-        private Event ResolveMessage(ResolveFieldContext context)
-        {
-            return context.Source as Event;
-        }
-
-        private IObservable<Event> SubscribeAll(ResolveEventStreamContext context)
-        {
-            return observables.EventStream.AsObservable();
+            AddField(new EventStreamFieldType
+            {
+                Name = "changedEventSignups",
+                Type = typeof(UserEventSignupType),
+                Arguments = new QueryArguments(
+                    new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "event", Description = "The ID of the event." }
+                ),
+                Resolver = new FuncFieldResolver<UserEventSignup>(context => context.Source as UserEventSignup),
+                Subscriber = new EventStreamResolver<UserEventSignup>(context =>
+                {
+                    var eventId = context.GetArgument<Guid>("event");
+                    return observables.EventSignupStream
+                        .Where(n => n.EventId == eventId)
+                        .AsObservable();
+                })
+            });
         }
     }
 }
