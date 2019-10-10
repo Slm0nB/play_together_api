@@ -19,5 +19,7 @@ namespace PlayTogetherApi.Domain
         public string PasswordHash { get; set; }
 
         public ICollection<UserEventSignup> Signups { get; } = new List<UserEventSignup>();
+
+        public string AvatarFilename { get; set; }
     }
 }
