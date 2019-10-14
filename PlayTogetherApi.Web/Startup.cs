@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
@@ -12,14 +13,16 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using GraphQL;
 using GraphQL.Server;
 using GraphQL.Server.Ui.Playground;
-using Newtonsoft.Json;
 using PlayTogetherApi.Domain;
 using PlayTogetherApi.Web.GraphQl;
 using PlayTogetherApi.Services;
-using Microsoft.EntityFrameworkCore;
+using ElastiLog;
+using ElastiLog.Middleware;
 
 namespace PlayTogetherApi.Web
 {
@@ -35,6 +38,9 @@ namespace PlayTogetherApi.Web
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.Configure<ElastiLogConfiguration>(Configuration.GetSection("Logging:ElastiLog"));
+
             services.AddScoped<AuthenticationService>();
 
             services.AddSingleton<SubscriptionObservables>();
@@ -81,10 +87,12 @@ namespace PlayTogetherApi.Web
                 .AddMvc()
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
                 .AddJsonOptions(options => options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore);
+
+            services.AddElastiLog();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, IServiceProvider serviceProvider)
         {
             if (env.IsDevelopment())
             {
@@ -94,6 +102,9 @@ namespace PlayTogetherApi.Web
             {
                 app.UseHsts();
             }
+
+            app.UseElastiLog();
+            loggerFactory.UseElastiLog(serviceProvider);
 
             app.UseHttpsRedirection();
             app.UseCors("CorsPolicy");
