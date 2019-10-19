@@ -40,8 +40,11 @@ namespace PlayTogetherApi.Web
         {
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.Configure<ElastiLogConfiguration>(Configuration.GetSection("Logging:ElastiLog"));
+            services.AddSingleton(Configuration);
+
 
             services.AddScoped<AuthenticationService>();
+            services.AddScoped<S3Service>();
 
             services.AddSingleton<SubscriptionObservables>();
 

@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using PlayTogetherApi.Domain;
 using PlayTogetherApi.Web.Models;
 
@@ -12,7 +13,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 {
     public class UserType : ObjectGraphType<User>
     {
-        public UserType(PlayTogetherDbContext db)
+        public UserType(PlayTogetherDbContext db, IConfiguration config)
         {
             Field("id", user => user.UserId, type: typeof(IdGraphType)).Description("Id property from the user object.");
             Field(user => user.DisplayName).Description("DisplayName property from the user object.");
@@ -23,6 +24,14 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 ),
                 resolve: context =>
                 {
+                    if(!string.IsNullOrWhiteSpace(context.Source.AvatarFilename))
+                    {
+                        // todo: handle width, or deliberately ignore?
+
+                        var url = config.GetValue<string>("AssetPath") + context.Source.AvatarFilename;
+                        return url;
+                    }
+
                     var width = context.GetArgument<int>("width", 128);
                     var hash = md5(context.Source.Email);
                     return $"http://gravatar.com/avatar/{hash}?s={width}&d=mm";
