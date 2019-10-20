@@ -153,6 +153,12 @@ namespace PlayTogetherApi.Web.GraphQl
                     if(!await db.Users.AnyAsync(n => n.UserId == userId))
                         return null;
 
+                    if (context.GetArgument<DateTime>("startdate") > context.GetArgument<DateTime>("enddate"))
+                    {
+                        context.Errors.Add(new ExecutionError("Start- and end-dates not in correct order."));
+                        return null;
+                    }
+
                     var newEvent = new Event
                     {
                         Title = context.GetArgument<string>("title"),
@@ -211,6 +217,12 @@ namespace PlayTogetherApi.Web.GraphQl
                         {
                             editedEvent.EventEndDate = date;
                         }
+                    }
+
+                    if (editedEvent.EventDate > editedEvent.EventEndDate)
+                    {
+                        context.Errors.Add(new ExecutionError("Start- and end-dates not in correct order."));
+                        return null;
                     }
 
                     var title = context.GetArgument<string>("title");
