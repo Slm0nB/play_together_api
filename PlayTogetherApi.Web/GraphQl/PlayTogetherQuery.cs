@@ -78,6 +78,7 @@ namespace PlayTogetherApi.Web.GraphQl
                "users",
                arguments: new QueryArguments(
                    new QueryArgument<StringGraphType> { Name = "id", Description = "Id of the user." },
+                   new QueryArgument<StringGraphType> { Name = "email", Description = "Email of the user." },
                    new QueryArgument<StringGraphType> { Name = "search", Description = "Search term applied to the displayname." },
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many users to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many users to return." }
@@ -90,6 +91,13 @@ namespace PlayTogetherApi.Web.GraphQl
                    if (Guid.TryParse(id, out var uid))
                    {
                        query = query.Where(n => n.UserId == uid);
+                   }
+
+                   var email = context.GetArgument<string>("email");
+                   if (!string.IsNullOrWhiteSpace(email))
+                   {
+                       email = email.ToLowerInvariant();
+                       query = query.Where(n => n.Email.ToLower().Contains(email)); // todo: verify sql isnt retarded
                    }
 
                    var search = context.GetArgument<string>("search");
