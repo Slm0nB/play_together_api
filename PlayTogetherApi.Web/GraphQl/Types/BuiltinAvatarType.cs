@@ -15,8 +15,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
         public BuiltinAvatarType(PlayTogetherDbContext db, IConfiguration config)
         {
             Field("id", avatar => avatar.AvatarId, type: typeof(IntGraphType));
-            Field("path", avatar => avatar.ImagePath, type: typeof(StringGraphType));
-            Field("image", avatar => config.GetValue<string>("AssetPath") + avatar.ImagePath, type: typeof(StringGraphType));
+            Field("filename", avatar => avatar.ImagePath, type: typeof(StringGraphType));
+            Field("url", avatar => config.GetValue<string>("AssetPath") + avatar.ImagePath, type: typeof(StringGraphType));
         }
     }
 }

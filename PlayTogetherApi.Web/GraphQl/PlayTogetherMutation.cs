@@ -325,7 +325,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 arguments: new QueryArguments(
                     new QueryArgument<StringGraphType> { Name = "displayName" },
                     new QueryArgument<StringGraphType> { Name = "email" },
-                    new QueryArgument<StringGraphType> { Name = "password" }
+                    new QueryArgument<StringGraphType> { Name = "password" },
+                    new QueryArgument<StringGraphType> { Name = "avatar", Description = "Filename of the new avatar image" }
                 ),
                 resolve: async context =>
                 {
@@ -356,6 +357,20 @@ namespace PlayTogetherApi.Web.GraphQl
                     {
                         // todo: validation
                         editedUser.PasswordHash = authenticationService.CreatePasswordHash(password);
+                    }
+
+                    var avatar = context.GetArgument<string>("avatar");
+                    if (!string.IsNullOrEmpty(avatar))
+                    {
+                        if (!db.Avatars.Any(n => n.ImagePath == avatar))
+                        {
+                            context.Errors.Add(new ExecutionError("Avatar not available."));
+                        }
+                        else
+                        {
+                            // todo: here we might later add checks around premium-avatars and access rights
+                            editedUser.AvatarFilename = avatar;
+                        }
                     }
 
                     db.Users.Update(editedUser);
