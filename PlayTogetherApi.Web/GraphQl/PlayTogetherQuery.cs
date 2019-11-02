@@ -164,6 +164,32 @@ namespace PlayTogetherApi.Web.GraphQl
                }
            );
 
+            Field<BuiltinAvatarCollectionType>(
+               "avatars",
+               arguments: new QueryArguments(
+                   new QueryArgument<IntGraphType> { Name = "skip", Description = "How many games to skip." },
+                   new QueryArgument<IntGraphType> { Name = "take", Description = "How many games to return." }
+                ),
+               resolve: context =>
+               {
+                   IQueryable<BuiltinAvatar> query = db.Avatars;
+
+                   var skip = context.GetArgument<int>("skip");
+                   if (skip > 0)
+                   {
+                       query = query.Skip(skip);
+                   }
+
+                   var take = context.GetArgument<int>("take");
+                   if (take > 0)
+                   {
+                       query = query.Take(take);
+                   }
+
+                   return query;
+               }
+           );
+
             FieldAsync<SelfUserType>(
                "me",
                description: "The details of the authorized user.",
