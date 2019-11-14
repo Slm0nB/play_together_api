@@ -14,7 +14,7 @@ namespace PlayTogetherApi.Web.GraphQl
 {
     public class PlayTogetherMutation : ObjectGraphType
     {
-        public PlayTogetherMutation(PlayTogetherDbContext db, AuthenticationService authenticationService, ObservablesService observables)
+        public PlayTogetherMutation(PlayTogetherDbContext db, AuthenticationService authenticationService, ObservablesService observables, PushMessageService pushMessageService)
         {
             Name = "Mutation";
 
@@ -30,23 +30,53 @@ namespace PlayTogetherApi.Web.GraphQl
                     var principal = context.UserContext as ClaimsPrincipal;
                     var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
                     if (!Guid.TryParse(userIdClaim, out var userId))
+                    {
+                        context.Errors.Add(new ExecutionError("Unauthorized"));
                         return false;
-                    if (!await db.Users.AnyAsync(n => n.UserId == userId))
+                    }
+                    var user = await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
+                    if (user == null)
+                    {
+                        context.Errors.Add(new ExecutionError("User not found."));
                         return false;
+                    }
 
-                    if (!context.HasArgument("event"))
-                        return false;
                     var eventId = context.GetArgument<Guid>("event");
-                    if (!await db.Events.AnyAsync(n => n.EventId == eventId))
+                    var gameEvent = await db.Events.FirstOrDefaultAsync(n => n.EventId == eventId);
+                    if (gameEvent == null)
+                    {
+                        context.Errors.Add(new ExecutionError("Event not found."));
                         return false;
+                    }
 
-                    var signup = new UserEventSignup {
+                    var eventOwner = await db.Users.FirstOrDefaultAsync(n => n.UserId == gameEvent.CreatedByUserId);
+                    if (eventOwner == null)
+                    {
+                        context.Errors.Add(new ExecutionError("Invalid event; the creator no longer exists."));
+                        return false;
+                    }
+
+                    var signup = await db.UserEventSignups.FirstOrDefaultAsync(n => n.EventId == eventId && n.UserId == userId);
+                    if (signup != null)
+                    {
+                        context.Errors.Add(new ExecutionError("Already signed up to this event."));
+                        return false;
+                    }
+
+                    signup = new UserEventSignup {
                         EventId = eventId,
                         UserId = userId,
                         Status = context.GetArgument<UserEventStatus>("status")
                     };
                     db.UserEventSignups.Add(signup);
                     await db.SaveChangesAsync();
+
+                    var _ = pushMessageService.PushMessageAsync(
+                        "JoinEvent",
+                        "A player has joined!",
+                        $"{user.DisplayName} signed up for \"{gameEvent.Title}\".", // todo: add a cleverly-formatted date/time?
+                        new { eventId, userId, eventName = gameEvent.Title, userName = user.DisplayName },
+                        eventOwner.Email);
 
                     return true;
                 }
@@ -63,17 +93,24 @@ namespace PlayTogetherApi.Web.GraphQl
                     var principal = context.UserContext as ClaimsPrincipal;
                     var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
                     if (!Guid.TryParse(userIdClaim, out var userId))
+                    {
+                        context.Errors.Add(new ExecutionError("Unauthorized"));
                         return false;
+                    }
                     if (!await db.Users.AnyAsync(n => n.UserId == userId))
+                    {
+                        context.Errors.Add(new ExecutionError("User not found."));
                         return false;
+                    }
 
-                    if (!context.HasArgument("event"))
-                        return false;
                     var eventId = context.GetArgument<Guid>("event");
 
                     var signup = await db.UserEventSignups.FirstOrDefaultAsync(n => n.EventId == eventId && n.UserId == userId);
                     if (signup == null)
+                    {
+                        context.Errors.Add(new ExecutionError("Not signed up to this event."));
                         return false;
+                    }
 
                     db.UserEventSignups.Remove(signup);
                     await db.SaveChangesAsync();
@@ -97,7 +134,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     Guid authenticatedUserId = Guid.Empty;
                     if (string.IsNullOrEmpty(claimText) || !Guid.TryParse(claimText, out authenticatedUserId))
                     {
-                        context.Errors.Add(new ExecutionError("Authorization."));
+                        context.Errors.Add(new ExecutionError("Unauthorized"));
                         return false;
                     }
 
@@ -148,19 +185,43 @@ namespace PlayTogetherApi.Web.GraphQl
                     var principal = context.UserContext as ClaimsPrincipal;
                     var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
                     if (!Guid.TryParse(userIdClaim, out var userId))
+                    {
+                        context.Errors.Add(new ExecutionError("Unauthorized"));
                         return null;
+                    }
 
-                    if(!await db.Users.AnyAsync(n => n.UserId == userId))
+                    if (!await db.Users.AnyAsync(n => n.UserId == userId))
+                    {
+                        context.Errors.Add(new ExecutionError("User not found."));
                         return null;
+                    }
+
+                    var startdate = context.GetArgument<DateTime>("startdate");
+                    var enddate = context.GetArgument<DateTime>("enddate");
+                    if (startdate > enddate)
+                    {
+                        context.Errors.Add(new ExecutionError("Start- and end-dates not in correct order."));
+                        return null;
+                    }
+
+                    var gameId = context.GetArgument<Guid>("game");
+                    if (gameId != default(Guid))
+                    {
+                        if (!await db.Games.AnyAsync(n => n.GameId == gameId))
+                        {
+                            context.Errors.Add(new ExecutionError("Game doesn't exist."));
+                            return null;
+                        }
+                    }
 
                     var newEvent = new Event
                     {
                         Title = context.GetArgument<string>("title"),
                         CreatedByUserId = userId,
-                        EventDate = context.GetArgument<DateTime>("startdate"),
-                        EventEndDate = context.GetArgument<DateTime>("enddate"),
+                        EventDate = startdate,
+                        EventEndDate = enddate,
                         Description = context.GetArgument<string>("description"),
-                        GameId = context.GetArgument<Guid?>("game")
+                        GameId = gameId
                     };
                     db.Events.Add(newEvent);
                     await db.SaveChangesAsync();
@@ -185,15 +246,24 @@ namespace PlayTogetherApi.Web.GraphQl
                     var principal = context.UserContext as ClaimsPrincipal;
                     var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
                     if (!Guid.TryParse(userIdClaim, out var userId))
+                    {
+                        context.Errors.Add(new ExecutionError("Unauthorized"));
                         return null;
+                    }
 
                     if (!await db.Users.AnyAsync(n => n.UserId == userId))
+                    {
+                        context.Errors.Add(new ExecutionError("User not found."));
                         return null;
+                    }
 
                     var eventId = context.GetArgument<Guid>("id");
                     var editedEvent = await db.Events.FirstOrDefaultAsync(n => n.EventId == eventId);
                     if (editedEvent == null || editedEvent.CreatedByUserId != userId)
+                    {
+                        context.Errors.Add(new ExecutionError("Must be the creator of the event to modify it."));
                         return null;
+                    }
 
                     if (context.HasArgument("startdate"))
                     {
@@ -213,6 +283,12 @@ namespace PlayTogetherApi.Web.GraphQl
                         }
                     }
 
+                    if (editedEvent.EventDate > editedEvent.EventEndDate)
+                    {
+                        context.Errors.Add(new ExecutionError("Start- and end-dates not in correct order."));
+                        return null;
+                    }
+
                     var title = context.GetArgument<string>("title");
                     if (!string.IsNullOrEmpty(title))
                     {
@@ -230,9 +306,11 @@ namespace PlayTogetherApi.Web.GraphQl
                         var gameId = context.GetArgument<Guid>("game");
                         if (gameId != default(Guid))
                         {
-                            var gameExists = await db.Games.AnyAsync(n => n.GameId == gameId);
-                            if (gameExists)
+                            if (!await db.Games.AnyAsync(n => n.GameId == gameId))
+                            {
+                                context.Errors.Add(new ExecutionError("Game doesn't exist."));
                                 return null;
+                            }
 
                             editedEvent.GameId = gameId;
                         }
@@ -297,11 +375,30 @@ namespace PlayTogetherApi.Web.GraphQl
                     var email = context.GetArgument<string>("email");
                     var password = context.GetArgument<string>("password");
 
-                    // todo: validation
+                    if (!ValidateDisplayName(displayName))
+                    {
+                        context.Errors.Add(new ExecutionError("Displayname too short."));
+                        return null;
+                    }
+
+                    if (!ValidateEmail(email))
+                    {
+                        context.Errors.Add(new ExecutionError("Email invalid."));
+                        return null;
+                    }
+
+                    if (!ValidatePassword(password))
+                    {
+                        context.Errors.Add(new ExecutionError("Password too weak."));
+                        return null;
+                    }
 
                     var userExists = await db.Users.AnyAsync(n => n.Email == email);
                     if (userExists)
+                    {
+                        context.Errors.Add(new ExecutionError("User with this email already exists."));
                         return null;
+                    }
 
                     var passwordHash = authenticationService.CreatePasswordHash(password);
 
@@ -333,29 +430,48 @@ namespace PlayTogetherApi.Web.GraphQl
                     var principal = context.UserContext as ClaimsPrincipal;
                     var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
                     if (!Guid.TryParse(userIdClaim, out var userId))
+                    {
+                        context.Errors.Add(new ExecutionError("Unauthorized"));
                         return null;
+                    }
 
                     var editedUser = await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
-                    if(editedUser == null)
+                    if (editedUser == null)
+                    {
+                        context.Errors.Add(new ExecutionError("User not found."));
                         return null;
+                    }
 
                     var displayName = context.GetArgument<string>("displayName");
                     if(!string.IsNullOrEmpty(displayName))
                     {
+                        if (!ValidateDisplayName(displayName))
+                        {
+                            context.Errors.Add(new ExecutionError("Displayname too short."));
+                            return null;
+                        }
                         editedUser.DisplayName = displayName;
                     }
 
                     var email = context.GetArgument<string>("email");
                     if(!string.IsNullOrEmpty(email))
                     {
-                        // todo: validation
+                        if (!ValidateEmail(email))
+                        {
+                            context.Errors.Add(new ExecutionError("Email invalid."));
+                            return null;
+                        }
                         editedUser.Email = email;
                     }
 
                     var password = context.GetArgument<string>("password");
                     if(!string.IsNullOrEmpty(password))
                     {
-                        // todo: validation
+                        if (!ValidatePassword(password))
+                        {
+                            context.Errors.Add(new ExecutionError("Password too weak."));
+                            return null;
+                        }
                         editedUser.PasswordHash = authenticationService.CreatePasswordHash(password);
                     }
 
@@ -409,5 +525,12 @@ namespace PlayTogetherApi.Web.GraphQl
                 }
             );
         }
+
+        // todo: better rules
+
+        static private bool ValidateEmail(string email) => email.Length >= 5 && email.Contains("@");
+        static private bool ValidateDisplayName(string displayName) => displayName.Trim().Length >= 3;
+        static private bool ValidatePassword(string password) => password.Trim().Length >= 3;
+
     }
 }

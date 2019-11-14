@@ -23,6 +23,12 @@
     <ProjectReference Include="..\PlayTogetherApi.Domain\PlayTogetherApi.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="ElastiLog">
+      <HintPath>..\resources\ElastiLog.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <VersionPrefix>1.0.0</VersionPrefix>
