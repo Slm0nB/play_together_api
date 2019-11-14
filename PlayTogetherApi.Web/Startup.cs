@@ -37,7 +37,7 @@ namespace PlayTogetherApi.Web
         {
             services.AddScoped<AuthenticationService>();
 
-            services.AddSingleton<SubscriptionObservables>();
+            services.AddSingleton<ObservablesService>();
 
             services.AddDbContext<PlayTogetherDbContext>(opt => opt.UseNpgsql(Environment.GetEnvironmentVariable("PlayTogetherConnectionString")));
 

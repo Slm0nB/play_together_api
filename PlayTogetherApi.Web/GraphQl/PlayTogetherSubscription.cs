@@ -17,9 +17,9 @@ namespace PlayTogetherApi.Web.GraphQl
 {
     public class PlayTogetherSubscription : ObjectGraphType
     {
-        SubscriptionObservables observables;
+        ObservablesService observables;
 
-        public PlayTogetherSubscription(PlayTogetherDbContext db, AuthenticationService authenticationService, SubscriptionObservables observables)
+        public PlayTogetherSubscription(PlayTogetherDbContext db, AuthenticationService authenticationService, ObservablesService observables)
         {
             this.observables = observables;
 
@@ -31,7 +31,7 @@ namespace PlayTogetherApi.Web.GraphQl
                 Name = "changedEvents",
                 Type = typeof(EventBaseType),
                 Resolver = new FuncFieldResolver<Event>(context => context.Source as Event),
-                Subscriber = new EventStreamResolver<Event>(context => observables.EventStream.AsObservable())
+                Subscriber = new EventStreamResolver<Event>(context => observables.GameEventStream.AsObservable())
             });
 
             AddField(new EventStreamFieldType
@@ -45,7 +45,7 @@ namespace PlayTogetherApi.Web.GraphQl
                 Resolver = new FuncFieldResolver<UserEventSignup>(context => context.Source as UserEventSignup),
                 Subscriber = new EventStreamResolver<UserEventSignup>(context =>
                 {
-                    var observable = observables.EventSignupStream;
+                    var observable = observables.UserEventSignupStream;
 
                     if(context.HasArgument("event"))
                     {
