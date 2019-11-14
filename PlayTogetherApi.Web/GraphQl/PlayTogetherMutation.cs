@@ -71,6 +71,8 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.UserEventSignups.Add(signup);
                     await db.SaveChangesAsync();
 
+                    observables.UserEventSignupStream.OnNext(signup);
+
                     var _ = pushMessageService.PushMessageAsync(
                         "JoinEvent",
                         "A player has joined!",
@@ -166,6 +168,10 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     await db.SaveChangesAsync();
 
+                    observables.UserEventSignupStream.OnNext(signup);
+
+                    // todo: if the new status was AcceptedInvitation, maybe push a message to the owner of the event?
+
                     return signup;
                 }
             );
@@ -225,6 +231,8 @@ namespace PlayTogetherApi.Web.GraphQl
                     };
                     db.Events.Add(newEvent);
                     await db.SaveChangesAsync();
+
+                    observables.GameEventStream.OnNext(newEvent);
 
                     return newEvent;
                 }
