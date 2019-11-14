@@ -19,9 +19,9 @@ namespace PlayTogetherApi.Web.GraphQl.Types
             Field("date", model => model.Relation.CreatedDate, type: typeof(DateTimeGraphType)).Description("Invitation date.");
 
             Field<UserType>("user", resolve: context => {
-                var user = context.Source.PrimaryUserId == context.Source.Relation.FromUserId
-                    ? context.Source.Relation.ToUser
-                    : context.Source.Relation.FromUser;
+                var user = context.Source.PrimaryUserId == context.Source.Relation.UserAId
+                    ? context.Source.Relation.UserB
+                    : context.Source.Relation.UserA;
                 return user;
             });
         }

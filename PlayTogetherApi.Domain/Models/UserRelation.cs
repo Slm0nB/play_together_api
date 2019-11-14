@@ -4,23 +4,35 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PlayTogetherApi.Domain
 {
+    //public enum UserRelationStatus
+    //{
+    //    Invited = 1,
+    //    Accepted = 2,
+    //    Rejected = 3,
+    //    Blocked = 4
+    //}
+
     public enum UserRelationStatus
     {
-        Invited = 1,
-        Accepted = 2,
-        Rejected = 3,
-        Blocked = 4
+        A_Invited_B = 1,
+        B_Invited_A = 2,
+        Friends = 3,
+        A_Rejected = 4,
+        B_Rejected = 5,
+        A_Blocked_B = 6,
+        B_Blocked_A = 7,
+        Both_Blocked = 8
     }
 
     public class UserRelation
     {
-        public User FromUser { get; set; } = null;
+        public User UserA { get; set; } = null;
         [ForeignKey("User")]
-        public Guid FromUserId { get; set; }
+        public Guid UserAId { get; set; }
 
-        public User ToUser { get; set; } = null;
+        public User UserB { get; set; } = null;
         [ForeignKey("User")]
-        public Guid ToUserId { get; set; }
+        public Guid UserBId { get; set; }
 
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 

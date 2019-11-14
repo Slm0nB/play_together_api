@@ -137,12 +137,12 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 {
                     var userId = context.Source.UserId;
                     IQueryable<UserRelation> relations = db.UserRelations
-                        .Where(n => n.Status == UserRelationStatus.Accepted && (n.ToUserId == context.Source.UserId || n.FromUserId == context.Source.UserId))
+                        .Where(n => n.Status == UserRelationStatus.Friends && (n.UserBId == context.Source.UserId || n.UserAId == context.Source.UserId))
                         .OrderBy(n => n.CreatedDate);
 
                     IQueryable<UserRelation> filteredRelations = relations
-                        .Include(n => n.FromUser)
-                        .Include(n => n.ToUser);
+                        .Include(n => n.UserA)
+                        .Include(n => n.UserB);
 
                     var skip = context.GetArgument<int>("skip");
                     if (skip > 0)

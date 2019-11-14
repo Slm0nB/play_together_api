@@ -166,6 +166,7 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     signup.Status = context.GetArgument<UserEventStatus>("status");
 
+                    db.UserEventSignups.Update(signup);
                     await db.SaveChangesAsync();
 
                     observables.UserEventSignupStream.OnNext(signup);
@@ -365,6 +366,8 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.Events.Remove(dbEvent);
                     await db.SaveChangesAsync();
 
+                    // todo: push deletion to observables
+
                     return true;
                 }
             );
@@ -501,6 +504,119 @@ namespace PlayTogetherApi.Web.GraphQl
                     await db.SaveChangesAsync();
 
                     return editedUser;
+                }
+            );
+
+            FieldAsync<UserRelationType>(
+                "setUserRelation",
+                description: "Add a user to your friendlist, or accept an invitation from a user.  This requires the caller to be authorized.",
+                arguments: new QueryArguments(
+                    new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "user" },
+                    new QueryArgument<NonNullGraphType<UserRelationStatusType>> { Name = "status" }
+                ),
+                resolve: async context =>
+                {
+                    var principal = context.UserContext as ClaimsPrincipal;
+                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+                    if (!Guid.TryParse(userIdClaim, out var callingUserId))
+                    {
+                        context.Errors.Add(new ExecutionError("Unauthorized"));
+                        return null;
+                    }
+
+                    var callingUser = await db.Users.FirstOrDefaultAsync(n => n.UserId == callingUserId);
+                    if (callingUser == null)
+                    {
+                        context.Errors.Add(new ExecutionError("Calling user not found."));
+                        return null;
+                    }
+
+                    var friendUserId = context.GetArgument<Guid>("user");
+                    var friendUser = await db.Users.FirstOrDefaultAsync(n => n.UserId == friendUserId);
+                    if (friendUser == null)
+                    {
+                        context.Errors.Add(new ExecutionError("User not found."));
+                        return null;
+                    }
+
+                    var status = context.GetArgument<UserRelationStatus>("status");
+
+                    var relation = await db.UserRelations.FirstAsync(n => (n.UserAId == callingUserId && n.UserBId == friendUserId) || (n.UserAId == friendUserId && n.UserBId == callingUserId));
+                    /*
+
+                    if (relation == null)
+                    {
+                        // Inviting (or blocking) an unrelated user
+                        if (status != UserRelationStatus.Accepted && status != UserRelationStatus.Blocked)
+                        {
+                            context.Errors.Add(new ExecutionError("Can only invite or block unrelated users."));
+                            return null;
+                        }
+                        relation = new UserRelation
+                        {
+                            UserAId = callingUserId,
+                            UserBId = friendUserId,
+                            Status = status,
+                            CreatedDate = DateTime.Now
+                        };
+                        db.UserRelations.Add(relation);
+                    }
+                    else if (relation.UserAId == callingUserId)
+                    {
+                        // updating our own invitation
+                        switch(relation.Status)
+                        {
+                            case UserRelationStatus.Blocked:
+                                if (status != UserRelationStatus.Blocked)
+                                {
+                                    context.Errors.Add(new ExecutionError("This user is blocking you."));
+                                    return null;
+                                }
+                                else
+                                {
+                                    // todo: unhandled corner-case of trying to block a user that is already blocking
+                                }
+                                break;
+                            case UserRelationStatus.Rejected:
+                                if (status == UserRelationStatus.Accepted)
+                                {
+                                    context.Errors.Add(new ExecutionError("Can't accept a rejected invitation."));
+                                    return null;
+                                }
+                                break;
+                            case UserRelationStatus.Accepted:
+                                break;
+                            case UserRelationStatus.Invited:
+                                break;
+                        }
+
+
+
+                        relation.Status = status;
+                    }
+                    else
+                    {
+                        // updating an invitation from another user
+                        switch (relation.Status)
+                        {
+                            case UserRelationStatus.Blocked:
+                                break;
+                            case UserRelationStatus.Rejected:
+                                break;
+                            case UserRelationStatus.Accepted:
+                                break;
+                            case UserRelationStatus.Invited:
+                                break;
+                        }
+
+                    }
+                    */
+
+                    await db.SaveChangesAsync();
+
+                    observables.UserRelationStream.OnNext(relation);
+
+                    return relation;
                 }
             );
 
