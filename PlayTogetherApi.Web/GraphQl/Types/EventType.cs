@@ -54,8 +54,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 
                     return new UserEventSignupCollectionModel
                     {
-                        SignupsQuery = signups,
-                        TotalSignupsQuery = db.UserEventSignups.Where(n => n.EventId == context.Source.EventId)
+                        ItemsQuery = signups,
+                        TotalItemsQuery = db.UserEventSignups.Where(n => n.EventId == context.Source.EventId)
                     };
                 }
             );

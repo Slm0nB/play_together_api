@@ -6,9 +6,9 @@ using PlayTogetherApi.Domain;
 
 namespace PlayTogetherApi.Web.Models
 {
-    public class UserEventSignupCollectionModel
+    public class UserRelationExtModel
     {
-        public IQueryable<UserEventSignup> TotalItemsQuery;
-        public IQueryable<UserEventSignup> ItemsQuery;
+        public UserRelation Relation;
+        public Guid PrimaryUserId;
     }
 }

@@ -14,13 +14,13 @@ namespace PlayTogetherApi.Domain
 
     public class UserRelation
     {
-        public User FirstUser { get; set; } = null;
+        public User FromUser { get; set; } = null;
         [ForeignKey("User")]
-        public Guid FirstUserId { get; set; }
+        public Guid FromUserId { get; set; }
 
-        public User SecondUser { get; set; } = null;
+        public User ToUser { get; set; } = null;
         [ForeignKey("User")]
-        public Guid SecondUserId { get; set; }
+        public Guid ToUserId { get; set; }
 
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 

@@ -12,5 +12,7 @@ namespace PlayTogetherApi.Services
         public ISubject<Domain.Event> GameEventStream = new ReplaySubject<Domain.Event>(1);
 
         public ISubject<Domain.UserEventSignup> UserEventSignupStream = new ReplaySubject<Domain.UserEventSignup>(1);
+
+        public ISubject<Domain.UserRelation> UserRelationStream = new ReplaySubject<Domain.UserRelation>(1);
     }
 }

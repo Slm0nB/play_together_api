@@ -10,12 +10,12 @@ using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class UserEventSignupCollectionType : ObjectGraphType<UserEventSignupCollectionModel>
+    public class UserRelationCollectionType : ObjectGraphType<UserRelationCollectionModel>
     {
-        public UserEventSignupCollectionType(PlayTogetherDbContext db, IConfiguration config)
+        public UserRelationCollectionType(PlayTogetherDbContext db, IConfiguration config)
         {
             FieldAsync<IntGraphType>("total",
-                description: "The total number of signup available",
+                description: "The total number of friends available",
                 resolve: async context =>
                 {
                     var total = await context.Source.TotalItemsQuery.CountAsync();
@@ -24,7 +24,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
             );
 
             FieldAsync<IntGraphType>("count",
-                description: "The number of signups selected by the query",
+                description: "The number of friends selected by the query",
                 resolve: async context =>
                 {
                     var count = await context.Source.ItemsQuery.CountAsync();
@@ -32,8 +32,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 }
             );
 
-            FieldAsync<ListGraphType<UserEventSignupType>>("items",
-                resolve: async context => await context.Source.ItemsQuery.ToListAsync());
+            FieldAsync<ListGraphType<UserFriendType>>("items",
+                resolve: async context => await context.Source.ItemsQuery.Select(rel => new UserRelationExtModel { PrimaryUserId = context.Source.UserId, Relation = rel }).ToListAsync());
         }
     }
 }

@@ -43,8 +43,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 arguments: new QueryArguments(
                    new QueryArgument<DateTimeGraphType> { Name = "beforeDate", Description = "Event occurs before or on this datetime." },
                    new QueryArgument<DateTimeGraphType> { Name = "afterDate", Description = "Event occurs on or after this datetime." },
-                   new QueryArgument<IntGraphType> { Name = "skip", Description = "How many events to skip." },
-                   new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return." }
+                   new QueryArgument<IntGraphType> { Name = "skip", Description = "How many items to skip." },
+                   new QueryArgument<IntGraphType> { Name = "take", Description = "How many items to return." }
                 ),
                 resolve: context => {
                     var query = db.Events.Where(n => n.CreatedByUserId == context.Source.UserId);
@@ -85,8 +85,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 arguments: new QueryArguments(
                    new QueryArgument<DateTimeGraphType> { Name = "beforeDate", Description = "Event occurs before or on this datetime." },
                    new QueryArgument<DateTimeGraphType> { Name = "afterDate", Description = "Event occurs on or after this datetime." },
-                   new QueryArgument<IntGraphType> { Name = "skip", Description = "How many events to skip." },
-                   new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return." }
+                   new QueryArgument<IntGraphType> { Name = "skip", Description = "How many items to skip." },
+                   new QueryArgument<IntGraphType> { Name = "take", Description = "How many items to return." }
                 ),
                 resolve: context =>
                 {
@@ -122,8 +122,44 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 
                     return new UserEventSignupCollectionModel
                     {
-                        SignupsQuery = signups,
-                        TotalSignupsQuery = db.UserEventSignups.Where(n => n.UserId == context.Source.UserId)
+                        ItemsQuery = signups,
+                        TotalItemsQuery = db.UserEventSignups.Where(n => n.UserId == context.Source.UserId)
+                    };
+                }
+            );
+
+            Field<UserRelationCollectionType>("friends",
+                arguments: new QueryArguments(
+                   new QueryArgument<IntGraphType> { Name = "skip", Description = "How many items to skip." },
+                   new QueryArgument<IntGraphType> { Name = "take", Description = "How many items to return." }
+                ),
+                resolve: context =>
+                {
+                    var userId = context.Source.UserId;
+                    IQueryable<UserRelation> relations = db.UserRelations
+                        .Where(n => n.Status == UserRelationStatus.Accepted && (n.ToUserId == context.Source.UserId || n.FromUserId == context.Source.UserId))
+                        .OrderBy(n => n.CreatedDate);
+
+                    IQueryable<UserRelation> filteredRelations = relations
+                        .Include(n => n.FromUser)
+                        .Include(n => n.ToUser);
+
+                    var skip = context.GetArgument<int>("skip");
+                    if (skip > 0)
+                    {
+                        filteredRelations = filteredRelations.Skip(skip);
+                    }
+
+                    var take = context.GetArgument<int>("take");
+                    if (take > 0)
+                    {
+                        filteredRelations = filteredRelations.Take(take);
+                    }
+
+                    return new UserRelationCollectionModel
+                    {
+                        ItemsQuery = filteredRelations,
+                        TotalItemsQuery = relations
                     };
                 }
             );
