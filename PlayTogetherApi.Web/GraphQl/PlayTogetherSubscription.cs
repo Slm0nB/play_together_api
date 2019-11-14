@@ -17,9 +17,9 @@ namespace PlayTogetherApi.Web.GraphQl
 {
     public class PlayTogetherSubscription : ObjectGraphType
     {
-        SubscriptionObservables observables;
+        ObservablesService observables;
 
-        public PlayTogetherSubscription(PlayTogetherDbContext db, AuthenticationService authenticationService, SubscriptionObservables observables)
+        public PlayTogetherSubscription(PlayTogetherDbContext db, AuthenticationService authenticationService, ObservablesService observables)
         {
             this.observables = observables;
 
@@ -28,26 +28,47 @@ namespace PlayTogetherApi.Web.GraphQl
             AddField(new EventStreamFieldType
             {
                 // todo: add arguments for filtering
-                Name = "changedEvents",
+                Name = "events",
+                Description = "Created or updated events.",
                 Type = typeof(EventBaseType),
                 Resolver = new FuncFieldResolver<Event>(context => context.Source as Event),
-                Subscriber = new EventStreamResolver<Event>(context => observables.EventStream.AsObservable())
+                Subscriber = new EventStreamResolver<Event>(context => observables.GameEventStream.AsObservable())
             });
 
             AddField(new EventStreamFieldType
             {
-                Name = "changedEventSignups",
+                Name = "signups",
+                Description = "Users joining an event or updating their signup-status.",
                 Type = typeof(UserEventSignupType),
                 Arguments = new QueryArguments(
-                    new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "event", Description = "The ID of the event." }
+                    new QueryArgument<IdGraphType> { Name = "owner", Description = "The ID of the user who created the event." },
+                    new QueryArgument<IdGraphType> { Name = "user", Description = "The ID of the user joining or leaving the event." },
+                    new QueryArgument<IdGraphType> { Name = "event", Description = "The ID of the event." }
                 ),
                 Resolver = new FuncFieldResolver<UserEventSignup>(context => context.Source as UserEventSignup),
                 Subscriber = new EventStreamResolver<UserEventSignup>(context =>
                 {
-                    var eventId = context.GetArgument<Guid>("event");
-                    return observables.EventSignupStream
-                        .Where(n => n.EventId == eventId)
-                        .AsObservable();
+                    var observable = observables.UserEventSignupStream;
+
+                    if(context.HasArgument("event"))
+                    {
+                        var eventId = context.GetArgument<Guid>("event");
+                        observable = (ISubject<UserEventSignup>)observable.Where(n => n.EventId == eventId);
+                    }
+
+                    if (context.HasArgument("user"))
+                    {
+                        var userId = context.GetArgument<Guid>("user");
+                        observable = (ISubject<UserEventSignup>)observable.Where(n => n.UserId == userId);
+                    }
+
+                    if (context.HasArgument("owner"))
+                    {
+                        var ownerId = context.GetArgument<Guid>("owner");
+                        observable = (ISubject<UserEventSignup>)observable.Where(n => n.Event.CreatedByUserId == ownerId);
+                    }
+
+                    return observable.AsObservable();
                 })
             });
         }

@@ -41,12 +41,11 @@ namespace PlayTogetherApi.Web
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.Configure<ElastiLogConfiguration>(Configuration.GetSection("Logging:ElastiLog"));
             services.AddSingleton(Configuration);
-
+            services.AddSingleton<ObservablesService>();
+            services.AddSingleton<PushMessageService>();
 
             services.AddScoped<AuthenticationService>();
             services.AddScoped<S3Service>();
-
-            services.AddSingleton<SubscriptionObservables>();
 
             services.AddDbContext<PlayTogetherDbContext>(opt => opt.UseNpgsql(Environment.GetEnvironmentVariable("PlayTogetherConnectionString")));
 
