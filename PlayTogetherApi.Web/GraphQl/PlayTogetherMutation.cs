@@ -14,7 +14,7 @@ namespace PlayTogetherApi.Web.GraphQl
 {
     public class PlayTogetherMutation : ObjectGraphType
     {
-        public PlayTogetherMutation(PlayTogetherDbContext db, AuthenticationService authenticationService, SubscriptionObservables observables)
+        public PlayTogetherMutation(PlayTogetherDbContext db, AuthenticationService authenticationService, SubscriptionObservables observables, PushMessageService pushMessageService)
         {
             Name = "Mutation";
 
@@ -34,16 +34,25 @@ namespace PlayTogetherApi.Web.GraphQl
                         context.Errors.Add(new ExecutionError("Unauthorized"));
                         return false;
                     }
-                    if (!await db.Users.AnyAsync(n => n.UserId == userId))
+                    var user = await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
+                    if (user == null)
                     {
                         context.Errors.Add(new ExecutionError("User not found."));
                         return false;
                     }
 
                     var eventId = context.GetArgument<Guid>("event");
-                    if (!await db.Events.AnyAsync(n => n.EventId == eventId))
+                    var gameEvent = await db.Events.FirstOrDefaultAsync(n => n.EventId == eventId);
+                    if (gameEvent == null)
                     {
                         context.Errors.Add(new ExecutionError("Event not found."));
+                        return false;
+                    }
+
+                    var eventOwner = await db.Users.FirstOrDefaultAsync(n => n.UserId == gameEvent.CreatedByUserId);
+                    if (eventOwner == null)
+                    {
+                        context.Errors.Add(new ExecutionError("Invalid event; the creator no longer exists."));
                         return false;
                     }
 
@@ -61,6 +70,13 @@ namespace PlayTogetherApi.Web.GraphQl
                     };
                     db.UserEventSignups.Add(signup);
                     await db.SaveChangesAsync();
+
+                    var _ = pushMessageService.PushMessageAsync(
+                        "JoinEvent",
+                        "A player has joined!",
+                        $"{user.DisplayName} signed up for \"{gameEvent.Title}\".", // todo: add a cleverly-formatted date/time?
+                        new { eventId, userId, eventName = gameEvent.Title, userName = user.DisplayName },
+                        eventOwner.Email);
 
                     return true;
                 }
