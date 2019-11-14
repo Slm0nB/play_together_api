@@ -40,7 +40,7 @@ namespace PlayTogetherApi.Web
             services.AddScoped<AuthenticationService>();
             services.AddScoped<S3Service>();
 
-            services.AddSingleton<SubscriptionObservables>();
+            services.AddSingleton<ObservablesService>();
 
             services.AddDbContext<PlayTogetherDbContext>(opt => opt.UseNpgsql(Environment.GetEnvironmentVariable("PlayTogetherConnectionString")));
 
