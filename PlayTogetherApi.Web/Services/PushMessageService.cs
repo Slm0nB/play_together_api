@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,12 @@ namespace PlayTogetherApi.Services
 {
     public class PushMessageService
     {
-        static private string ApiKey => Environment.GetEnvironmentVariable("PlayTogetherPushKey");
+        private readonly string ApiKey;
+
+        public PushMessageService (IConfiguration conf)
+        {
+            ApiKey = conf.GetSection("PlayTogetherPushKey").Value;
+        }
 
         public async Task<string> PushMessageAsync<T>(string name, string title, string body, T payload = null, params string[] recipients) where T : class
         {

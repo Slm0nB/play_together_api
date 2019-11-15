@@ -42,12 +42,16 @@ namespace PlayTogetherApi.Web
             services.Configure<ElastiLogConfiguration>(Configuration.GetSection("Logging:ElastiLog"));
             services.AddSingleton(Configuration);
             services.AddSingleton<ObservablesService>();
-            services.AddSingleton<PushMessageService>();
 
             services.AddScoped<AuthenticationService>();
             services.AddScoped<S3Service>();
+            services.AddScoped<PushMessageService>();
 
-            services.AddDbContext<PlayTogetherDbContext>(opt => opt.UseNpgsql(Environment.GetEnvironmentVariable("PlayTogetherConnectionString")));
+            services.AddDbContext<PlayTogetherDbContext>(opt =>
+            {
+                var connectionString = Configuration.GetSection("PlayTogetherConnectionString").Value;
+                opt.UseNpgsql(connectionString);
+            });
 
             services.AddScoped<IDependencyResolver>(s => new FuncDependencyResolver(s.GetRequiredService));
             services.AddScoped<PlayTogetherSchema>();
