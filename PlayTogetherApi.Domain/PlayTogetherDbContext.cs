@@ -30,6 +30,9 @@ namespace PlayTogetherApi.Domain
         {
             modelBuilder.Entity<UserEventSignup>()
                 .HasKey(t => new { t.UserId, t.EventId });
+
+            modelBuilder.Entity<UserRelation>()
+                .HasKey(t => new { t.UserAId, t.UserBId });
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
