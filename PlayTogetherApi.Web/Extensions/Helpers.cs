@@ -20,8 +20,14 @@ namespace PlayTogetherApi.Extensions
                 throw new ArgumentException("UserId not found in the relation.");
             }
 
-            var userFlags = relation.Status & (relation.UserAId == userId ? Relation_A_Mask : Relation_B_Mask );
-            var relationFlags = relation.Status & (relation.UserAId == userId ? Relation_B_Mask : Relation_A_Mask );
+            var userFlags = relation.Status & Relation_A_Mask;
+            var relationFlags = relation.Status & Relation_B_Mask;
+
+            if(relation.UserBId == userId)
+            {
+                userFlags = (UserRelationInternalStatus)((int)(relation.Status & Relation_B_Mask) >> 8);
+                relationFlags = (UserRelationInternalStatus)((int)(relation.Status & Relation_A_Mask) << 8);
+            }
 
             switch (userFlags)
             {

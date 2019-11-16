@@ -138,7 +138,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 {
                     var userId = context.Source.UserId;
                     IQueryable<UserRelation> relations = db.UserRelations
-                        .Where(relation => relation.Status == (UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended) && (relation.UserBId == context.Source.UserId || relation.UserAId == context.Source.UserId))
+                        .Where(relation => /*relation.Status == (UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended) &&*/ (relation.UserBId == context.Source.UserId || relation.UserAId == context.Source.UserId))
                         .OrderBy(relation => relation.CreatedDate);
 
                     IQueryable<UserRelation> filteredRelations = relations
@@ -159,6 +159,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 
                     return new UserRelationCollectionModel
                     {
+                        UserId = userId,
                         ItemsQuery = filteredRelations,
                         TotalItemsQuery = relations
                     };

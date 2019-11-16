@@ -542,7 +542,7 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     var status = context.GetArgument<UserRelationStatusChange>("status");
 
-                    var relation = await db.UserRelations.FirstAsync(n => (n.UserAId == callingUserId && n.UserBId == friendUserId) || (n.UserAId == friendUserId && n.UserBId == callingUserId));
+                    var relation = await db.UserRelations.FirstOrDefaultAsync(n => (n.UserAId == callingUserId && n.UserBId == friendUserId) || (n.UserAId == friendUserId && n.UserBId == callingUserId));
 
                     if (relation == null)
                     {
@@ -636,7 +636,11 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     observables.UserRelationStream.OnNext(relation);
 
-                    return relation;
+                    return new UserRelationExtModel
+                    {
+                        PrimaryUserId = callingUserId,
+                        Relation = relation
+                    };
                 }
             );
 
