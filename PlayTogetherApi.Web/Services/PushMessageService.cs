@@ -21,13 +21,16 @@ namespace PlayTogetherApi.Services
                     name,
                     title,
                     body,
-                    custom_data = payload,
-                    notification_target = new {
-                        Type = "user_ids_target",
-                        user_ids = recipients
-                    }
+                    custom_data = payload
+                },
+                notification_target = new
+                {
+                    type = "user_ids_target",
+                    user_ids = recipients
                 }
             };
+
+            var json = JsonConvert.SerializeObject(postbody);
 
             var message = new HttpRequestMessage
             {
@@ -37,7 +40,7 @@ namespace PlayTogetherApi.Services
                         {"X-API-Token", ApiKey},
                         {"Accept", "application/json"}
                     },
-                Content = new StringContent(JsonConvert.SerializeObject(postbody), Encoding.UTF8, "application/json")
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
             };
 
             using (var client = new HttpClient())
@@ -46,8 +49,8 @@ namespace PlayTogetherApi.Services
                 {
                     using (HttpContent content = responseMessage.Content)
                     {
-                        var json = await content.ReadAsStringAsync();
-                        return json;
+                        var result = await content.ReadAsStringAsync();
+                        return result;
 
                         // todo: might instead parse the json and return the messageid guid
                     }
