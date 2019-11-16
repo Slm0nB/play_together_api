@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PlayTogetherApi.Domain;
 using PlayTogetherApi.Web.Models;
+using static PlayTogetherApi.Extensions.Helpers;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
@@ -137,8 +138,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 {
                     var userId = context.Source.UserId;
                     IQueryable<UserRelation> relations = db.UserRelations
-                        .Where(n => n.Status == UserRelationStatus.Friends && (n.UserBId == context.Source.UserId || n.UserAId == context.Source.UserId))
-                        .OrderBy(n => n.CreatedDate);
+                        .Where(relation => relation.Status == (UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended) && (relation.UserBId == context.Source.UserId || relation.UserAId == context.Source.UserId))
+                        .OrderBy(relation => relation.CreatedDate);
 
                     IQueryable<UserRelation> filteredRelations = relations
                         .Include(n => n.UserA)

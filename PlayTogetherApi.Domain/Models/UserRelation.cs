@@ -4,25 +4,22 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PlayTogetherApi.Domain
 {
-    //public enum UserRelationStatus
-    //{
-    //    Invited = 1,
-    //    Accepted = 2,
-    //    Rejected = 3,
-    //    Blocked = 4
-    //}
-
-    public enum UserRelationStatus
+    [Flags]
+    public enum UserRelationInternalStatus
     {
-        A_Invited_B = 1,
-        B_Invited_A = 2,
-        Friends = 3,
-        A_Rejected = 4,
-        B_Rejected = 5,
-        A_Blocked_B = 6,
-        B_Blocked_A = 7,
-        Both_Blocked = 8
+        None = 0,
+        A_Invited = 1<<0,
+        A_Befriended = 1<<1,
+        A_Rejected = 1<<2,
+        A_Blocked = 1<<3,
+
+        B_Invited = 1 << 8,
+        B_Befriended = 1 << 9,
+        B_Rejected = 1 << 10,
+        B_Blocked = 1 << 11
     }
+
+
 
     public class UserRelation
     {
@@ -36,6 +33,6 @@ namespace PlayTogetherApi.Domain
 
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 
-        public UserRelationStatus Status { get; set; }
+        public UserRelationInternalStatus Status { get; set; }
     }
 }

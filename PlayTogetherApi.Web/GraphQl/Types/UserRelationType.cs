@@ -7,6 +7,7 @@ using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
 using PlayTogetherApi.Domain;
 using PlayTogetherApi.Web.Models;
+using static PlayTogetherApi.Extensions.Helpers;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
@@ -17,17 +18,14 @@ namespace PlayTogetherApi.Web.GraphQl.Types
             Name = "Relation";
 
             Field("date", model => model.Relation.CreatedDate, type: typeof(DateTimeGraphType)).Description("Invitation date.");
-            Field("status", model => model.Relation.Status, type: typeof(UserRelationStatusType)).Description("Status of the invitation.");
+            Field("status", model => model.Relation.GetStatusForUser(model.PrimaryUserId), type: typeof(UserRelationStatusType)).Description("Status of the relation.");
 
-            // todo: this will be the graphtype for all relations; not the specialized one for those with the friend-status
-
-            /*
-            FieldAsync<UserType>("user", resolve: async context => {
-                if (context.Source.User != null)
-                    return context.Source.User;
-                return await db.Users.FirstOrDefaultAsync(u => u.UserId == context.Source.UserId);
+            Field<UserType>("user", resolve: context => {
+                var user = context.Source.PrimaryUserId == context.Source.Relation.UserAId
+                    ? context.Source.Relation.UserB
+                    : context.Source.Relation.UserA;
+                return user;
             });
-            */
         }
     }
 }

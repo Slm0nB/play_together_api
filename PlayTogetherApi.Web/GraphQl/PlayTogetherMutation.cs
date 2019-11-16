@@ -9,6 +9,7 @@ using PlayTogetherApi.Services;
 using PlayTogetherApi.Domain;
 using PlayTogetherApi.Web.Models;
 using PlayTogetherApi.Web.GraphQl.Types;
+using PlayTogetherApi.Extensions;
 
 namespace PlayTogetherApi.Web.GraphQl
 {
@@ -508,11 +509,11 @@ namespace PlayTogetherApi.Web.GraphQl
             );
 
             FieldAsync<UserRelationType>(
-                "setUserRelation",
-                description: "Add a user to your friendlist, or accept an invitation from a user.  This requires the caller to be authorized.",
+                "changeUserRelation",
+                description: "Invite a user to your friendlist, or accept an invitation from a user.  This requires the caller to be authorized.",
                 arguments: new QueryArguments(
                     new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "user" },
-                    new QueryArgument<NonNullGraphType<UserRelationStatusType>> { Name = "status" }
+                    new QueryArgument<NonNullGraphType<UserRelationStatusChangeType>> { Name = "status" }
                 ),
                 resolve: async context =>
                 {
@@ -539,15 +540,14 @@ namespace PlayTogetherApi.Web.GraphQl
                         return null;
                     }
 
-                    var status = context.GetArgument<UserRelationStatus>("status");
+                    var status = context.GetArgument<UserRelationStatusChange>("status");
 
                     var relation = await db.UserRelations.FirstAsync(n => (n.UserAId == callingUserId && n.UserBId == friendUserId) || (n.UserAId == friendUserId && n.UserBId == callingUserId));
-                    /*
 
                     if (relation == null)
                     {
                         // Inviting (or blocking) an unrelated user
-                        if (status != UserRelationStatus.Accepted && status != UserRelationStatus.Blocked)
+                        if (status != UserRelationStatusChange.Invite && status != UserRelationStatusChange.Block)
                         {
                             context.Errors.Add(new ExecutionError("Can only invite or block unrelated users."));
                             return null;
@@ -556,61 +556,81 @@ namespace PlayTogetherApi.Web.GraphQl
                         {
                             UserAId = callingUserId,
                             UserBId = friendUserId,
-                            Status = status,
+                            Status = status == UserRelationStatusChange.Invite ? UserRelationInternalStatus.A_Invited : UserRelationInternalStatus.A_Blocked,
                             CreatedDate = DateTime.Now
                         };
                         db.UserRelations.Add(relation);
                     }
                     else if (relation.UserAId == callingUserId)
                     {
-                        // updating our own invitation
-                        switch(relation.Status)
+                        switch (status)
                         {
-                            case UserRelationStatus.Blocked:
-                                if (status != UserRelationStatus.Blocked)
+                            case UserRelationStatusChange.Invite:
+                                if ((int)(relation.Status & (UserRelationInternalStatus.B_Invited | UserRelationInternalStatus.B_Befriended)) != 0)
                                 {
-                                    context.Errors.Add(new ExecutionError("This user is blocking you."));
-                                    return null;
+                                    relation.Status = Helpers.Relation_A_Mask;
                                 }
                                 else
                                 {
-                                    // todo: unhandled corner-case of trying to block a user that is already blocking
+                                    relation.Status = (relation.Status & Helpers.Relation_B_Mask) | UserRelationInternalStatus.A_Invited;
                                 }
                                 break;
-                            case UserRelationStatus.Rejected:
-                                if (status == UserRelationStatus.Accepted)
+                            case UserRelationStatusChange.Accept:
+                                if ((relation.Status & Helpers.Relation_B_Mask) == UserRelationInternalStatus.B_Invited)
                                 {
-                                    context.Errors.Add(new ExecutionError("Can't accept a rejected invitation."));
-                                    return null;
+                                    relation.Status = Helpers.Relation_MutualFriends;
+                                }
+                                else
+                                {
+                                    relation.Status = (relation.Status & Helpers.Relation_B_Mask) | UserRelationInternalStatus.A_Befriended;
                                 }
                                 break;
-                            case UserRelationStatus.Accepted:
+                            case UserRelationStatusChange.Reject:
+                                relation.Status = (relation.Status & Helpers.Relation_B_Mask) | UserRelationInternalStatus.A_Rejected;
                                 break;
-                            case UserRelationStatus.Invited:
+                            case UserRelationStatusChange.Block:
+                                relation.Status = (relation.Status & Helpers.Relation_B_Mask) | UserRelationInternalStatus.A_Blocked;
+                                break;
+                            case UserRelationStatusChange.Remove:
+                                relation.Status &= Helpers.Relation_B_Mask;
                                 break;
                         }
-
-
-
-                        relation.Status = status;
                     }
                     else
                     {
-                        // updating an invitation from another user
-                        switch (relation.Status)
+                        switch (status)
                         {
-                            case UserRelationStatus.Blocked:
+                            case UserRelationStatusChange.Invite:
+                                if ((int)(relation.Status & (UserRelationInternalStatus.A_Invited | UserRelationInternalStatus.A_Befriended)) != 0)
+                                {
+                                    relation.Status = Helpers.Relation_MutualFriends;
+                                }
+                                else
+                                {
+                                    relation.Status = (relation.Status & Helpers.Relation_A_Mask) | UserRelationInternalStatus.B_Invited;
+                                }
                                 break;
-                            case UserRelationStatus.Rejected:
+                            case UserRelationStatusChange.Accept:
+                                if ((relation.Status & Helpers.Relation_A_Mask) == UserRelationInternalStatus.A_Invited)
+                                {
+                                    relation.Status = Helpers.Relation_MutualFriends;
+                                }
+                                else
+                                {
+                                    relation.Status = (relation.Status & Helpers.Relation_A_Mask) | UserRelationInternalStatus.B_Befriended;
+                                }
                                 break;
-                            case UserRelationStatus.Accepted:
+                            case UserRelationStatusChange.Reject:
+                                relation.Status = (relation.Status & Helpers.Relation_A_Mask) | UserRelationInternalStatus.B_Rejected;
                                 break;
-                            case UserRelationStatus.Invited:
+                            case UserRelationStatusChange.Block:
+                                relation.Status = (relation.Status & Helpers.Relation_A_Mask) | UserRelationInternalStatus.B_Blocked;
+                                break;
+                            case UserRelationStatusChange.Remove:
+                                relation.Status &= Helpers.Relation_A_Mask;
                                 break;
                         }
-
                     }
-                    */
 
                     await db.SaveChangesAsync();
 
