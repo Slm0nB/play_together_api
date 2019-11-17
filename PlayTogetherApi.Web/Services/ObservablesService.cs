@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Services
 {
@@ -13,6 +14,6 @@ namespace PlayTogetherApi.Services
 
         public ISubject<Domain.UserEventSignup> UserEventSignupStream = new ReplaySubject<Domain.UserEventSignup>(1);
 
-        public ISubject<Domain.UserRelation> UserRelationStream = new ReplaySubject<Domain.UserRelation>(1);
+        public ISubject<UserRelationExtModel> UserRelationStream = new ReplaySubject<UserRelationExtModel>(1);
     }
 }

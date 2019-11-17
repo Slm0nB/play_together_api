@@ -71,6 +71,38 @@ namespace PlayTogetherApi.Web.GraphQl
                     return observable.AsObservable();
                 })
             });
+
+
+            AddField(new EventStreamFieldType
+            {
+                Name = "friends",
+                Description = "Changes to the friendlist; this subscription requires the calling-user to be logged in.",
+                Type = typeof(UserRelationChangeType),
+                Arguments = new QueryArguments(
+                    new QueryArgument<BooleanGraphType> { Name = "excludeChangesFromCaller", Description = "Don't return changes that were triggered by the calling user.", DefaultValue = true }
+                ),
+                Resolver = new FuncFieldResolver<UserRelationExtModel>(context => context.Source as UserRelationExtModel),
+                Subscriber = new EventStreamResolver<UserRelationExtModel>(context =>
+                {
+                    var principal = context.UserContext as ClaimsPrincipal;
+                    var userIdClaim = principal?.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+                    if (!Guid.TryParse(userIdClaim, out var callingUserId))
+                    {
+                        context.Errors.Add(new ExecutionError("Unauthorized"));
+                        return null;
+                    }
+
+                    IObservable<UserRelationExtModel> observable = observables.UserRelationStream
+                        .Where(rel => rel.Relation.UserAId == callingUserId || rel.Relation.UserBId == callingUserId);
+
+                    if (!context.GetArgument<bool>("excludeChangesFromCaller"))
+                    {
+                        observable = observable.Where(rel => rel.PrimaryUserId != callingUserId);
+                    }
+
+                    return observable.AsObservable();
+                })
+            });
         }
     }
 }

@@ -544,6 +544,10 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     var relation = await db.UserRelations.FirstOrDefaultAsync(n => (n.UserAId == callingUserId && n.UserBId == friendUserId) || (n.UserAId == friendUserId && n.UserBId == callingUserId));
 
+                    var previousStatusForFriendUser = relation == null
+                        ? UserRelationStatus.None
+                        : relation.GetStatusForUser(friendUserId);
+
                     if (relation == null)
                     {
                         // Inviting (or blocking) an unrelated user
@@ -634,13 +638,17 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     await db.SaveChangesAsync();
 
-                    observables.UserRelationStream.OnNext(relation);
-
-                    return new UserRelationExtModel
+                    var model = new UserRelationExtModel
                     {
                         PrimaryUserId = callingUserId,
-                        Relation = relation
+                        Relation = relation,
+                        PrimaryUserAction = status,
+                        PreviousStatusForSecondaryUser = previousStatusForFriendUser
                     };
+
+                    observables.UserRelationStream.OnNext(model);
+
+                    return model;
                 }
             );
 
