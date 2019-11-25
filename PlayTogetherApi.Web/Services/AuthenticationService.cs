@@ -134,6 +134,34 @@ namespace PlayTogetherApi.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
+        public JwtSecurityToken ValidateJwt(string accessToken)
+        {
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+
+            var validationParameters = new TokenValidationParameters()
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = key
+            };
+
+            var handler = new JwtSecurityTokenHandler();
+
+            var principal = handler.ValidateToken(accessToken, validationParameters, out var validToken);
+            var validJwt = validToken as JwtSecurityToken;
+
+            if (validJwt == null)
+            {
+                throw new ArgumentException("Invalid JWT");
+            }
+
+            if (!validJwt.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("Algorithm must be HmacSha256");
+            }
+
+            return validJwt;
+        }
+
         #endregion
     }
 }

@@ -76,9 +76,10 @@ namespace PlayTogetherApi.Web.GraphQl
             AddField(new EventStreamFieldType
             {
                 Name = "friends",
-                Description = "Changes to the friendlist; this subscription requires the calling-user to be logged in.",
+                Description = "Changes to the friendlist",
                 Type = typeof(UserRelationChangeType),
                 Arguments = new QueryArguments(
+                    new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "token", Description = "Access-token. Because it currently can't be provided as a header for subscriptions." },
                     new QueryArgument<BooleanGraphType> { Name = "excludeChangesFromCaller", Description = "Don't return changes that were triggered by the calling user.", DefaultValue = true }
                 ),
                 Resolver = new FuncFieldResolver<UserRelationExtModel>(context => context.Source as UserRelationExtModel),
