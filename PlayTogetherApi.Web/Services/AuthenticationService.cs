@@ -141,7 +141,9 @@ namespace PlayTogetherApi.Services
             var validationParameters = new TokenValidationParameters()
             {
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = key
+                IssuerSigningKey = key,
+                ValidIssuer = _config["Jwt:Issuer"],
+                ValidAudience = _config["Jwt:Issuer"]
             };
 
             var handler = new JwtSecurityTokenHandler();

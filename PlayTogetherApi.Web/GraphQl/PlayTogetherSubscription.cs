@@ -85,8 +85,9 @@ namespace PlayTogetherApi.Web.GraphQl
                 Resolver = new FuncFieldResolver<UserRelationExtModel>(context => context.Source as UserRelationExtModel),
                 Subscriber = new EventStreamResolver<UserRelationExtModel>(context =>
                 {
-                    var principal = context.UserContext as ClaimsPrincipal;
-                    var userIdClaim = principal?.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+                    var jwt = authenticationService.ValidateJwt(context.GetArgument<string>("token"));
+
+                    var userIdClaim = jwt?.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
                     if (!Guid.TryParse(userIdClaim, out var callingUserId))
                     {
                         context.Errors.Add(new ExecutionError("Unauthorized"));
@@ -96,7 +97,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     IObservable<UserRelationExtModel> observable = observables.UserRelationStream
                         .Where(rel => rel.Relation.UserAId == callingUserId || rel.Relation.UserBId == callingUserId);
 
-                    if (!context.GetArgument<bool>("excludeChangesFromCaller"))
+                    if (context.GetArgument<bool>("excludeChangesFromCaller"))
                     {
                         observable = observable.Where(rel => rel.PrimaryUserId != callingUserId);
                     }
