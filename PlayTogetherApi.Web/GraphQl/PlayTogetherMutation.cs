@@ -78,8 +78,15 @@ namespace PlayTogetherApi.Web.GraphQl
                         "JoinEvent",
                         "A player has joined!",
                         $"{user.DisplayName} signed up for \"{gameEvent.Title}\".", // todo: add a cleverly-formatted date/time?
-                        new { eventId, userId, eventName = gameEvent.Title, userName = user.DisplayName },
-                        eventOwner.Email);
+                        new {
+                            type = "JoinEvent",
+                            eventId = eventId,
+                            userId = userId,
+                            eventName = gameEvent.Title,
+                            userName = user.DisplayName
+                        },
+                        eventOwner.Email
+                    );
 
                     return true;
                 }
@@ -637,6 +644,22 @@ namespace PlayTogetherApi.Web.GraphQl
                     }
 
                     await db.SaveChangesAsync();
+
+                    if (relation.GetStatusForUser(callingUserId) == UserRelationStatus.Inviting)
+                    {
+                        var _ = pushMessageService.PushMessageAsync(
+                            "InviteFriend",
+                            "You have a friend-request!",
+                            $"{callingUser.DisplayName} wants to be your friend.",
+                            new
+                            {
+                                type = "InviteFriend",
+                                userId = callingUserId,
+                                userName = callingUser.DisplayName
+                            },
+                            friendUser.Email
+                        );
+                    }
 
                     var model = new UserRelationExtModel
                     {
