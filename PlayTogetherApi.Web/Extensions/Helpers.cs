@@ -13,6 +13,17 @@ namespace PlayTogetherApi.Extensions
         public const UserRelationInternalStatus Relation_B_Mask = (UserRelationInternalStatus)0xFF00;
         public const UserRelationInternalStatus Relation_MutualFriends = UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended;
 
+        static public void ExtractStatuses(this UserRelation relation, Guid userId, out UserRelationInternalStatus userFlags, out UserRelationInternalStatus relationFlags)
+        {
+            userFlags = relation.Status & Relation_A_Mask;
+            relationFlags = relation.Status & Relation_B_Mask;
+            if (relation.UserBId == userId)
+            {
+                userFlags = (UserRelationInternalStatus)((int)(relation.Status & Relation_B_Mask) >> 8);
+                relationFlags = (UserRelationInternalStatus)((int)(relation.Status & Relation_A_Mask) << 8);
+            }
+        }
+
         static public UserRelationStatus GetStatusForUser(this UserRelation relation, Guid userId)
         {
             if (relation.UserAId != userId && relation.UserBId != userId)
@@ -20,14 +31,7 @@ namespace PlayTogetherApi.Extensions
                 throw new ArgumentException("UserId not found in the relation.");
             }
 
-            var userFlags = relation.Status & Relation_A_Mask;
-            var relationFlags = relation.Status & Relation_B_Mask;
-
-            if(relation.UserBId == userId)
-            {
-                userFlags = (UserRelationInternalStatus)((int)(relation.Status & Relation_B_Mask) >> 8);
-                relationFlags = (UserRelationInternalStatus)((int)(relation.Status & Relation_A_Mask) << 8);
-            }
+            relation.ExtractStatuses(userId, out var userFlags, out var relationFlags);
 
             switch (userFlags)
             {
