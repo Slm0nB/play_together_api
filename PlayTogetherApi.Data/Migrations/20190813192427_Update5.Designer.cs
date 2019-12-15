@@ -5,13 +5,13 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using PlayTogetherApi.Domain;
+using PlayTogetherApi.Data;
 
-namespace PlayTogetherApi.Domain.Migrations
+namespace PlayTogetherApi.Data.Migrations
 {
     [DbContext(typeof(PlayTogetherDbContext))]
-    [Migration("20191102142920_Update7")]
-    partial class Update7
+    [Migration("20190813192427_Update5")]
+    partial class Update5
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -20,19 +20,6 @@ namespace PlayTogetherApi.Domain.Migrations
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn)
                 .HasAnnotation("ProductVersion", "2.2.6-servicing-10079")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
-
-            modelBuilder.Entity("PlayTogetherApi.Domain.BuiltinAvatar", b =>
-                {
-                    b.Property<int>("AvatarId")
-                        .ValueGeneratedOnAdd();
-
-                    b.Property<string>("ImagePath")
-                        .HasMaxLength(100);
-
-                    b.HasKey("AvatarId");
-
-                    b.ToTable("Avatars");
-                });
 
             modelBuilder.Entity("PlayTogetherApi.Domain.Event", b =>
                 {
@@ -99,8 +86,6 @@ namespace PlayTogetherApi.Domain.Migrations
                 {
                     b.Property<Guid>("UserId")
                         .ValueGeneratedOnAdd();
-
-                    b.Property<string>("AvatarFilename");
 
                     b.Property<string>("DisplayName")
                         .HasMaxLength(50);

@@ -2,13 +2,16 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace PlayTogetherApi.Domain
+namespace PlayTogetherApi.Data
 {
-    public class BuiltinAvatar
+    public class Game
     {
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Key]
-        public int AvatarId { get; set; }
+        public Guid GameId { get; set; } = Guid.NewGuid();
+
+        [MaxLength(50)]
+        [MinLength(5)]
+        public string Title { get; set; }
 
         [MaxLength(100)]
         public string ImagePath { get; set; }

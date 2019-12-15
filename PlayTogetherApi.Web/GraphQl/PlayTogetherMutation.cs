@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using GraphQL;
 using GraphQL.Types;
 using PlayTogetherApi.Services;
-using PlayTogetherApi.Domain;
+using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.Models;
 using PlayTogetherApi.Web.GraphQl.Types;
 using PlayTogetherApi.Extensions;

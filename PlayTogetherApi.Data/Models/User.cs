@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 
-namespace PlayTogetherApi.Domain
+namespace PlayTogetherApi.Data
 {
     public class User
     {

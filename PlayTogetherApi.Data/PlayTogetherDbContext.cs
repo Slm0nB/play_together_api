@@ -4,7 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
-namespace PlayTogetherApi.Domain
+namespace PlayTogetherApi.Data
 {
     public class PlayTogetherDbContext : DbContext
     {

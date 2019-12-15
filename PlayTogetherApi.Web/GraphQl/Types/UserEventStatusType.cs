@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
-using PlayTogetherApi.Domain;
+using PlayTogetherApi.Data;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {

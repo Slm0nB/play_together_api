@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PlayTogetherApi.Web.Models;
-using PlayTogetherApi.Domain;
+using PlayTogetherApi.Data;
 using PlayTogetherApi.Services;
 using Microsoft.AspNetCore.Http;
 

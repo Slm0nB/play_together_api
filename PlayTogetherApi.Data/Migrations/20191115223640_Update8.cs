@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace PlayTogetherApi.Domain.Migrations
+namespace PlayTogetherApi.Data.Migrations
 {
     public partial class Update8 : Migration
     {

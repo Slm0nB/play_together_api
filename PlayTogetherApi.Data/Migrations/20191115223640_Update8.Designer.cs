@@ -5,13 +5,13 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using PlayTogetherApi.Domain;
+using PlayTogetherApi.Data;
 
-namespace PlayTogetherApi.Domain.Migrations
+namespace PlayTogetherApi.Data.Migrations
 {
     [DbContext(typeof(PlayTogetherDbContext))]
-    [Migration("20190803125056_Update3")]
-    partial class Update3
+    [Migration("20191115223640_Update8")]
+    partial class Update8
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -20,6 +20,19 @@ namespace PlayTogetherApi.Domain.Migrations
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn)
                 .HasAnnotation("ProductVersion", "2.2.6-servicing-10079")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
+
+            modelBuilder.Entity("PlayTogetherApi.Domain.BuiltinAvatar", b =>
+                {
+                    b.Property<int>("AvatarId")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<string>("ImagePath")
+                        .HasMaxLength(100);
+
+                    b.HasKey("AvatarId");
+
+                    b.ToTable("Avatars");
+                });
 
             modelBuilder.Entity("PlayTogetherApi.Domain.Event", b =>
                 {
@@ -33,6 +46,8 @@ namespace PlayTogetherApi.Domain.Migrations
                     b.Property<string>("Description");
 
                     b.Property<DateTime>("EventDate");
+
+                    b.Property<DateTime>("EventEndDate");
 
                     b.Property<Guid?>("GameId");
 
@@ -85,6 +100,8 @@ namespace PlayTogetherApi.Domain.Migrations
                     b.Property<Guid>("UserId")
                         .ValueGeneratedOnAdd();
 
+                    b.Property<string>("AvatarFilename");
+
                     b.Property<string>("DisplayName")
                         .HasMaxLength(50);
 
@@ -105,11 +122,30 @@ namespace PlayTogetherApi.Domain.Migrations
 
                     b.Property<DateTime>("SignupDate");
 
+                    b.Property<int>("Status");
+
                     b.HasKey("UserId", "EventId");
 
                     b.HasIndex("EventId");
 
                     b.ToTable("UserEventSignups");
+                });
+
+            modelBuilder.Entity("PlayTogetherApi.Domain.UserRelation", b =>
+                {
+                    b.Property<Guid>("UserAId");
+
+                    b.Property<Guid>("UserBId");
+
+                    b.Property<DateTime>("CreatedDate");
+
+                    b.Property<int>("Status");
+
+                    b.HasKey("UserAId", "UserBId");
+
+                    b.HasIndex("UserBId");
+
+                    b.ToTable("UserRelations");
                 });
 
             modelBuilder.Entity("PlayTogetherApi.Domain.Event", b =>
@@ -134,6 +170,19 @@ namespace PlayTogetherApi.Domain.Migrations
                     b.HasOne("PlayTogetherApi.Domain.User", "User")
                         .WithMany("Signups")
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("PlayTogetherApi.Domain.UserRelation", b =>
+                {
+                    b.HasOne("PlayTogetherApi.Domain.User", "UserA")
+                        .WithMany()
+                        .HasForeignKey("UserAId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("PlayTogetherApi.Domain.User", "UserB")
+                        .WithMany()
+                        .HasForeignKey("UserBId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 #pragma warning restore 612, 618

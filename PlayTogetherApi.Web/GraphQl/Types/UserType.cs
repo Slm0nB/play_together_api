@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PlayTogetherApi.Domain;
+using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.Models;
 using static PlayTogetherApi.Extensions.Helpers;
 

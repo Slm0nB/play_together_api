@@ -10,14 +10,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using PlayTogetherApi.Web.Models;
-using PlayTogetherApi.Domain;
+using PlayTogetherApi.Data;
 
 namespace PlayTogetherApi.Services
 {
     public class AuthenticationService
     {
         readonly IConfiguration _config;
-        readonly Domain.PlayTogetherDbContext _dbContext;
+        readonly Data.PlayTogetherDbContext _dbContext;
 
         public AuthenticationService(IConfiguration config, PlayTogetherDbContext dbContext)
         {
@@ -78,9 +78,9 @@ namespace PlayTogetherApi.Services
             return null;
         }
 
-        public async Task<Domain.RefreshToken> CreateRefreshTokenForUserAsync(Guid userId, TimeSpan? lifetime = null)
+        public async Task<Data.RefreshToken> CreateRefreshTokenForUserAsync(Guid userId, TimeSpan? lifetime = null)
         {
-            var refreshToken = new Domain.RefreshToken
+            var refreshToken = new Data.RefreshToken
             {
                 Token = Guid.NewGuid(),
                 UserId = userId,
@@ -110,7 +110,7 @@ namespace PlayTogetherApi.Services
 
         #region JWT
 
-        public string BuildJwt(Domain.User user)
+        public string BuildJwt(Data.User user)
         {
             return BuildJwt(
                 new[] {

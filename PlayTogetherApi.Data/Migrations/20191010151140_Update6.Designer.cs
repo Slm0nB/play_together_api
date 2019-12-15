@@ -5,13 +5,13 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using PlayTogetherApi.Domain;
+using PlayTogetherApi.Data;
 
-namespace PlayTogetherApi.Domain.Migrations
+namespace PlayTogetherApi.Data.Migrations
 {
     [DbContext(typeof(PlayTogetherDbContext))]
-    [Migration("20190811173016_Update4")]
-    partial class Update4
+    [Migration("20191010151140_Update6")]
+    partial class Update6
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -33,6 +33,8 @@ namespace PlayTogetherApi.Domain.Migrations
                     b.Property<string>("Description");
 
                     b.Property<DateTime>("EventDate");
+
+                    b.Property<DateTime>("EventEndDate");
 
                     b.Property<Guid?>("GameId");
 
@@ -84,6 +86,8 @@ namespace PlayTogetherApi.Domain.Migrations
                 {
                     b.Property<Guid>("UserId")
                         .ValueGeneratedOnAdd();
+
+                    b.Property<string>("AvatarFilename");
 
                     b.Property<string>("DisplayName")
                         .HasMaxLength(50);

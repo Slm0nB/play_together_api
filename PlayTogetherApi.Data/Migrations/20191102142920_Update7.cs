@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
-namespace PlayTogetherApi.Domain.Migrations
+namespace PlayTogetherApi.Data.Migrations
 {
     public partial class Update7 : Migration
     {

@@ -18,7 +18,7 @@ using Newtonsoft.Json;
 using GraphQL;
 using GraphQL.Server;
 using GraphQL.Server.Ui.Playground;
-using PlayTogetherApi.Domain;
+using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.GraphQl;
 using PlayTogetherApi.Services;
 using ElastiLog;

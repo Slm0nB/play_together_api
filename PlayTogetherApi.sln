@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.29025.244
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlayTogetherApi.Web", "PlayTogetherApi.Web\PlayTogetherApi.Web.csproj", "{03201CBA-818F-4CB1-93E7-16A8DDA8601E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlayTogetherApi.Domain", "PlayTogetherApi.Domain\PlayTogetherApi.Domain.csproj", "{2CF78809-DD86-42BD-9CE7-0B8180FA4BEE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlayTogetherApi.Data", "PlayTogetherApi.Data\PlayTogetherApi.Data.csproj", "{2CF78809-DD86-42BD-9CE7-0B8180FA4BEE}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D4B9CF14-4104-46B6-816E-2C41C727B617}"
 	ProjectSection(SolutionItems) = preProject

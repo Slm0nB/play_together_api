@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PlayTogetherApi.Domain\PlayTogetherApi.Domain.csproj" />
+    <ProjectReference Include="..\PlayTogetherApi.Data\PlayTogetherApi.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>
