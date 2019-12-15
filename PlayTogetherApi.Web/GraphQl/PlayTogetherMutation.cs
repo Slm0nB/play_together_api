@@ -579,7 +579,7 @@ namespace PlayTogetherApi.Web.GraphQl
                             case UserRelationStatusChange.Invite:
                                 if ((int)(relation.Status & (UserRelationInternalStatus.B_Invited | UserRelationInternalStatus.B_Befriended)) != 0)
                                 {
-                                    relation.Status = Helpers.Relation_A_Mask;
+                                    relation.Status = Helpers.Relation_MutualFriends;
                                 }
                                 else
                                 {
