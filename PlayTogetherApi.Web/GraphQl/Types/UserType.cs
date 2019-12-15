@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.Models;
-using static PlayTogetherApi.Extensions.Helpers;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {

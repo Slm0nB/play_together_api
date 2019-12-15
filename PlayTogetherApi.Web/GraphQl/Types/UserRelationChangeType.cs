@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
 using PlayTogetherApi.Data;
+using PlayTogetherApi.Services;
 using PlayTogetherApi.Web.Models;
-using static PlayTogetherApi.Extensions.Helpers;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
     public class UserRelationChangeType : UserRelationType
     {
-        public UserRelationChangeType(PlayTogetherDbContext db) : base(db)
+        public UserRelationChangeType(PlayTogetherDbContext db, FriendLogicService friendLogicService) : base(db, friendLogicService)
         {
             Name = "RelationChange";
 

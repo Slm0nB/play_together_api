@@ -9,13 +9,12 @@ using PlayTogetherApi.Services;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.Models;
 using PlayTogetherApi.Web.GraphQl.Types;
-using PlayTogetherApi.Extensions;
 
 namespace PlayTogetherApi.Web.GraphQl
 {
     public class PlayTogetherMutation : ObjectGraphType
     {
-        public PlayTogetherMutation(PlayTogetherDbContext db, AuthenticationService authenticationService, ObservablesService observables, PushMessageService pushMessageService)
+        public PlayTogetherMutation(PlayTogetherDbContext db, AuthenticationService authenticationService, ObservablesService observables, PushMessageService pushMessageService, FriendLogicService friendLogicService)
         {
             Name = "Mutation";
 
@@ -547,18 +546,18 @@ namespace PlayTogetherApi.Web.GraphQl
                         return null;
                     }
 
-                    var status = context.GetArgument<UserRelationStatusChange>("status");
+                    var statusChange = context.GetArgument<UserRelationStatusChange>("status");
 
                     var relation = await db.UserRelations.FirstOrDefaultAsync(n => (n.UserAId == callingUserId && n.UserBId == friendUserId) || (n.UserAId == friendUserId && n.UserBId == callingUserId));
 
                     var previousStatusForFriendUser = relation == null
                         ? UserRelationStatus.None
-                        : relation.GetStatusForUser(friendUserId);
+                        : friendLogicService.GetStatusForUser(relation, friendUserId);
 
                     if (relation == null)
                     {
                         // Inviting (or blocking) an unrelated user
-                        if (status != UserRelationStatusChange.Invite && status != UserRelationStatusChange.Block)
+                        if (statusChange != UserRelationStatusChange.Invite && statusChange != UserRelationStatusChange.Block)
                         {
                             context.Errors.Add(new ExecutionError("Can only invite or block unrelated users."));
                             return null;
@@ -567,85 +566,18 @@ namespace PlayTogetherApi.Web.GraphQl
                         {
                             UserAId = callingUserId,
                             UserBId = friendUserId,
-                            Status = status == UserRelationStatusChange.Invite ? UserRelationInternalStatus.A_Invited : UserRelationInternalStatus.A_Blocked,
+                            Status = statusChange == UserRelationStatusChange.Invite ? UserRelationInternalStatus.A_Invited : UserRelationInternalStatus.A_Blocked,
                             CreatedDate = DateTime.Now
                         };
                         db.UserRelations.Add(relation);
                     }
-                    else if (relation.UserAId == callingUserId)
-                    {
-                        switch (status)
-                        {
-                            case UserRelationStatusChange.Invite:
-                                if ((int)(relation.Status & (UserRelationInternalStatus.B_Invited | UserRelationInternalStatus.B_Befriended)) != 0)
-                                {
-                                    relation.Status = Helpers.Relation_MutualFriends;
-                                }
-                                else
-                                {
-                                    relation.Status = (relation.Status & Helpers.Relation_B_Mask) | UserRelationInternalStatus.A_Invited;
-                                }
-                                break;
-                            case UserRelationStatusChange.Accept:
-                                if ((relation.Status & Helpers.Relation_B_Mask) == UserRelationInternalStatus.B_Invited)
-                                {
-                                    relation.Status = Helpers.Relation_MutualFriends;
-                                }
-                                else
-                                {
-                                    relation.Status = (relation.Status & Helpers.Relation_B_Mask) | UserRelationInternalStatus.A_Befriended;
-                                }
-                                break;
-                            case UserRelationStatusChange.Reject:
-                                relation.Status = (relation.Status & Helpers.Relation_B_Mask) | UserRelationInternalStatus.A_Rejected;
-                                break;
-                            case UserRelationStatusChange.Block:
-                                relation.Status = (relation.Status & Helpers.Relation_B_Mask) | UserRelationInternalStatus.A_Blocked;
-                                break;
-                            case UserRelationStatusChange.Remove:
-                                relation.Status &= Helpers.Relation_B_Mask;
-                                break;
-                        }
+                    else {
+                        var newStatus = friendLogicService.GetUpdatedStatus(relation, callingUserId, statusChange);
+                        relation.Status = newStatus;
                     }
-                    else
-                    {
-                        switch (status)
-                        {
-                            case UserRelationStatusChange.Invite:
-                                if ((int)(relation.Status & (UserRelationInternalStatus.A_Invited | UserRelationInternalStatus.A_Befriended)) != 0)
-                                {
-                                    relation.Status = Helpers.Relation_MutualFriends;
-                                }
-                                else
-                                {
-                                    relation.Status = (relation.Status & Helpers.Relation_A_Mask) | UserRelationInternalStatus.B_Invited;
-                                }
-                                break;
-                            case UserRelationStatusChange.Accept:
-                                if ((relation.Status & Helpers.Relation_A_Mask) == UserRelationInternalStatus.A_Invited)
-                                {
-                                    relation.Status = Helpers.Relation_MutualFriends;
-                                }
-                                else
-                                {
-                                    relation.Status = (relation.Status & Helpers.Relation_A_Mask) | UserRelationInternalStatus.B_Befriended;
-                                }
-                                break;
-                            case UserRelationStatusChange.Reject:
-                                relation.Status = (relation.Status & Helpers.Relation_A_Mask) | UserRelationInternalStatus.B_Rejected;
-                                break;
-                            case UserRelationStatusChange.Block:
-                                relation.Status = (relation.Status & Helpers.Relation_A_Mask) | UserRelationInternalStatus.B_Blocked;
-                                break;
-                            case UserRelationStatusChange.Remove:
-                                relation.Status &= Helpers.Relation_A_Mask;
-                                break;
-                        }
-                    }
-
                     await db.SaveChangesAsync();
 
-                    if (relation.GetStatusForUser(callingUserId) == UserRelationStatus.Inviting)
+                    if (friendLogicService.GetStatusForUser(relation, callingUserId) == UserRelationStatus.Inviting)
                     {
                         var _ = pushMessageService.PushMessageAsync(
                             "InviteFriend",
@@ -665,7 +597,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     {
                         PrimaryUserId = callingUserId,
                         Relation = relation,
-                        PrimaryUserAction = status,
+                        PrimaryUserAction = statusChange,
                         PreviousStatusForSecondaryUser = previousStatusForFriendUser
                     };
 
