@@ -44,7 +44,10 @@ namespace PlayTogetherApi.Extensions
                     switch (relationFlags)
                     {
                         case UserRelationInternalStatus.None:
-                            return UserRelationStatus.Inviting;
+                            // if the other guy removes his "befriended" state, our own state goes to "none"
+                            return userFlags == UserRelationInternalStatus.A_Befriended
+                                ? UserRelationStatus.None
+                                : UserRelationStatus.Inviting;
 
                         case UserRelationInternalStatus.B_Invited:
                         case UserRelationInternalStatus.B_Befriended:
