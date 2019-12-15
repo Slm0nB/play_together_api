@@ -23,7 +23,7 @@ namespace PlayTogetherApi.Web.GraphQl
                    new QueryArgument<DateTimeGraphType> { Name = "beforeDate", Description = "Event occurs before or on this datetime." },
                    new QueryArgument<DateTimeGraphType> { Name = "afterDate", Description = "Event occurs on or after this datetime." },
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many events to skip." },
-                   new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return." }
+                   new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return. Maximum 100.", DefaultValue = 100 }
                 ),
                resolve: context =>
                {
@@ -60,10 +60,14 @@ namespace PlayTogetherApi.Web.GraphQl
                        query = query.Skip(skip);
                    }
 
-                   var take = context.GetArgument<int>("take");
+                   var take = Math.Min(100, context.GetArgument<int>("take", 100));
                    if (take > 0)
                    {
                        query = query.Take(take);
+                   }
+                   else
+                   {
+                       return null;
                    }
 
                    return new EventCollectionModel
@@ -79,9 +83,9 @@ namespace PlayTogetherApi.Web.GraphQl
                arguments: new QueryArguments(
                    new QueryArgument<StringGraphType> { Name = "id", Description = "Id of the user." },
                    new QueryArgument<StringGraphType> { Name = "email", Description = "Email of the user." },
-                   new QueryArgument<StringGraphType> { Name = "search", Description = "Search term applied to the displayname." },
+                   new QueryArgument<StringGraphType> { Name = "search", Description = "Search term." },
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many users to skip." },
-                   new QueryArgument<IntGraphType> { Name = "take", Description = "How many users to return." }
+                   new QueryArgument<IntGraphType> { Name = "take", Description = "How many users to return. Maximum 100.", DefaultValue = 100 }
                 ),
                resolve: context =>
                {
@@ -104,7 +108,7 @@ namespace PlayTogetherApi.Web.GraphQl
                    if (!string.IsNullOrWhiteSpace(search))
                    {
                        search = search.ToLowerInvariant();
-                       query = query.Where(n => n.DisplayName.ToLower().Contains(search)); // todo: verify sql isnt retarded
+                       query = query.Where(n => n.DisplayName.ToLower().Contains(search) || n.Email.ToLower() == search); // todo: verify sql isnt retarded
                    }
 
                    var skip = context.GetArgument<int>("skip");
@@ -113,10 +117,14 @@ namespace PlayTogetherApi.Web.GraphQl
                        query = query.Skip(skip);
                    }
 
-                   var take = context.GetArgument<int>("take");
+                   var take = Math.Min(100, context.GetArgument<int>("take", 100));
                    if (take > 0)
                    {
                        query = query.Take(take);
+                   }
+                   else
+                   {
+                       return null;
                    }
 
                    return query;
