@@ -27,6 +27,26 @@ namespace PlayTogetherApi.Web.GraphQl
 
             AddField(new EventStreamFieldType
             {
+                Name = "timestamp",
+                Description = "A simple test-eventstream sending a timestamp every few seconds.",
+                Arguments = new QueryArguments(
+                    new QueryArgument<IntGraphType> { Name = "interval", Description = "Interval in seconds.", DefaultValue = 5 }
+                ),
+                Type = typeof(TimestampGraphType),
+                Resolver = new FuncFieldResolver<TimestampModel>(context => context.Source as TimestampModel),
+                Subscriber = new EventStreamResolver<TimestampModel>(context =>
+                    Observable
+                        .Interval(TimeSpan.FromSeconds(context.GetArgument<int>("interval", 5)))
+                        .StartWith(0)
+                        .Select(n => new TimestampModel
+                        {
+                            DateTime = DateTime.Now
+                        })
+                )
+            });
+
+            AddField(new EventStreamFieldType
+            {
                 // todo: add arguments for filtering
                 Name = "events",
                 Description = "Created or updated events.",
