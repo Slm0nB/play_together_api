@@ -47,9 +47,9 @@ namespace PlayTogetherApi.Web.GraphQl
 
             AddField(new EventStreamFieldType
             {
-                // todo: add arguments for filtering
+                // todo: add arguments for filtering based on action
                 Name = "events",
-                Description = "Created or updated events.  (The events themselves, not signups.)",
+                Description = "Created, updated or deleted events.  (The events themselves, not signups.)",
                 Type = typeof(EventChangeType),
                 Resolver = new FuncFieldResolver<EventExtModel>(context => context.Source as EventExtModel),
                 Subscriber = new EventStreamResolver<EventExtModel>(context => observables.GameEventStream.AsObservable())

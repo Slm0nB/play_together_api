@@ -9,9 +9,10 @@ namespace PlayTogetherApi.Web.Models
     public enum EventAction
     {
         Created = 1,
-        EditedPeriod = 2,
-        EditedVisibility = 4,
-        EditedText = 8,
-        EditedGame = 16
+        Deleted = 2,
+        EditedPeriod = 4,
+        EditedVisibility = 8,
+        EditedText = 16,
+        EditedGame = 32
     }
 }

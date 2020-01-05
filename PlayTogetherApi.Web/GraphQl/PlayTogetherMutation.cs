@@ -376,6 +376,13 @@ namespace PlayTogetherApi.Web.GraphQl
                         return null;
                     }
 
+                    var user = await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
+                    if (user == null)
+                    {
+                        context.Errors.Add(new ExecutionError("User not found."));
+                        return null;
+                    }
+
                     var eventId = context.GetArgument<Guid>("id");
                     var dbEvent = await db.Events.FirstOrDefaultAsync(n => n.EventId == eventId);
                     if(dbEvent == null)
@@ -392,7 +399,12 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.Events.Remove(dbEvent);
                     await db.SaveChangesAsync();
 
-                    // todo: push deletion to observables
+                    observables.GameEventStream.OnNext(new EventExtModel
+                    {
+                        Event = dbEvent,
+                        ChangingUser = user,
+                        Action = EventAction.Deleted
+                    });
 
                     return true;
                 }
