@@ -13,6 +13,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
     {
         public UserEventSignupType(PlayTogetherDbContext db)
         {
+            Name = "UserEventSignup";
+
             Field("date", signup => signup.SignupDate, type: typeof(DateTimeGraphType)).Description("Signup/invitation date.");
             Field("status", signup => signup.Status, type: typeof(UserEventStatusType)).Description("Status of the signup/invitation.");
 
@@ -27,7 +29,6 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                     return context.Source.User;
                 return await db.Users.FirstOrDefaultAsync(u => u.UserId == context.Source.UserId);
             });
-
         }
     }
 }

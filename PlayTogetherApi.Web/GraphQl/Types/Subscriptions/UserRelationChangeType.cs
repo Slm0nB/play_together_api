@@ -18,7 +18,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
             Name = "RelationChange";
 
             Field("oldStatus", model => model.PreviousStatusForSecondaryUser, type: typeof(UserRelationStatusType)).Description("Status of the relation before the change.");
-            Field("action", model => model.PrimaryUserAction, type: typeof(UserRelationStatusChangeType)).Description("The action on the relation.");
+            Field("action", model => model.PrimaryUserAction, type: typeof(UserRelationStatusActionType)).Description("The action on the relation.");
         }
     }
 }

@@ -10,7 +10,7 @@ namespace PlayTogetherApi.Services
 {
     public class ObservablesService
     {
-        public ISubject<Data.Event> GameEventStream = new ReplaySubject<Data.Event>(0);
+        public ISubject<EventExtModel> GameEventStream = new ReplaySubject<EventExtModel>(0);
 
         public ISubject<Data.UserEventSignup> UserEventSignupStream = new ReplaySubject<Data.UserEventSignup>(0);
 

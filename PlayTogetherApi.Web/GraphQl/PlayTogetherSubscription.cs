@@ -49,21 +49,22 @@ namespace PlayTogetherApi.Web.GraphQl
             {
                 // todo: add arguments for filtering
                 Name = "events",
-                Description = "Created or updated events.",
-                Type = typeof(EventBaseType),
-                Resolver = new FuncFieldResolver<Event>(context => context.Source as Event),
-                Subscriber = new EventStreamResolver<Event>(context => observables.GameEventStream.AsObservable())
+                Description = "Created or updated events.  (The events themselves, not signups.)",
+                Type = typeof(EventChangeType),
+                Resolver = new FuncFieldResolver<EventExtModel>(context => context.Source as EventExtModel),
+                Subscriber = new EventStreamResolver<EventExtModel>(context => observables.GameEventStream.AsObservable())
             });
 
             AddField(new EventStreamFieldType
             {
                 Name = "signups",
                 Description = "Users joining an event or updating their signup-status.",
-                Type = typeof(UserEventSignupType),
+                Type = typeof(SignupChangeType),
                 Arguments = new QueryArguments(
                     new QueryArgument<IdGraphType> { Name = "owner", Description = "The ID of the user who created the event." },
                     new QueryArgument<IdGraphType> { Name = "user", Description = "The ID of the user joining or leaving the event." },
                     new QueryArgument<IdGraphType> { Name = "event", Description = "The ID of the event." }
+                    // todo: "participant" parameter, so the user can get changes to all events they participate in ... which means also adding the "token" parameter
                 ),
                 Resolver = new FuncFieldResolver<UserEventSignup>(context => context.Source as UserEventSignup),
                 Subscriber = new EventStreamResolver<UserEventSignup>(context =>
@@ -92,11 +93,10 @@ namespace PlayTogetherApi.Web.GraphQl
                 })
             });
 
-
             AddField(new EventStreamFieldType
             {
                 Name = "friends",
-                Description = "Changes to the friendlist",
+                Description = "Changes to the friendlist. This only returns changed relevant to the authenticated user.",
                 Type = typeof(UserRelationChangeType),
                 Arguments = new QueryArguments(
                     new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "token", Description = "Access-token. Because it currently can't be provided as a header for subscriptions." },

@@ -8,6 +8,9 @@ using PlayTogetherApi.Data;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
+    /// <summary>
+    /// This was originally made for the Event subscription, to be able to exclude "signups".  But we dropped that idea.
+    /// </summary>
     public class EventBaseType : ObjectGraphType<Event>
     {
         public EventBaseType(PlayTogetherDbContext db)

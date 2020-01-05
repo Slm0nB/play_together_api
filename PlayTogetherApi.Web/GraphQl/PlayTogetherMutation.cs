@@ -204,7 +204,8 @@ namespace PlayTogetherApi.Web.GraphQl
                         return null;
                     }
 
-                    if (!await db.Users.AnyAsync(n => n.UserId == userId))
+                    var user = await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
+                    if (user == null)
                     {
                         context.Errors.Add(new ExecutionError("User not found."));
                         return null;
@@ -240,7 +241,12 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.Events.Add(newEvent);
                     await db.SaveChangesAsync();
 
-                    observables.GameEventStream.OnNext(newEvent);
+                    observables.GameEventStream.OnNext(new EventExtModel
+                    {
+                        Event = newEvent,
+                        ChangingUser = user,
+                        Action = EventAction.Created
+                    });
 
                     return newEvent;
                 }
@@ -259,6 +265,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 ),
                 resolve: async context =>
                 {
+                    EventAction? action = null;
+
                     var principal = context.UserContext as ClaimsPrincipal;
                     var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
                     if (!Guid.TryParse(userIdClaim, out var userId))
@@ -267,14 +275,15 @@ namespace PlayTogetherApi.Web.GraphQl
                         return null;
                     }
 
-                    if (!await db.Users.AnyAsync(n => n.UserId == userId))
+                    var user = await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
+                    if (user == null)
                     {
                         context.Errors.Add(new ExecutionError("User not found."));
                         return null;
                     }
 
                     var eventId = context.GetArgument<Guid>("id");
-                    var editedEvent = await db.Events.FirstOrDefaultAsync(n => n.EventId == eventId);
+                    var editedEvent = await db.Events.Include(n => n.Signups).FirstOrDefaultAsync(n => n.EventId == eventId);
                     if (editedEvent == null || editedEvent.CreatedByUserId != userId)
                     {
                         context.Errors.Add(new ExecutionError("Must be the creator of the event to modify it."));
@@ -287,6 +296,7 @@ namespace PlayTogetherApi.Web.GraphQl
                         if (date != default)
                         {
                             editedEvent.EventDate = date;
+                            action = EventAction.EditedPeriod;
                         }
                     }
 
@@ -296,6 +306,7 @@ namespace PlayTogetherApi.Web.GraphQl
                         if (date != default)
                         {
                             editedEvent.EventEndDate = date;
+                            action = EventAction.EditedPeriod;
                         }
                     }
 
@@ -309,12 +320,14 @@ namespace PlayTogetherApi.Web.GraphQl
                     if (!string.IsNullOrEmpty(title))
                     {
                         editedEvent.Title = title;
+                        action = action.HasValue ? (action.Value | EventAction.EditedText) : EventAction.EditedText;
                     }
 
                     var description = context.GetArgument<string>("description");
                     if (!string.IsNullOrEmpty(description))
                     {
                         editedEvent.Description = description;
+                        action = action.HasValue ? (action.Value | EventAction.EditedText) : EventAction.EditedText;
                     }
 
                     if (context.HasArgument("game"))
@@ -329,13 +342,19 @@ namespace PlayTogetherApi.Web.GraphQl
                             }
 
                             editedEvent.GameId = gameId;
+                            action = action.HasValue ? (action.Value | EventAction.EditedGame) : EventAction.EditedGame;
                         }
                     }
 
                     db.Events.Update(editedEvent);
                     await db.SaveChangesAsync();
 
-                    observables.GameEventStream.OnNext(editedEvent);
+                    observables.GameEventStream.OnNext(new EventExtModel
+                    {
+                        Event = editedEvent,
+                        ChangingUser = user,
+                        Action = action
+                    });
 
                     return editedEvent;
                 }
@@ -519,7 +538,7 @@ namespace PlayTogetherApi.Web.GraphQl
                 description: "Invite a user to your friendlist, or accept an invitation from a user.  This requires the caller to be authorized.",
                 arguments: new QueryArguments(
                     new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "user" },
-                    new QueryArgument<NonNullGraphType<UserRelationStatusChangeType>> { Name = "status" }
+                    new QueryArgument<NonNullGraphType<UserRelationStatusActionType>> { Name = "status" }
                 ),
                 resolve: async context =>
                 {
@@ -546,7 +565,7 @@ namespace PlayTogetherApi.Web.GraphQl
                         return null;
                     }
 
-                    var statusChange = context.GetArgument<UserRelationStatusChange>("status");
+                    var statusChange = context.GetArgument<UserRelationStatusAction>("status");
 
                     var relation = await db.UserRelations.FirstOrDefaultAsync(n => (n.UserAId == callingUserId && n.UserBId == friendUserId) || (n.UserAId == friendUserId && n.UserBId == callingUserId));
 
@@ -557,7 +576,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     if (relation == null)
                     {
                         // Inviting (or blocking) an unrelated user
-                        if (statusChange != UserRelationStatusChange.Invite && statusChange != UserRelationStatusChange.Block)
+                        if (statusChange != UserRelationStatusAction.Invite && statusChange != UserRelationStatusAction.Block)
                         {
                             context.Errors.Add(new ExecutionError("Can only invite or block unrelated users."));
                             return null;
@@ -566,7 +585,7 @@ namespace PlayTogetherApi.Web.GraphQl
                         {
                             UserAId = callingUserId,
                             UserBId = friendUserId,
-                            Status = statusChange == UserRelationStatusChange.Invite ? UserRelationInternalStatus.A_Invited : UserRelationInternalStatus.A_Blocked,
+                            Status = statusChange == UserRelationStatusAction.Invite ? UserRelationInternalStatus.A_Invited : UserRelationInternalStatus.A_Blocked,
                             CreatedDate = DateTime.Now
                         };
                         db.UserRelations.Add(relation);

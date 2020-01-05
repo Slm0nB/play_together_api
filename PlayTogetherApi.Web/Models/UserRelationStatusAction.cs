@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace PlayTogetherApi.Web.Models
 {
-    public enum UserRelationStatusChange
+    public enum UserRelationStatusAction
     {
         Invite,
         Accept,
