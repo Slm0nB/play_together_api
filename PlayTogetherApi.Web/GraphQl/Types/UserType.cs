@@ -15,6 +15,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
     {
         public UserType(PlayTogetherDbContext db, IConfiguration config)
         {
+            Name = "User";
+
             Field("id", user => user.UserId, type: typeof(IdGraphType)).Description("Id property from the user object.");
             Field(user => user.DisplayName).Description("DisplayName property from the user object.");
 

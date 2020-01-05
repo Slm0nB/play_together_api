@@ -18,7 +18,7 @@ namespace PlayTogetherApi.Web.Models
         // Additional data
 
         public Guid PrimaryUserId;
-        public UserRelationStatusAction? PrimaryUserAction;
+        public UserRelationAction? PrimaryUserAction;
         public UserRelationStatus? PreviousStatusForSecondaryUser;
     }
 }

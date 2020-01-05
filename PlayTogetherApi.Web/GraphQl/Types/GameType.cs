@@ -14,6 +14,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
     {
         public GameType(PlayTogetherDbContext db, IConfiguration config)
         {
+            Name = "Game";
+
             Field("id", game => game.GameId, type: typeof(IdGraphType));
             Field(game => game.Title);
             Field("image", game => config.GetValue<string>("AssetPath") + game.ImagePath, type: typeof(StringGraphType));

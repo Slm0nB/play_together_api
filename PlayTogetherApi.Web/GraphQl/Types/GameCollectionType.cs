@@ -13,6 +13,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
     {
         public GameCollectionType(PlayTogetherDbContext db, IConfiguration config)
         {
+            Name = "GameCollection";
+
             FieldAsync<IntGraphType>("total",
                 description: "The total number of games available",
                 resolve: async context =>

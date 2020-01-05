@@ -14,6 +14,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
     {
         public SelfUserType(PlayTogetherDbContext db, IConfiguration config) : base(db, config)
         {
+            Name = "SelfUser";
+
             Field(user => user.Email).Description("Email property from the user object.");
         }
     }

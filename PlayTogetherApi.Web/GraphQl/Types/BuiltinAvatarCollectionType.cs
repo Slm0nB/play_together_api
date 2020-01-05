@@ -13,6 +13,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
     {
         public BuiltinAvatarCollectionType(PlayTogetherDbContext db, IConfiguration config)
         {
+            Name = "AvatarCollection";
+
             FieldAsync<IntGraphType>("total",
                 description: "The total number of avatars available",
                 resolve: async context =>

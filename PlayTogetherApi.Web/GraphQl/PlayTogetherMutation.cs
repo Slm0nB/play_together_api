@@ -538,7 +538,7 @@ namespace PlayTogetherApi.Web.GraphQl
                 description: "Invite a user to your friendlist, or accept an invitation from a user.  This requires the caller to be authorized.",
                 arguments: new QueryArguments(
                     new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "user" },
-                    new QueryArgument<NonNullGraphType<UserRelationStatusActionType>> { Name = "status" }
+                    new QueryArgument<NonNullGraphType<UserRelationActionType>> { Name = "status" }
                 ),
                 resolve: async context =>
                 {
@@ -565,7 +565,7 @@ namespace PlayTogetherApi.Web.GraphQl
                         return null;
                     }
 
-                    var statusChange = context.GetArgument<UserRelationStatusAction>("status");
+                    var action = context.GetArgument<UserRelationAction>("status");
 
                     var relation = await db.UserRelations.FirstOrDefaultAsync(n => (n.UserAId == callingUserId && n.UserBId == friendUserId) || (n.UserAId == friendUserId && n.UserBId == callingUserId));
 
@@ -576,7 +576,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     if (relation == null)
                     {
                         // Inviting (or blocking) an unrelated user
-                        if (statusChange != UserRelationStatusAction.Invite && statusChange != UserRelationStatusAction.Block)
+                        if (action != UserRelationAction.Invite && action != UserRelationAction.Block)
                         {
                             context.Errors.Add(new ExecutionError("Can only invite or block unrelated users."));
                             return null;
@@ -585,13 +585,13 @@ namespace PlayTogetherApi.Web.GraphQl
                         {
                             UserAId = callingUserId,
                             UserBId = friendUserId,
-                            Status = statusChange == UserRelationStatusAction.Invite ? UserRelationInternalStatus.A_Invited : UserRelationInternalStatus.A_Blocked,
+                            Status = action == UserRelationAction.Invite ? UserRelationInternalStatus.A_Invited : UserRelationInternalStatus.A_Blocked,
                             CreatedDate = DateTime.Now
                         };
                         db.UserRelations.Add(relation);
                     }
                     else {
-                        var newStatus = friendLogicService.GetUpdatedStatus(relation, callingUserId, statusChange);
+                        var newStatus = friendLogicService.GetUpdatedStatus(relation, callingUserId, action);
                         relation.Status = newStatus;
                     }
                     await db.SaveChangesAsync();
@@ -616,7 +616,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     {
                         PrimaryUserId = callingUserId,
                         Relation = relation,
-                        PrimaryUserAction = statusChange,
+                        PrimaryUserAction = action,
                         PreviousStatusForSecondaryUser = previousStatusForFriendUser
                     };
 

@@ -91,13 +91,13 @@ namespace PlayTogetherApi.Services
             return UserRelationStatus.None;
         }
 
-        public UserRelationInternalStatus GetUpdatedStatus(UserRelation relation, Guid callingUserId, UserRelationStatusAction statusChange)
+        public UserRelationInternalStatus GetUpdatedStatus(UserRelation relation, Guid callingUserId, UserRelationAction action)
         {
             if (relation.UserAId == callingUserId)
             {
-                switch (statusChange)
+                switch (action)
                 {
-                    case UserRelationStatusAction.Invite:
+                    case UserRelationAction.Invite:
                         if ((int)(relation.Status & (UserRelationInternalStatus.B_Invited | UserRelationInternalStatus.B_Befriended)) != 0)
                         {
                             return Relation_MutualFriends;
@@ -107,7 +107,7 @@ namespace PlayTogetherApi.Services
                             return (relation.Status & Relation_B_Mask) | UserRelationInternalStatus.A_Invited;
                         }
 
-                    case UserRelationStatusAction.Accept:
+                    case UserRelationAction.Accept:
                         if ((relation.Status & Relation_B_Mask) == UserRelationInternalStatus.B_Invited)
                         {
                             return Relation_MutualFriends;
@@ -117,21 +117,21 @@ namespace PlayTogetherApi.Services
                             return (relation.Status & Relation_B_Mask) | UserRelationInternalStatus.A_Befriended;
                         }
 
-                    case UserRelationStatusAction.Reject:
+                    case UserRelationAction.Reject:
                         return (relation.Status & Relation_B_Mask) | UserRelationInternalStatus.A_Rejected;
 
-                    case UserRelationStatusAction.Block:
+                    case UserRelationAction.Block:
                         return (relation.Status & Relation_B_Mask) | UserRelationInternalStatus.A_Blocked;
 
-                    case UserRelationStatusAction.Remove:
+                    case UserRelationAction.Remove:
                         return relation.Status & Relation_B_Mask;
                 }
             }
             else
             {
-                switch (statusChange)
+                switch (action)
                 {
-                    case UserRelationStatusAction.Invite:
+                    case UserRelationAction.Invite:
                         if ((int)(relation.Status & (UserRelationInternalStatus.A_Invited | UserRelationInternalStatus.A_Befriended)) != 0)
                         {
                             return Relation_MutualFriends;
@@ -141,7 +141,7 @@ namespace PlayTogetherApi.Services
                             return (relation.Status & Relation_A_Mask) | UserRelationInternalStatus.B_Invited;
                         }
 
-                    case UserRelationStatusAction.Accept:
+                    case UserRelationAction.Accept:
                         if ((relation.Status & Relation_A_Mask) == UserRelationInternalStatus.A_Invited)
                         {
                             return Relation_MutualFriends;
@@ -151,13 +151,13 @@ namespace PlayTogetherApi.Services
                             return (relation.Status & Relation_A_Mask) | UserRelationInternalStatus.B_Befriended;
                         }
 
-                    case UserRelationStatusAction.Reject:
+                    case UserRelationAction.Reject:
                         return (relation.Status & Relation_A_Mask) | UserRelationInternalStatus.B_Rejected;
 
-                    case UserRelationStatusAction.Block:
+                    case UserRelationAction.Block:
                         return (relation.Status & Relation_A_Mask) | UserRelationInternalStatus.B_Blocked;
 
-                    case UserRelationStatusAction.Remove:
+                    case UserRelationAction.Remove:
                         return relation.Status & Relation_A_Mask;
                 }
             }

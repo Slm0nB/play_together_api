@@ -14,6 +14,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
     {
         public UserEventSignupCollectionType(PlayTogetherDbContext db, IConfiguration config)
         {
+            Name = "UserEventSignupCollection";
+
             FieldAsync<IntGraphType>("total",
                 description: "The total number of signup available",
                 resolve: async context =>

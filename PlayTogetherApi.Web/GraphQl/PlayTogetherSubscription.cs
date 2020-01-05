@@ -59,7 +59,7 @@ namespace PlayTogetherApi.Web.GraphQl
             {
                 Name = "signups",
                 Description = "Users joining an event or updating their signup-status.",
-                Type = typeof(SignupChangeType),
+                Type = typeof(EventSignupChangeType),
                 Arguments = new QueryArguments(
                     new QueryArgument<IdGraphType> { Name = "owner", Description = "The ID of the user who created the event." },
                     new QueryArgument<IdGraphType> { Name = "user", Description = "The ID of the user joining or leaving the event." },

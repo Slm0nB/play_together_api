@@ -14,6 +14,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
     {
         public UserRelationCollectionType(PlayTogetherDbContext db, IConfiguration config)
         {
+            Name = "UserRelationCollection";
+
             FieldAsync<IntGraphType>("total",
                 description: "The total number of friends available",
                 resolve: async context =>

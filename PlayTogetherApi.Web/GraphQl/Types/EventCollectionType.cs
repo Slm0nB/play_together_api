@@ -14,6 +14,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
     {
         public EventCollectionType(PlayTogetherDbContext db, IConfiguration config)
         {
+            Name = "EventCollection";
+
             FieldAsync<IntGraphType>("total",
                 description: "The total number of events available",
                 resolve: async context =>

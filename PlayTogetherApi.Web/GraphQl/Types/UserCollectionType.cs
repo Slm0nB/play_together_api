@@ -13,6 +13,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
     {
         public UserCollectionType(PlayTogetherDbContext db, IConfiguration config)
         {
+            Name = "UserCollection";
+
             FieldAsync<IntGraphType>("total",
                 description: "The total number of users registered",
                 resolve: async context =>

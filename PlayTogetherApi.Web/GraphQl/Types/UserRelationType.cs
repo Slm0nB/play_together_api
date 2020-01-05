@@ -15,7 +15,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
     {
         public UserRelationType(PlayTogetherDbContext db, FriendLogicService friendLogicService)
         {
-            Name = "Relation";
+            Name = "UserRelation";
 
             Field("invitedDate", model => model.Relation.CreatedDate, type: typeof(DateTimeGraphType)).Description("Invitation date.");
             Field("status", model => friendLogicService.GetStatusForUser(model.Relation, model.PrimaryUserId), type: typeof(UserRelationStatusType)).Description("Status of the relation.");
