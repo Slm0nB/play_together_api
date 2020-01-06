@@ -28,6 +28,8 @@ namespace PlayTogetherApi.Data
         public DateTime EventDate { get; set; }
         public DateTime EventEndDate { get; set; }
 
+        public bool FriendsOnly { get; set; }
+
         public string Description { get; set; }
 
         public ICollection<UserEventSignup> Signups { get; } = new List<UserEventSignup>();

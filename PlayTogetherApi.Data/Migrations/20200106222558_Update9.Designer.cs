@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PlayTogetherApi.Data;
@@ -9,9 +10,10 @@ using PlayTogetherApi.Data;
 namespace PlayTogetherApi.Data.Migrations
 {
     [DbContext(typeof(PlayTogetherDbContext))]
-    partial class PlayTogetherDbContextModelSnapshot : ModelSnapshot
+    [Migration("20200106222558_Update9")]
+    partial class Update9
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
