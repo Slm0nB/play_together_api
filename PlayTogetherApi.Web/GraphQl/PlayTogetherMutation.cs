@@ -191,9 +191,9 @@ namespace PlayTogetherApi.Web.GraphQl
                     new QueryArgument<NonNullGraphType<DateTimeGraphType>> { Name = "startdate" },
                     new QueryArgument<NonNullGraphType<DateTimeGraphType>> { Name = "enddate" },
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "title" },
-                    new QueryArgument<BooleanGraphType> { Name = "friendsOnly", DefaultValue = false },
                     new QueryArgument<StringGraphType> { Name = "description" },
-                    new QueryArgument<IdGraphType> { Name = "game" }
+                    new QueryArgument<BooleanGraphType> { Name = "friendsOnly", DefaultValue = false },
+                    new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "game" }
                 ),
                 resolve: async context =>
                 {
@@ -269,6 +269,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     new QueryArgument<DateTimeGraphType> { Name = "enddate" },
                     new QueryArgument<StringGraphType> { Name = "title" },
                     new QueryArgument<StringGraphType> { Name = "description" },
+                    new QueryArgument<BooleanGraphType> { Name = "friendsOnly" },
                     new QueryArgument<IdGraphType> { Name = "game" }
                 ),
                 resolve: async context =>
@@ -336,6 +337,16 @@ namespace PlayTogetherApi.Web.GraphQl
                     {
                         editedEvent.Description = description;
                         action = action.HasValue ? (action.Value | EventAction.EditedText) : EventAction.EditedText;
+                    }
+
+                    if (context.HasArgument("friendsOnly"))
+                    {
+                        var friendsOnly = context.GetArgument<bool>("friendsOnly");
+                        if(friendsOnly != editedEvent.FriendsOnly)
+                        {
+                            editedEvent.FriendsOnly = friendsOnly;
+                            action = action.HasValue ? (action.Value | EventAction.EditedVisibility) : EventAction.EditedVisibility;
+                        }
                     }
 
                     if (context.HasArgument("game"))
