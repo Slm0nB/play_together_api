@@ -191,6 +191,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     new QueryArgument<NonNullGraphType<DateTimeGraphType>> { Name = "startdate" },
                     new QueryArgument<NonNullGraphType<DateTimeGraphType>> { Name = "enddate" },
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "title" },
+                    new QueryArgument<BooleanGraphType> { Name = "friendsOnly", DefaultValue = false },
                     new QueryArgument<StringGraphType> { Name = "description" },
                     new QueryArgument<IdGraphType> { Name = "game" }
                 ),
@@ -229,6 +230,12 @@ namespace PlayTogetherApi.Web.GraphQl
                         }
                     }
 
+                    var friendsOnly = false;
+                    if(context.HasArgument("friendsOnly"))
+                    {
+                        friendsOnly = context.GetArgument<bool>("friendsOnly");
+                    }
+
                     var newEvent = new Event
                     {
                         Title = context.GetArgument<string>("title"),
@@ -236,6 +243,7 @@ namespace PlayTogetherApi.Web.GraphQl
                         EventDate = startdate,
                         EventEndDate = enddate,
                         Description = context.GetArgument<string>("description"),
+                        FriendsOnly = friendsOnly,
                         GameId = gameId
                     };
                     db.Events.Add(newEvent);
