@@ -49,10 +49,29 @@ namespace PlayTogetherApi.Web.GraphQl
             {
                 // todo: add arguments for filtering based on action
                 Name = "events",
-                Description = "Created, updated or deleted events.  (The events themselves, not signups.)",
+                Description = "Created, updated or deleted events. (The events themselves, not signups.)",
                 Type = typeof(EventChangeType),
+                Arguments = new QueryArguments(
+                    new QueryArgument<IdGraphType> { Name = "token", Description = "Access-token. Because it currently can't be provided as a header for subscriptions. This is required to get updates for friendsOnly events." }
+                ),
                 Resolver = new FuncFieldResolver<EventExtModel>(context => context.Source as EventExtModel),
-                Subscriber = new EventStreamResolver<EventExtModel>(context => observables.GameEventStream.AsObservable())
+                Subscriber = new EventStreamResolver<EventExtModel>(context =>
+                {
+                    Guid? userId = null;
+                    if (context.HasArgument("token"))
+                    {
+                        var jwt = authenticationService.ValidateJwt(context.GetArgument<string>("token"));
+                        var userIdClaim = jwt?.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+                        if (Guid.TryParse(userIdClaim, out var _userId))
+                        {
+                            userId = _userId;
+                        }
+                    }
+
+                    return observables.GameEventStream
+                        .Where(eventExt => !eventExt.Event.FriendsOnly || (userId.HasValue && eventExt.FriendsOfChangingUser != null && eventExt.FriendsOfChangingUser.Any(nn => nn.UserAId == userId ||nn.UserBId == userId)))
+                        .AsObservable();
+                })
             });
 
             AddField(new EventStreamFieldType
@@ -106,7 +125,6 @@ namespace PlayTogetherApi.Web.GraphQl
                 Subscriber = new EventStreamResolver<UserRelationExtModel>(context =>
                 {
                     var jwt = authenticationService.ValidateJwt(context.GetArgument<string>("token"));
-
                     var userIdClaim = jwt?.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
                     if (!Guid.TryParse(userIdClaim, out var callingUserId))
                     {

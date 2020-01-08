@@ -253,8 +253,9 @@ namespace PlayTogetherApi.Web.GraphQl
                     {
                         Event = newEvent,
                         ChangingUser = user,
-                        Action = EventAction.Created
-                    });
+                        FriendsOfChangingUser = !newEvent.FriendsOnly ? null : await db.UserRelations.Where(n => n.Status == FriendLogicService.Relation_MutualFriends && (n.UserAId == user.UserId || n.UserBId == user.UserId)).ToArrayAsync(),
+                        Action = EventAction.Created,
+                    }); ;
 
                     return newEvent;
                 }
@@ -372,6 +373,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     {
                         Event = editedEvent,
                         ChangingUser = user,
+                        FriendsOfChangingUser = !editedEvent.FriendsOnly ? null : await db.UserRelations.Where(n => n.Status == FriendLogicService.Relation_MutualFriends && (n.UserAId == user.UserId || n.UserBId == user.UserId)).ToArrayAsync(),
                         Action = action
                     });
 
