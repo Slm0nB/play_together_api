@@ -40,11 +40,11 @@ namespace PlayTogetherApi.Web.GraphQl
                            .ToListAsync();
                        var friendIds = friends.Select(rel => rel.UserAId == userId ? rel.UserBId : rel.UserAId).ToList();
 
-                       query = query.Where(n => !n.FriendsOnly || friendIds.Contains(n.CreatedByUserId));
+                       query = query.Where(n => !n.FriendsOnly || n.CreatedByUserId == userId || friendIds.Contains(n.CreatedByUserId));
                    }
                    //{
                    //    // Authenticated users get an additional criteria to include friendsonly-events
-                   //    query = query.Where(n => !n.FriendsOnly || db.UserRelations.Any(
+                   //    query = query.Where(n => !n.FriendsOnly || n.CreatedByUserId == userId || db.UserRelations.Any(
                    //        rel => rel.Status == (UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended) &&
                    //         ((rel.UserAId == n.CreatedByUserId && rel.UserBId == userId) || (rel.UserAId == userId && rel.UserBId == n.CreatedByUserId))
                    //     ));

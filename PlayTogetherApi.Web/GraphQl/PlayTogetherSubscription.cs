@@ -69,7 +69,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     }
 
                     return observables.GameEventStream
-                        .Where(eventExt => !eventExt.Event.FriendsOnly || (userId.HasValue && eventExt.FriendsOfChangingUser != null && eventExt.FriendsOfChangingUser.Any(nn => nn.UserAId == userId ||nn.UserBId == userId)))
+                        .Where(eventExt => !eventExt.Event.FriendsOnly || eventExt.Event.CreatedByUserId == userId || (userId.HasValue && eventExt.FriendsOfChangingUser != null && eventExt.FriendsOfChangingUser.Any(nn => nn.UserAId == userId ||nn.UserBId == userId)))
                         .AsObservable();
                 })
             });
