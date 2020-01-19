@@ -21,7 +21,7 @@ namespace PlayTogetherApi.Web.GraphQl
                    new QueryArgument<StringGraphType> { Name = "id", Description = "Id of the event." },
                    new QueryArgument<StringGraphType> { Name = "search", Description = "Search term applied to the title or description." },
                    new QueryArgument<DateTimeGraphType> { Name = "beforeDate", Description = "Event occurs before or on this datetime." },
-                   new QueryArgument<DateTimeGraphType> { Name = "afterDate", Description = "Event occurs on or after this datetime." },
+                   new QueryArgument<DateTimeGraphType> { Name = "afterDate", Description = "Event occurs on or after this datetime. If unspecified, this will be todays date." },
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many events to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return. Maximum 100.", DefaultValue = 100 }
                 ),
@@ -72,6 +72,10 @@ namespace PlayTogetherApi.Web.GraphQl
                    if (afterDate != default(DateTime))
                    {
                        query = query.Where(n => n.EventDate >= afterDate);
+                   }
+                   else
+                   {
+                       query = query.Where(n => n.EventDate >= DateTime.Today);
                    }
 
                    var beforeDate = context.GetArgument<DateTime>("beforeDate");
