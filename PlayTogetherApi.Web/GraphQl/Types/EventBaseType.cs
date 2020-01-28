@@ -19,7 +19,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
             Field(x => x.CreatedDate, type: typeof(NonNullGraphType<DateTimeGraphType>)).Description("When the event was created.");
             Field<DateTimeGraphType>("startDate", resolve: context => context.Source.EventDate, description: "When the event starts.");
             Field<DateTimeGraphType>("endDate", resolve: context => context.Source.EventEndDate, description: "When the event ends.");
-            Field(x => x.EventEndDate, type: typeof(DateTimeGraphType)).Description("When the event ends.");
+            Field(x => x.EventEndDate, type: typeof(DateTimeGraphType)).Description("When the event ends.").DeprecationReason("WTF, this is a duplicate of 'endDate'.  How did that happen.");
             Field(x => x.Title).Description("Title of the event.");
             Field(x => x.Description, type: typeof(StringGraphType)).Description("Description of the event.");
             Field(x => x.FriendsOnly).Description("If the event is only visible to friends of the creator.");
