@@ -267,8 +267,8 @@ namespace PlayTogetherApi.Web.GraphQl
                     {
                         _ = pushMessageService.PushMessageAsync(
                             "CallToArms",
-                            "Call to arms!",
                             $"{callingUser.DisplayName} calls you to arms!",
+                            newEvent.Title,
                             new
                             {
                                 type = "CallToArms",
