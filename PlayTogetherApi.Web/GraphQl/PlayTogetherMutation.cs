@@ -27,6 +27,12 @@ namespace PlayTogetherApi.Web.GraphQl
                 ),
                 resolve: async context =>
                 {
+
+
+                    // todo: if it's a friendsonly event, then verify that the caller is a friend
+
+
+
                     var principal = context.UserContext as ClaimsPrincipal;
                     var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
                     if (!Guid.TryParse(userIdClaim, out var userId))
@@ -185,6 +191,100 @@ namespace PlayTogetherApi.Web.GraphQl
             );
 
             FieldAsync<EventType>(
+                "callToArms",
+                description: "Create a new call-to-arms event. This requires the caller to be authorized.",
+                arguments: new QueryArguments(
+                    new QueryArgument<NonNullGraphType<DateTimeGraphType>> { Name = "startdate" },
+                    new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "title" },
+                    new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "game" }
+                ),
+                resolve: async context =>
+                {
+                    var principal = context.UserContext as ClaimsPrincipal;
+                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+                    if (!Guid.TryParse(userIdClaim, out var callingUserId))
+                    {
+                        context.Errors.Add(new ExecutionError("Unauthorized"));
+                        return null;
+                    }
+
+                    var callingUser = await db.Users.FirstOrDefaultAsync(n => n.UserId == callingUserId);
+                    if (callingUser == null)
+                    {
+                        context.Errors.Add(new ExecutionError("User not found."));
+                        return null;
+                    }
+
+                    var startdate = context.GetArgument<DateTime>("startdate");
+                    if (startdate > DateTime.Now.AddMinutes(90))
+                    {
+                        context.Errors.Add(new ExecutionError("Startdate must be within 45 minutes."));
+                        return null;
+                    }
+
+                    var gameId = context.GetArgument<Guid>("game");
+                    if (gameId != default(Guid))
+                    {
+                        if (!await db.Games.AnyAsync(n => n.GameId == gameId))
+                        {
+                            context.Errors.Add(new ExecutionError("Game doesn't exist."));
+                            return null;
+                        }
+                    }
+
+                    var friendsOfChangingUser = await db.UserRelations.Where(n => n.Status == FriendLogicService.Relation_MutualFriends && (n.UserAId == callingUser.UserId || n.UserBId == callingUser.UserId)).ToArrayAsync();
+                    if (friendsOfChangingUser.Length == 0)
+                    {
+                        context.Errors.Add(new ExecutionError("Must have friends to issue a call to arms :("));
+                        return null;
+                    }
+
+                    var newEvent = new Event
+                    {
+                        Title = context.GetArgument<string>("title"),
+                        CreatedByUserId = callingUserId,
+                        EventDate = startdate,
+                        EventEndDate = startdate + TimeSpan.FromMinutes(45),
+                        Description = "",
+                        FriendsOnly = true,
+                        CallToArms = true,
+                        GameId = gameId
+                    };
+                    db.Events.Add(newEvent);
+                    await db.SaveChangesAsync();
+
+                    observables.GameEventStream.OnNext(new EventExtModel
+                    {
+                        Event = newEvent,
+                        ChangingUser = callingUser,
+                        FriendsOfChangingUser = friendsOfChangingUser,
+                        Action = EventAction.Created,
+                    });
+
+                    var friendIds = friendsOfChangingUser.Select(n => n.UserAId == callingUserId ? n.UserBId : n.UserAId).ToList();
+                    var friendEmails = await db.Users.Where(n => friendIds.Contains(n.UserId)).Select(n => n.Email).ToListAsync();
+                    foreach (var email in friendEmails)
+                    {
+                        _ = pushMessageService.PushMessageAsync(
+                            "CallToArms",
+                            "Call to arms!",
+                            $"{callingUser.DisplayName} calls you to arms!",
+                            new
+                            {
+                                type = "CallToArms",
+                                userId = callingUserId.ToString("N"),
+                                userName = callingUser.DisplayName,
+                                eventId = newEvent.EventId.ToString("N")
+                            },
+                            email
+                        );
+                    }
+
+                    return newEvent;
+                }
+            );
+
+            FieldAsync<EventType>(
                 "createEvent",
                 description: "Create a new event. This requires the caller to be authorized.",
                 arguments: new QueryArguments(
@@ -277,6 +377,14 @@ namespace PlayTogetherApi.Web.GraphQl
                 {
                     EventAction? action = null;
 
+
+
+
+                    // todo: if this is a call to arms, it should reject changing friendonly as well as the date
+
+
+
+
                     var principal = context.UserContext as ClaimsPrincipal;
                     var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
                     if (!Guid.TryParse(userIdClaim, out var userId))
@@ -305,6 +413,12 @@ namespace PlayTogetherApi.Web.GraphQl
                         var date = context.GetArgument<DateTime>("startdate");
                         if (date != default)
                         {
+                            if (editedEvent.CallToArms && date > DateTime.Now.AddMinutes(60))
+                            {
+                                context.Errors.Add(new ExecutionError("Call to arms must be within 60 minutes."));
+                                return null;
+                            }
+
                             editedEvent.EventDate = date;
                             action = EventAction.EditedPeriod;
                         }
@@ -315,6 +429,12 @@ namespace PlayTogetherApi.Web.GraphQl
                         var date = context.GetArgument<DateTime>("enddate");
                         if (date != default)
                         {
+                            if(editedEvent.CallToArms && date > DateTime.Now.AddHours(4))
+                            {
+                                context.Errors.Add(new ExecutionError("Call to arms can't end more then 4 hours in the future."));
+                                return null;
+                            }
+
                             editedEvent.EventEndDate = date;
                             action = EventAction.EditedPeriod;
                         }
@@ -342,6 +462,12 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     if (context.HasArgument("friendsOnly"))
                     {
+                        if(editedEvent.CallToArms)
+                        {
+                            context.Errors.Add(new ExecutionError("Can't change the friendsonly-state of a call to arms."));
+                            return null;
+                        }
+
                         var friendsOnly = context.GetArgument<bool>("friendsOnly");
                         if(friendsOnly != editedEvent.FriendsOnly)
                         {

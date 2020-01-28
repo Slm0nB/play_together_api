@@ -23,6 +23,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
             Field(x => x.Title).Description("Title of the event.");
             Field(x => x.Description, type: typeof(StringGraphType)).Description("Description of the event.");
             Field(x => x.FriendsOnly).Description("If the event is only visible to friends of the creator.");
+            Field(x => x.CallToArms).Description("If the event is a call to arms.");
 
             FieldAsync<UserType>("author",
                 resolve: async context => context.Source.CreatedByUser ?? await db.Users.FirstOrDefaultAsync(n => n.UserId == context.Source.CreatedByUserId)

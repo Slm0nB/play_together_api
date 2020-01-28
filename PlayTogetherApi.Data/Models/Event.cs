@@ -32,6 +32,8 @@ namespace PlayTogetherApi.Data
 
         public string Description { get; set; }
 
+        public bool CallToArms { get; set; }
+
         public ICollection<UserEventSignup> Signups { get; } = new List<UserEventSignup>();
     }
 }
