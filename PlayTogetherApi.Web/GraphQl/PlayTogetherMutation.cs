@@ -130,6 +130,9 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.UserEventSignups.Remove(signup);
                     await db.SaveChangesAsync();
 
+                    signup.Status = UserEventStatus.Cancelled;
+                    observables.UserEventSignupStream.OnNext(signup);
+
                     return true;
                 }
             );
