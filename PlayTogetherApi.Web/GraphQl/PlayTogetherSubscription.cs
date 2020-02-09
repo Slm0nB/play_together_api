@@ -119,10 +119,10 @@ namespace PlayTogetherApi.Web.GraphQl
                 Type = typeof(UserRelationChangeType),
                 Arguments = new QueryArguments(
                     new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "token", Description = "Access-token. Because it currently can't be provided as a header for subscriptions." },
-                    new QueryArgument<BooleanGraphType> { Name = "excludeChangesFromCaller", Description = "Don't return changes that were triggered by the calling user.", DefaultValue = true }
+                    new QueryArgument<BooleanGraphType> { Name = "excludeChangesFromCaller", Description = "Don't return changes that were triggered by the subscribing user.", DefaultValue = true }
                 ),
-                Resolver = new FuncFieldResolver<UserRelationExtModel>(context => context.Source as UserRelationExtModel),
-                Subscriber = new EventStreamResolver<UserRelationExtModel>(context =>
+                Resolver = new FuncFieldResolver<UserRelationChangedExtModel>(context => context.Source as UserRelationChangedExtModel),
+                Subscriber = new EventStreamResolver<UserRelationChangedExtModel>(context =>
                 {
                     var jwt = authenticationService.ValidateJwt(context.GetArgument<string>("token"));
                     var userIdClaim = jwt?.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
@@ -132,15 +132,17 @@ namespace PlayTogetherApi.Web.GraphQl
                         return null;
                     }
 
-                    IObservable<UserRelationExtModel> observable = observables.UserRelationStream
+                    IObservable<UserRelationChangedModel> observable = observables.UserRelationChangeStream
                         .Where(rel => rel.Relation.UserAId == callingUserId || rel.Relation.UserBId == callingUserId);
 
                     if (context.GetArgument<bool>("excludeChangesFromCaller"))
                     {
-                        observable = observable.Where(rel => rel.PrimaryUserId != callingUserId);
+                        observable = observable.Where(rel => rel.ActiveUser.UserId != callingUserId);
                     }
 
-                    return observable.AsObservable();
+                    return observable
+                        .Select(n => new UserRelationChangedExtModel(n, callingUserId))
+                        .AsObservable();
                 })
             });
         }

@@ -6,9 +6,6 @@ using PlayTogetherApi.Data;
 
 namespace PlayTogetherApi.Web.Models
 {
-    /// <summary>
-    /// The additional data primarily neeeded for the "Friends" subscription.
-    /// </summary>
     public class UserRelationExtModel
     {
         // Wrapped object
@@ -17,8 +14,8 @@ namespace PlayTogetherApi.Web.Models
 
         // Additional data
 
-        public Guid PrimaryUserId;
-        public UserRelationAction? PrimaryUserAction;
-        public UserRelationStatus? PreviousStatusForSecondaryUser;
+        public Guid ActiveUserId;
+        public UserRelationAction? ActiveUserAction;
+        public UserRelationStatus? PreviousStatusForTargetUser;
     }
 }

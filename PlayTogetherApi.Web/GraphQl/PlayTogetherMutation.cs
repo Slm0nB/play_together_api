@@ -774,17 +774,23 @@ namespace PlayTogetherApi.Web.GraphQl
                         );
                     }
 
-                    var model = new UserRelationExtModel
+                    var model = new UserRelationChangedModel
                     {
-                        PrimaryUserId = callingUserId,
                         Relation = relation,
-                        PrimaryUserAction = action,
-                        PreviousStatusForSecondaryUser = previousStatusForFriendUser
+                        ActiveUser = callingUser,
+                        ActiveUserAction = action,
+                        TargetUser = friendUser
                     };
+                    observables.UserRelationChangeStream.OnNext(model);
 
-                    observables.UserRelationStream.OnNext(model);
-
-                    return model;
+                    var result = new UserRelationExtModel
+                    {
+                        Relation = relation,
+                        ActiveUserId = callingUserId,
+                        ActiveUserAction = action,
+                        PreviousStatusForTargetUser = previousStatusForFriendUser
+                    };
+                    return result;
                 }
             );
 

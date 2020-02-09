@@ -35,7 +35,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
             );
 
             FieldAsync<ListGraphType<UserRelationType>>("items",
-                resolve: async context => await context.Source.ItemsQuery.Select(rel => new UserRelationExtModel { PrimaryUserId = context.Source.UserId, Relation = rel }).ToListAsync());
+                resolve: async context => await context.Source.ItemsQuery.Select(rel => new UserRelationExtModel { ActiveUserId = context.Source.UserId, Relation = rel }).ToListAsync());
         }
     }
 }

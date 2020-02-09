@@ -14,6 +14,6 @@ namespace PlayTogetherApi.Services
 
         public ISubject<Data.UserEventSignup> UserEventSignupStream = new ReplaySubject<Data.UserEventSignup>(0);
 
-        public ISubject<UserRelationExtModel> UserRelationStream = new ReplaySubject<UserRelationExtModel>(0);
+        public ISubject<UserRelationChangedModel> UserRelationChangeStream = new ReplaySubject<UserRelationChangedModel>(0);
     }
 }

@@ -11,14 +11,20 @@ using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class UserRelationChangeType : UserRelationType
+    public class UserRelationChangeType : ObjectGraphType<UserRelationChangedExtModel>
     {
-        public UserRelationChangeType(PlayTogetherDbContext db, FriendLogicService friendLogicService) : base(db, friendLogicService)
+        public UserRelationChangeType(/*PlayTogetherDbContext db, */FriendLogicService friendLogicService)
         {
             Name = "UserRelationChange";
 
-            Field("oldStatus", model => model.PreviousStatusForSecondaryUser, type: typeof(UserRelationStatusType)).Description("Status of the relation before the change.");
-            Field("action", model => model.PrimaryUserAction, type: typeof(UserRelationActionType)).Description("The action on the relation.");
+            Field("action", model => model.ActiveUserAction, type: typeof(UserRelationActionType)).Description("The action on the relation.");
+
+            Field<UserPreviewType>("sendingUser", resolve: context => context.Source.ActiveUser);
+            Field<UserPreviewType>("targetUser", resolve: context => context.Source.TargetUser);
+            Field<UserPreviewType>("otherUser", resolve: context => context.Source.ActiveUser.UserId == context.Source.SubscribingUserId ? context.Source.TargetUser : context.Source.ActiveUser);
+
+            Field<BooleanGraphType>("sentBySubscriber", resolve: context => context.Source.ActiveUser.UserId == context.Source.SubscribingUserId);
+            Field<UserRelationStatusType>("statusSubscriber", resolve: context => friendLogicService.GetStatusForUser(context.Source.Relation, context.Source.SubscribingUserId));
         }
     }
 }
