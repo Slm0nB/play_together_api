@@ -10,9 +10,9 @@ using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class BuiltinAvatarType : ObjectGraphType<BuiltinAvatar>
+    public class BuiltinAvatarGraphType : ObjectGraphType<BuiltinAvatar>
     {
-        public BuiltinAvatarType(PlayTogetherDbContext db, IConfiguration config)
+        public BuiltinAvatarGraphType(PlayTogetherDbContext db, IConfiguration config)
         {
             Name = "Avatar";
 

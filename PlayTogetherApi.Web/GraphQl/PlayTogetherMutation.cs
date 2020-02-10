@@ -23,7 +23,7 @@ namespace PlayTogetherApi.Web.GraphQl
                 description: "Add the currently logged in user to an event.",
                 arguments: new QueryArguments(
                     new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "event" },
-                    new QueryArgument<UserEventStatusType> { Name = "status", DefaultValue = UserEventStatus.AcceptedInvitation }
+                    new QueryArgument<UserEventStatusGraphType> { Name = "status", DefaultValue = UserEventStatus.AcceptedInvitation }
                 ),
                 resolve: async context =>
                 {
@@ -137,12 +137,12 @@ namespace PlayTogetherApi.Web.GraphQl
                 }
             );
 
-            FieldAsync<UserEventSignupType>(
+            FieldAsync<UserEventSignupGraphType>(
                 "updateSignup",
                 description: "Update the current or any users signup state for an event. This requires the caller to be authorized.",
                 arguments: new QueryArguments(
                     new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "event", Description = "Id of the event to update the status for." },
-                    new QueryArgument<NonNullGraphType<UserEventStatusType>> { Name = "status", Description = "The new status." },
+                    new QueryArgument<NonNullGraphType<UserEventStatusGraphType>> { Name = "status", Description = "The new status." },
                     new QueryArgument<IdGraphType> { Name = "user", Description = "Id of the user, for event-owners changing the status of signsup to their event." }
                 ),
                 resolve: async context =>
@@ -193,7 +193,7 @@ namespace PlayTogetherApi.Web.GraphQl
                 }
             );
 
-            FieldAsync<EventType>(
+            FieldAsync<EventGraphType>(
                 "callToArms",
                 description: "Create a new call-to-arms event. This requires the caller to be authorized.",
                 arguments: new QueryArguments(
@@ -287,7 +287,7 @@ namespace PlayTogetherApi.Web.GraphQl
                 }
             );
 
-            FieldAsync<EventType>(
+            FieldAsync<EventGraphType>(
                 "createEvent",
                 description: "Create a new event. This requires the caller to be authorized.",
                 arguments: new QueryArguments(
@@ -364,7 +364,7 @@ namespace PlayTogetherApi.Web.GraphQl
                 }
             );
 
-            FieldAsync<EventType>(
+            FieldAsync<EventGraphType>(
                 "updateEvent",
                 description: "Update an event. This requires the caller to be authorized, and be the creator of the event.",
                 arguments: new QueryArguments(
@@ -560,7 +560,7 @@ namespace PlayTogetherApi.Web.GraphQl
                 }
             );
 
-            FieldAsync<UserType>(
+            FieldAsync<UserGraphType>(
                 "createUser",
                 description: "Create a new user. This will fail if the email is already in use.",
                 arguments: new QueryArguments(
@@ -615,7 +615,7 @@ namespace PlayTogetherApi.Web.GraphQl
                 }
             );
 
-            FieldAsync<UserType>(
+            FieldAsync<UserGraphType>(
                 "updateUser",
                 description: "Update the currently logged in user.",
                 arguments: new QueryArguments(
@@ -695,12 +695,12 @@ namespace PlayTogetherApi.Web.GraphQl
                 }
             );
 
-            FieldAsync<UserRelationType>(
+            FieldAsync<UserRelationGraphType>(
                 "changeUserRelation",
                 description: "Invite a user to your friendlist, or accept an invitation from a user.  This requires the caller to be authorized.",
                 arguments: new QueryArguments(
                     new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "user" },
-                    new QueryArgument<NonNullGraphType<UserRelationActionType>> { Name = "status" }
+                    new QueryArgument<NonNullGraphType<UserRelationActionGraphType>> { Name = "status" }
                 ),
                 resolve: async context =>
                 {
@@ -794,7 +794,7 @@ namespace PlayTogetherApi.Web.GraphQl
                 }
             );
 
-            FieldAsync<TokenResponseType>(
+            FieldAsync<TokenResponseGraphType>(
                 "token",
                 description: "Request authorization tokens for a user, based on email/password or a refresh token.",
                 arguments: new QueryArguments(

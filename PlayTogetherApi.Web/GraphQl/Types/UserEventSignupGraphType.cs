@@ -9,22 +9,22 @@ using PlayTogetherApi.Data;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class UserEventSignupType : ObjectGraphType<UserEventSignup>
+    public class UserEventSignupGraphType : ObjectGraphType<UserEventSignup>
     {
-        public UserEventSignupType(PlayTogetherDbContext db)
+        public UserEventSignupGraphType(PlayTogetherDbContext db)
         {
             Name = "UserEventSignup";
 
             Field("date", signup => signup.SignupDate, type: typeof(DateTimeGraphType)).Description("Signup/invitation date.");
-            Field("status", signup => signup.Status, type: typeof(UserEventStatusType)).Description("Status of the signup/invitation.");
+            Field("status", signup => signup.Status, type: typeof(UserEventStatusGraphType)).Description("Status of the signup/invitation.");
 
-            FieldAsync<EventType>("event", resolve: async context => {
+            FieldAsync<EventGraphType>("event", resolve: async context => {
                 if (context.Source.Event != null)
                     return context.Source.Event;
                 return await db.Events.FirstOrDefaultAsync(ev => ev.EventId == context.Source.EventId);
             });
 
-            FieldAsync<UserType>("user", resolve: async context => {
+            FieldAsync<UserGraphType>("user", resolve: async context => {
                 if (context.Source.User != null)
                     return context.Source.User;
                 return await db.Users.FirstOrDefaultAsync(u => u.UserId == context.Source.UserId);

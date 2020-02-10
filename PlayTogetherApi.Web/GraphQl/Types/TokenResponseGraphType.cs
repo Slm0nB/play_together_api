@@ -7,11 +7,12 @@ using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class TokenResponseType : ObjectGraphType<TokenResponseModel>
+    public class TokenResponseGraphType : ObjectGraphType<TokenResponseModel>
     {
-        public TokenResponseType()
+        public TokenResponseGraphType()
         {
             Name = "TokenResponse";
+
             Field(x => x.Access_token, type: typeof(NonNullGraphType<StringGraphType>), nullable: false);
             Field(x => x.Refresh_token, type: typeof(StringGraphType), nullable: true);
             Field(x => x.Token_type, type: typeof(StringGraphType), nullable: false);

@@ -10,9 +10,9 @@ using PlayTogetherApi.Data;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class SelfUserType : UserType
+    public class SelfUserGraphType : UserGraphType
     {
-        public SelfUserType(PlayTogetherDbContext db, IConfiguration config) : base(db, config)
+        public SelfUserGraphType(PlayTogetherDbContext db, IConfiguration config) : base(db, config)
         {
             Name = "SelfUser";
 

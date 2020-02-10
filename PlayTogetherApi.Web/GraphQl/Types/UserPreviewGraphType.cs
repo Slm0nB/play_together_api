@@ -11,9 +11,9 @@ using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class UserPreviewType : ObjectGraphType<User>
+    public class UserPreviewGraphType : ObjectGraphType<User>
     {
-        public UserPreviewType(PlayTogetherDbContext db, IConfiguration config)
+        public UserPreviewGraphType(PlayTogetherDbContext db, IConfiguration config)
         {
             Name = "UserPreview";
 

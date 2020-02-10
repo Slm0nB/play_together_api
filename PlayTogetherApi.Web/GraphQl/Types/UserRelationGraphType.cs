@@ -11,14 +11,14 @@ using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class UserRelationType : ObjectGraphType<UserRelationExtModel>
+    public class UserRelationGraphType : ObjectGraphType<UserRelationExtModel>
     {
-        public UserRelationType(PlayTogetherDbContext db, FriendLogicService friendLogicService)
+        public UserRelationGraphType(PlayTogetherDbContext db, FriendLogicService friendLogicService)
         {
             Name = "UserRelation";
 
             Field("invitedDate", model => model.Relation.CreatedDate, type: typeof(DateTimeGraphType)).Description("Invitation date.");
-            Field("status", model => friendLogicService.GetStatusForUser(model.Relation, model.ActiveUserId), type: typeof(UserRelationStatusType)).Description("Status of the relation.");
+            Field("status", model => friendLogicService.GetStatusForUser(model.Relation, model.ActiveUserId), type: typeof(UserRelationStatusGraphType)).Description("Status of the relation.");
 
             Field<StringGraphType>("statusUser", resolve: context => {
                 var model = context.Source;
@@ -32,7 +32,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 return relationFlags.ToString();
             }, deprecationReason: "Debug only");
 
-            Field<UserType>("user", resolve: context => {
+            Field<UserGraphType>("user", resolve: context => {
                 var user = context.Source.ActiveUserId == context.Source.Relation.UserAId
                     ? context.Source.Relation.UserB
                     : context.Source.Relation.UserA;

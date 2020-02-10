@@ -9,7 +9,7 @@ using PlayTogetherApi.Data;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class UserEventStatusType : EnumerationGraphType<UserEventStatus>
+    public class UserEventStatusGraphType : EnumerationGraphType<UserEventStatus>
     {
     }
 }

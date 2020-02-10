@@ -50,7 +50,7 @@ namespace PlayTogetherApi.Web.GraphQl
                 // todo: add arguments for filtering based on action
                 Name = "events",
                 Description = "Created, updated or deleted events. (The events themselves, not signups.)",
-                Type = typeof(EventChangeType),
+                Type = typeof(EventChangeGraphType),
                 Arguments = new QueryArguments(
                     new QueryArgument<IdGraphType> { Name = "token", Description = "Access-token. Because it currently can't be provided as a header for subscriptions. This is required to get updates for friendsOnly events." }
                 ),
@@ -78,7 +78,7 @@ namespace PlayTogetherApi.Web.GraphQl
             {
                 Name = "signups",
                 Description = "Users joining an event or updating their signup-status.",
-                Type = typeof(EventSignupChangeType),
+                Type = typeof(EventSignupChangeGraphType),
                 Arguments = new QueryArguments(
                     new QueryArgument<IdGraphType> { Name = "owner", Description = "The ID of the user who created the event." },
                     new QueryArgument<IdGraphType> { Name = "user", Description = "The ID of the user joining or leaving the event." },
@@ -116,7 +116,7 @@ namespace PlayTogetherApi.Web.GraphQl
             {
                 Name = "friends",
                 Description = "Changes to the friendlist. This only returns changed relevant to the authenticated user.",
-                Type = typeof(UserRelationChangeType),
+                Type = typeof(UserRelationChangeGraphType),
                 Arguments = new QueryArguments(
                     new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "token", Description = "Access-token. Because it currently can't be provided as a header for subscriptions." },
                     new QueryArgument<BooleanGraphType> { Name = "excludeChangesFromCaller", Description = "Don't return changes that were triggered by the subscribing user.", DefaultValue = true }

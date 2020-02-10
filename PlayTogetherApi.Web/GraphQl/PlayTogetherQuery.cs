@@ -15,7 +15,7 @@ namespace PlayTogetherApi.Web.GraphQl
         {
             Name = "Query";
 
-            FieldAsync<EventCollectionType>(
+            FieldAsync<EventCollectionGraphType>(
                "events",
                 arguments: new QueryArguments(
                    new QueryArgument<StringGraphType> { Name = "id", Description = "Id of the event." },
@@ -108,7 +108,7 @@ namespace PlayTogetherApi.Web.GraphQl
                }
            );
 
-            Field<UserCollectionType>(
+            Field<UserCollectionGraphType>(
                "users",
                arguments: new QueryArguments(
                    new QueryArgument<StringGraphType> { Name = "id", Description = "Id of the user." },
@@ -161,7 +161,7 @@ namespace PlayTogetherApi.Web.GraphQl
                }
            );
 
-            Field<GameCollectionType>(
+            Field<GameCollectionGraphType>(
                "games",
                arguments: new QueryArguments(
                    new QueryArgument<StringGraphType> { Name = "id", Description = "Id of the game." },
@@ -202,7 +202,7 @@ namespace PlayTogetherApi.Web.GraphQl
                }
            );
 
-            Field<BuiltinAvatarCollectionType>(
+            Field<BuiltinAvatarCollectionGraphType>(
                "avatars",
                arguments: new QueryArguments(
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many games to skip." },
@@ -228,7 +228,7 @@ namespace PlayTogetherApi.Web.GraphQl
                }
            );
 
-            FieldAsync<SelfUserType>(
+            FieldAsync<SelfUserGraphType>(
                "me",
                description: "The details of the authorized user.",
                resolve: async context =>

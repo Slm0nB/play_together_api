@@ -10,9 +10,9 @@ using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class UserRelationCollectionType : ObjectGraphType<UserRelationCollectionModel>
+    public class UserRelationCollectionGraphType : ObjectGraphType<UserRelationCollectionModel>
     {
-        public UserRelationCollectionType(PlayTogetherDbContext db, IConfiguration config)
+        public UserRelationCollectionGraphType(PlayTogetherDbContext db, IConfiguration config)
         {
             Name = "UserRelationCollection";
 
@@ -34,7 +34,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 }
             );
 
-            FieldAsync<ListGraphType<UserRelationType>>("items",
+            FieldAsync<ListGraphType<UserRelationGraphType>>("items",
                 resolve: async context => await context.Source.ItemsQuery.Select(rel => new UserRelationExtModel { ActiveUserId = context.Source.UserId, Relation = rel }).ToListAsync());
         }
     }

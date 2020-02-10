@@ -11,13 +11,13 @@ using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class UserType : UserPreviewType
+    public class UserGraphType : UserPreviewGraphType
     {
-        public UserType(PlayTogetherDbContext db, IConfiguration config) : base(db, config)
+        public UserGraphType(PlayTogetherDbContext db, IConfiguration config) : base(db, config)
         {
             Name = "User";
 
-            Field<EventCollectionType>("events",
+            Field<EventCollectionGraphType>("events",
                 arguments: new QueryArguments(
                    new QueryArgument<DateTimeGraphType> { Name = "beforeDate", Description = "Event occurs before or on this datetime." },
                    new QueryArgument<DateTimeGraphType> { Name = "afterDate", Description = "Event occurs on or after this datetime." },
@@ -59,7 +59,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 }
             );
 
-            Field<UserEventSignupCollectionType>("signups",
+            Field<UserEventSignupCollectionGraphType>("signups",
                 arguments: new QueryArguments(
                    new QueryArgument<DateTimeGraphType> { Name = "beforeDate", Description = "Event occurs before or on this datetime." },
                    new QueryArgument<DateTimeGraphType> { Name = "afterDate", Description = "Event occurs on or after this datetime." },
@@ -106,7 +106,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 }
             );
 
-            Field<UserRelationCollectionType>("friends",
+            Field<UserRelationCollectionGraphType>("friends",
                 arguments: new QueryArguments(
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many items to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many items to return." }

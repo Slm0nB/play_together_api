@@ -2,18 +2,25 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using GraphQL.Types;
+using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
+using GraphQL.Types;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class EventType : EventBaseType
+    public class GameGraphType : ObjectGraphType<Game>
     {
-        public EventType(PlayTogetherDbContext db) : base(db)
+        public GameGraphType(PlayTogetherDbContext db, IConfiguration config)
         {
-            Field<UserEventSignupCollectionType>("signups",
+            Name = "Game";
+
+            Field("id", game => game.GameId, type: typeof(IdGraphType));
+            Field(game => game.Title);
+            Field("image", game => config.GetValue<string>("AssetPath") + game.ImagePath, type: typeof(StringGraphType));
+
+            Field<EventCollectionGraphType>("events",
                 arguments: new QueryArguments(
                    new QueryArgument<DateTimeGraphType> { Name = "beforeDate", Description = "Event occurs before or on this datetime." },
                    new QueryArgument<DateTimeGraphType> { Name = "afterDate", Description = "Event occurs on or after this datetime." },
@@ -22,40 +29,36 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 ),
                 resolve: context =>
                 {
-                    var eventId = context.Source.EventId;
-                    IQueryable<UserEventSignup> signups = db.UserEventSignups
-                        .Where(n => n.EventId == eventId)
-                        .Include(n => n.User)
-                        .OrderBy(n => n.SignupDate);
+                    var query = db.Events.Where(n => n.GameId == context.Source.GameId);
 
                     var afterDate = context.GetArgument<DateTime>("afterDate");
                     if (afterDate != default(DateTime))
                     {
-                        signups = signups.Where(n => n.Event.EventEndDate >= afterDate);
+                        query = query.Where(n => n.EventEndDate >= afterDate);
                     }
 
                     var beforeDate = context.GetArgument<DateTime>("beforeDate");
                     if (beforeDate != default(DateTime))
                     {
-                        signups = signups.Where(n => n.Event.EventDate <= beforeDate);
+                        query = query.Where(n => n.EventDate <= beforeDate);
                     }
 
                     var skip = context.GetArgument<int>("skip");
                     if (skip > 0)
                     {
-                        signups = signups.Skip(skip);
+                        query = query.Skip(skip);
                     }
 
                     var take = context.GetArgument<int>("take");
                     if (take > 0)
                     {
-                        signups = signups.Take(take);
+                        query = query.Take(take);
                     }
 
-                    return new UserEventSignupCollectionModel
+                    return new EventCollectionModel
                     {
-                        ItemsQuery = signups,
-                        TotalItemsQuery = db.UserEventSignups.Where(n => n.EventId == context.Source.EventId)
+                        EventsQuery = query,
+                        TotalEventsQuery = db.Events.Where(n => n.GameId == context.Source.GameId)
                     };
                 }
             );

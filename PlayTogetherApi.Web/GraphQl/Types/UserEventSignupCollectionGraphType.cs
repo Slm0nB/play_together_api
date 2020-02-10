@@ -10,9 +10,9 @@ using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class UserEventSignupCollectionType : ObjectGraphType<UserEventSignupCollectionModel>
+    public class UserEventSignupCollectionGraphType : ObjectGraphType<UserEventSignupCollectionModel>
     {
-        public UserEventSignupCollectionType(PlayTogetherDbContext db, IConfiguration config)
+        public UserEventSignupCollectionGraphType(PlayTogetherDbContext db, IConfiguration config)
         {
             Name = "UserEventSignupCollection";
 
@@ -34,7 +34,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 }
             );
 
-            FieldAsync<ListGraphType<UserEventSignupType>>("items",
+            FieldAsync<ListGraphType<UserEventSignupGraphType>>("items",
                 resolve: async context => await context.Source.ItemsQuery.ToListAsync());
         }
     }

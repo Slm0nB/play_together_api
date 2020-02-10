@@ -9,9 +9,9 @@ using PlayTogetherApi.Data;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class GameCollectionType : ObjectGraphType<IQueryable<Game>>
+    public class GameCollectionGraphType : ObjectGraphType<IQueryable<Game>>
     {
-        public GameCollectionType(PlayTogetherDbContext db, IConfiguration config)
+        public GameCollectionGraphType(PlayTogetherDbContext db, IConfiguration config)
         {
             Name = "GameCollection";
 
@@ -33,7 +33,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 }
             );
 
-            FieldAsync<ListGraphType<GameType>>("items",
+            FieldAsync<ListGraphType<GameGraphType>>("items",
                 resolve: async context => await context.Source.ToListAsync());
         }
     }

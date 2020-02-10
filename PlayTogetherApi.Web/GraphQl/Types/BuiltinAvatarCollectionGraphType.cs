@@ -9,9 +9,9 @@ using PlayTogetherApi.Data;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class BuiltinAvatarCollectionType : ObjectGraphType<IQueryable<BuiltinAvatar>>
+    public class BuiltinAvatarCollectionGraphType : ObjectGraphType<IQueryable<BuiltinAvatar>>
     {
-        public BuiltinAvatarCollectionType(PlayTogetherDbContext db, IConfiguration config)
+        public BuiltinAvatarCollectionGraphType(PlayTogetherDbContext db, IConfiguration config)
         {
             Name = "AvatarCollection";
 
@@ -33,7 +33,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 }
             );
 
-            FieldAsync<ListGraphType<BuiltinAvatarType>>("items",
+            FieldAsync<ListGraphType<BuiltinAvatarGraphType>>("items",
                 resolve: async context => await context.Source.ToListAsync());
         }
     }

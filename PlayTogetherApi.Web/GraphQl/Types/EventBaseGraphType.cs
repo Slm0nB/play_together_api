@@ -11,10 +11,12 @@ namespace PlayTogetherApi.Web.GraphQl.Types
     /// <summary>
     /// This was originally made for the Event subscription, to be able to exclude "signups".  But we dropped that idea.
     /// </summary>
-    public class EventBaseType : ObjectGraphType<Event>
+    public class EventBaseGraphType : ObjectGraphType<Event>
     {
-        public EventBaseType(PlayTogetherDbContext db)
+        public EventBaseGraphType(PlayTogetherDbContext db)
         {
+            Name = "EventBase";
+
             Field("id", x => x.EventId, type: typeof(IdGraphType)).Description("Id property from the event object.");
             Field(x => x.CreatedDate, type: typeof(NonNullGraphType<DateTimeGraphType>)).Description("When the event was created.");
             Field<DateTimeGraphType>("startDate", resolve: context => context.Source.EventDate, description: "When the event starts.");
@@ -25,11 +27,11 @@ namespace PlayTogetherApi.Web.GraphQl.Types
             Field(x => x.FriendsOnly).Description("If the event is only visible to friends of the creator.");
             Field(x => x.CallToArms).Description("If the event is a call to arms.");
 
-            FieldAsync<UserType>("author",
+            FieldAsync<UserGraphType>("author",
                 resolve: async context => context.Source.CreatedByUser ?? await db.Users.FirstOrDefaultAsync(n => n.UserId == context.Source.CreatedByUserId)
             );
 
-            FieldAsync<GameType>("game",
+            FieldAsync<GameGraphType>("game",
                 resolve: async context => context.Source.Game ?? await db.Games.FirstOrDefaultAsync(n => n.GameId == context.Source.GameId)
             );
         }
