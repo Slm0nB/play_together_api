@@ -19,12 +19,12 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 
             Field("action", model => model.ActiveUserAction, type: typeof(UserRelationActionType)).Description("The action on the relation.");
 
-            Field<UserPreviewType>("sendingUser", resolve: context => context.Source.ActiveUser);
-            Field<UserPreviewType>("targetUser", resolve: context => context.Source.TargetUser);
-            Field<UserPreviewType>("otherUser", resolve: context => context.Source.ActiveUser.UserId == context.Source.SubscribingUserId ? context.Source.TargetUser : context.Source.ActiveUser);
+            Field<UserPreviewType>("sendingUser", resolve: context => context.Source.ActiveUser, description: "The user that triggered the action. This can be the subscriber (if excludeChangesFromCaller is false) or another user.");
+            Field<UserPreviewType>("targetUser", resolve: context => context.Source.TargetUser, description: "The user targetted by the action. This can be the subscriber or another user (if excludeChangesFromCaller is false).");
+            Field<UserPreviewType>("otherUser", resolve: context => context.Source.ActiveUser.UserId == context.Source.SubscribingUserId ? context.Source.TargetUser : context.Source.ActiveUser, description: "The sending or target user that is NOT the subscriber.");
 
-            Field<BooleanGraphType>("sentBySubscriber", resolve: context => context.Source.ActiveUser.UserId == context.Source.SubscribingUserId);
-            Field<UserRelationStatusType>("statusSubscriber", resolve: context => friendLogicService.GetStatusForUser(context.Source.Relation, context.Source.SubscribingUserId));
+            Field<BooleanGraphType>("sentBySubscriber", resolve: context => context.Source.ActiveUser.UserId == context.Source.SubscribingUserId, description: "If the relation-change was sent by the subscriber.");
+            Field<UserRelationStatusType>("statusSubscriber", resolve: context => friendLogicService.GetStatusForUser(context.Source.Relation, context.Source.SubscribingUserId), description: "The updated relation status for the subscriber");
         }
     }
 }
