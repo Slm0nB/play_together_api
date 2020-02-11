@@ -641,7 +641,9 @@ namespace PlayTogetherApi.Web.GraphQl
                         return null;
                     }
 
-                    var displayName = context.GetArgument<string>("displayName");
+                    bool wasChangedRelevantForSubscription = false;
+
+                    var displayName = context.GetArgument<string>("displayName")?.Trim();
                     if(!string.IsNullOrEmpty(displayName))
                     {
                         if (!ValidateDisplayName(displayName))
@@ -649,10 +651,14 @@ namespace PlayTogetherApi.Web.GraphQl
                             context.Errors.Add(new ExecutionError("Displayname too short."));
                             return null;
                         }
-                        editedUser.DisplayName = displayName;
+                        if (editedUser.DisplayName != displayName)
+                        {
+                            editedUser.DisplayName = displayName;
+                            wasChangedRelevantForSubscription = true;
+                        }
                     }
 
-                    var email = context.GetArgument<string>("email");
+                    var email = context.GetArgument<string>("email")?.Trim();
                     if(!string.IsNullOrEmpty(email))
                     {
                         if (!ValidateEmail(email))
@@ -674,7 +680,7 @@ namespace PlayTogetherApi.Web.GraphQl
                         editedUser.PasswordHash = authenticationService.CreatePasswordHash(password);
                     }
 
-                    var avatar = context.GetArgument<string>("avatar");
+                    var avatar = context.GetArgument<string>("avatar")?.Trim();
                     if (!string.IsNullOrEmpty(avatar))
                     {
                         if (!db.Avatars.Any(n => n.ImagePath == avatar))
@@ -684,12 +690,29 @@ namespace PlayTogetherApi.Web.GraphQl
                         else
                         {
                             // todo: here we might later add checks around premium-avatars and access rights
-                            editedUser.AvatarFilename = avatar;
+                            if (editedUser.AvatarFilename != avatar)
+                            {
+                                editedUser.AvatarFilename = avatar;
+                                wasChangedRelevantForSubscription = true;
+                            }
                         }
                     }
 
                     db.Users.Update(editedUser);
                     await db.SaveChangesAsync();
+
+                    if (wasChangedRelevantForSubscription)
+                    {
+                        var friends = await db.UserRelations
+                            .Where(relation => (relation.UserBId == userId || relation.UserAId == userId)) // todo: consider filtering out relations that are not friends or at least are blocked
+                            .ToArrayAsync();
+                        var observableModel = new UserChangedSubscriptionModel
+                        {
+                            ChangingUser = editedUser,
+                            FriendsOfChangingUser = friends
+                        };
+                        observables.UserChangeStream.OnNext(observableModel);
+                    }
 
                     return editedUser;
                 }
@@ -774,14 +797,14 @@ namespace PlayTogetherApi.Web.GraphQl
                         );
                     }
 
-                    var model = new UserRelationChangedModel
+                    var observableModel = new UserRelationChangedModel
                     {
                         Relation = relation,
                         ActiveUser = callingUser,
                         ActiveUserAction = action,
                         TargetUser = friendUser
                     };
-                    observables.UserRelationChangeStream.OnNext(model);
+                    observables.UserRelationChangeStream.OnNext(observableModel);
 
                     var result = new UserRelationExtModel
                     {

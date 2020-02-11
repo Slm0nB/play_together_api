@@ -145,6 +145,40 @@ namespace PlayTogetherApi.Web.GraphQl
                         .AsObservable();
                 })
             });
+
+
+            AddField(new EventStreamFieldType
+            {
+                Name = "user",
+                Description = "Changes to users. This only returns changed relevant to the authenticated user.",
+                Type = typeof(UserChangedGraphType),
+                Arguments = new QueryArguments(
+                    new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "token", Description = "Access-token. Because it currently can't be provided as a header for subscriptions." },
+                    new QueryArgument<BooleanGraphType> { Name = "excludeChangesFromCaller", Description = "Don't return changes that were triggered by the subscribing user.", DefaultValue = true }
+                ),
+                Resolver = new FuncFieldResolver<UserChangedSubscriptionModel>(context => context.Source as UserChangedSubscriptionModel),
+                Subscriber = new EventStreamResolver<UserChangedSubscriptionModel>(context =>
+                {
+                    var jwt = authenticationService.ValidateJwt(context.GetArgument<string>("token"));
+                    var userIdClaim = jwt?.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+                    if (!Guid.TryParse(userIdClaim, out var callingUserId))
+                    {
+                        context.Errors.Add(new ExecutionError("Unauthorized"));
+                        return null;
+                    }
+
+                    IObservable<UserChangedSubscriptionModel> observable = observables.UserChangeStream
+                        .Where(model => model.FriendsOfChangingUser.Any(rel => rel.UserAId == callingUserId || rel.UserBId == callingUserId));
+
+                    if (context.GetArgument<bool>("excludeChangesFromCaller"))
+                    {
+                        observable = observable.Where(rel => rel.ChangingUser.UserId != callingUserId);
+                    }
+
+                    return observable
+                        .AsObservable();
+                })
+            });
         }
     }
 }
