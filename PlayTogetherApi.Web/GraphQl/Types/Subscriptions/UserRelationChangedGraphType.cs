@@ -11,11 +11,11 @@ using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class UserRelationChangeGraphType : ObjectGraphType<UserRelationChangedExtModel>
+    public class UserRelationChangedGraphType : ObjectGraphType<UserRelationChangedExtModel>
     {
-        public UserRelationChangeGraphType(/*PlayTogetherDbContext db, */FriendLogicService friendLogicService)
+        public UserRelationChangedGraphType(/*PlayTogetherDbContext db, */FriendLogicService friendLogicService)
         {
-            Name = "UserRelationChange";
+            Name = "UserRelationChanged";
 
             Field("action", model => model.ActiveUserAction, type: typeof(UserRelationActionGraphType)).Description("The action on the relation.");
 

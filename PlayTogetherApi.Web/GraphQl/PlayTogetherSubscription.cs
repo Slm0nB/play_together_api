@@ -116,7 +116,7 @@ namespace PlayTogetherApi.Web.GraphQl
             {
                 Name = "friends",
                 Description = "Changes to the friendlist. This only returns changed relevant to the authenticated user.",
-                Type = typeof(UserRelationChangeGraphType),
+                Type = typeof(UserRelationChangedGraphType),
                 Arguments = new QueryArguments(
                     new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "token", Description = "Access-token. Because it currently can't be provided as a header for subscriptions." },
                     new QueryArgument<BooleanGraphType> { Name = "excludeChangesFromCaller", Description = "Don't return changes that were triggered by the subscribing user.", DefaultValue = true }
@@ -146,10 +146,9 @@ namespace PlayTogetherApi.Web.GraphQl
                 })
             });
 
-
             AddField(new EventStreamFieldType
             {
-                Name = "user",
+                Name = "users",
                 Description = "Changes to users. This only returns changed relevant to the authenticated user.",
                 Type = typeof(UserChangedGraphType),
                 Arguments = new QueryArguments(

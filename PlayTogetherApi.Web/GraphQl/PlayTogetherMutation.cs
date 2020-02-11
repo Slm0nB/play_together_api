@@ -256,7 +256,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.Events.Add(newEvent);
                     await db.SaveChangesAsync();
 
-                    observables.GameEventStream.OnNext(new EventExtModel
+                    observables.GameEventStream.OnNext(new EventChangedModel
                     {
                         Event = newEvent,
                         ChangingUser = callingUser,
@@ -352,7 +352,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.Events.Add(newEvent);
                     await db.SaveChangesAsync();
 
-                    observables.GameEventStream.OnNext(new EventExtModel
+                    observables.GameEventStream.OnNext(new EventChangedModel
                     {
                         Event = newEvent,
                         ChangingUser = user,
@@ -498,7 +498,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.Events.Update(editedEvent);
                     await db.SaveChangesAsync();
 
-                    observables.GameEventStream.OnNext(new EventExtModel
+                    observables.GameEventStream.OnNext(new EventChangedModel
                     {
                         Event = editedEvent,
                         ChangingUser = user,
@@ -549,7 +549,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.Events.Remove(dbEvent);
                     await db.SaveChangesAsync();
 
-                    observables.GameEventStream.OnNext(new EventExtModel
+                    observables.GameEventStream.OnNext(new EventChangedModel
                     {
                         Event = dbEvent,
                         ChangingUser = user,

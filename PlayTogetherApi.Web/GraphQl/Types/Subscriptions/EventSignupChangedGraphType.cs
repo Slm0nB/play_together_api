@@ -11,11 +11,11 @@ using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class EventSignupChangeGraphType : UserEventSignupGraphType
+    public class EventSignupChangedGraphType : UserEventSignupGraphType
     {
-        public EventSignupChangeGraphType(PlayTogetherDbContext db) : base(db)
+        public EventSignupChangedGraphType(PlayTogetherDbContext db) : base(db)
         {
-            Name = "EventSignupChange";
+            Name = "EventSignupChanged";
 
             // Doesn't need to do anything yet; just formally make it a different type than the raw signup
         }

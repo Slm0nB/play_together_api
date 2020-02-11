@@ -15,7 +15,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
     {
         public UserChangedGraphType()
         {
-            Name = "UserChange";
+            Name = "UserChanged";
 
             Field<UserPreviewGraphType>("user",
                 resolve: context => context.Source.ChangingUser

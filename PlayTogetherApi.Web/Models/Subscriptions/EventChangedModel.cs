@@ -9,7 +9,7 @@ namespace PlayTogetherApi.Web.Models
     /// <summary>
     /// The additional data primarily neeeded for the "Events" subscription.
     /// </summary>
-    public class EventExtModel
+    public class EventChangedModel
     {
         // Wrapped object
 

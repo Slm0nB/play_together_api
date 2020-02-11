@@ -11,11 +11,11 @@ using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
-    public class EventChangeGraphType : ObjectGraphType<EventExtModel>
+    public class EventChangedGraphType : ObjectGraphType<EventChangedModel>
     {
-        public EventChangeGraphType()
+        public EventChangedGraphType()
         {
-            Name = "EventChange";
+            Name = "EventChanged";
 
             Field<EventGraphType>("event",
                 resolve: context => context.Source.Event
