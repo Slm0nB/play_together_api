@@ -50,12 +50,12 @@ namespace PlayTogetherApi.Web.GraphQl
                 // todo: add arguments for filtering based on action
                 Name = "events",
                 Description = "Created, updated or deleted events. (The events themselves, not signups.)",
-                Type = typeof(EventChangeGraphType),
+                Type = typeof(EventChangedGraphType),
                 Arguments = new QueryArguments(
                     new QueryArgument<IdGraphType> { Name = "token", Description = "Access-token. Because it currently can't be provided as a header for subscriptions. This is required to get updates for friendsOnly events." }
                 ),
-                Resolver = new FuncFieldResolver<EventExtModel>(context => context.Source as EventExtModel),
-                Subscriber = new EventStreamResolver<EventExtModel>(context =>
+                Resolver = new FuncFieldResolver<EventChangedModel>(context => context.Source as EventChangedModel),
+                Subscriber = new EventStreamResolver<EventChangedModel>(context =>
                 {
                     Guid? userId = null;
                     if (context.HasArgument("token"))
@@ -78,7 +78,7 @@ namespace PlayTogetherApi.Web.GraphQl
             {
                 Name = "signups",
                 Description = "Users joining an event or updating their signup-status.",
-                Type = typeof(EventSignupChangeGraphType),
+                Type = typeof(EventSignupChangedGraphType),
                 Arguments = new QueryArguments(
                     new QueryArgument<IdGraphType> { Name = "owner", Description = "The ID of the user who created the event." },
                     new QueryArgument<IdGraphType> { Name = "user", Description = "The ID of the user joining or leaving the event." },
