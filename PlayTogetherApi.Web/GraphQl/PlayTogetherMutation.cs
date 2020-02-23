@@ -599,11 +599,20 @@ namespace PlayTogetherApi.Web.GraphQl
                         return null;
                     }
 
+                    var usedDisplayIds = await db.Users.Where(n => n.DisplayName == displayName).Select(n => n.DisplayId).Distinct().ToListAsync();
+                    if(usedDisplayIds.Count >= 9999)
+                    {
+                        context.Errors.Add(new ExecutionError("Too many users with this displayname."));
+                        return null;
+                    }
+                    var displayId = GetUniqueDisplayId(usedDisplayIds);
+
                     var passwordHash = authenticationService.CreatePasswordHash(password);
 
                     var newUser = new User
                     {
                         DisplayName = displayName,
+                        DisplayId = displayId,
                         Email = email,
                         PasswordHash = passwordHash
                     };
@@ -654,6 +663,18 @@ namespace PlayTogetherApi.Web.GraphQl
                         if (editedUser.DisplayName != displayName)
                         {
                             editedUser.DisplayName = displayName;
+
+                            var usedDisplayIds = await db.Users.Where(n => n.DisplayName == displayName).Select(n => n.DisplayId).Distinct().ToListAsync();
+                            if (usedDisplayIds.Count >= 9999)
+                            {
+                                context.Errors.Add(new ExecutionError("Too many users with this displayname."));
+                                return null;
+                            }
+                            if (usedDisplayIds.Contains(editedUser.DisplayId))
+                            {
+                                editedUser.DisplayId = GetUniqueDisplayId(usedDisplayIds);
+                            }
+
                             wasChangedRelevantForSubscription = true;
                         }
                     }
@@ -853,5 +874,22 @@ namespace PlayTogetherApi.Web.GraphQl
         static private bool ValidateDisplayName(string displayName) => displayName.Trim().Length >= 3;
         static private bool ValidatePassword(string password) => password.Trim().Length >= 3;
 
+        static private Random rnd = new Random();
+
+        static private int GetUniqueDisplayId(List<int> usedDisplayIds)
+        {
+            if (usedDisplayIds.Count >= 9999)
+                throw new ArgumentException("Too many users with same display name!");
+
+            var range = usedDisplayIds.Count >= 999 ? 9999 : 999;
+
+            while(true)
+            {
+                // this could obviously be optimized for when the list is long, but it's irrelevant now
+                var id = rnd.Next(101, range);
+                if (usedDisplayIds.Contains(id))
+                    return id;
+            }
+        }
     }
 }

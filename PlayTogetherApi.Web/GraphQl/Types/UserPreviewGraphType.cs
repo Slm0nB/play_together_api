@@ -18,7 +18,9 @@ namespace PlayTogetherApi.Web.GraphQl.Types
             Name = "UserPreview";
 
             Field("id", user => user.UserId, type: typeof(IdGraphType)).Description("Id property from the user object.");
+            Field<StringGraphType>("displayNameFull", resolve: context => context.Source.DisplayName + "#" + context.Source.DisplayId.ToString("D3"), description: "Full Displayname.");
             Field(user => user.DisplayName).Description("DisplayName property from the user object.");
+            Field(user => user.DisplayId).Description("DisplayId property from the user object.");
 
             Field<StringGraphType>("avatar",
                 arguments: new QueryArguments(

@@ -14,6 +14,8 @@ namespace PlayTogetherApi.Data
         [MinLength(5)]
         public string DisplayName { get; set; }
 
+        public int DisplayId { get; set; }
+
         public string Email { get; set; }
 
         public string PasswordHash { get; set; }

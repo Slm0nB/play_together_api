@@ -33,6 +33,10 @@ namespace PlayTogetherApi.Data
 
             modelBuilder.Entity<UserRelation>()
                 .HasKey(t => new { t.UserAId, t.UserBId });
+
+            modelBuilder.Entity<User>()
+                .HasIndex(t => new { t.DisplayName, t.DisplayId })
+                .IsUnique();
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
