@@ -887,7 +887,7 @@ namespace PlayTogetherApi.Web.GraphQl
             {
                 // this could obviously be optimized for when the list is long, but it's irrelevant now
                 var id = rnd.Next(101, range);
-                if (usedDisplayIds.Contains(id))
+                if (!usedDisplayIds.Contains(id))
                     return id;
             }
         }
