@@ -18,7 +18,15 @@ namespace PlayTogetherApi.Services
         }
 
         public async Task<UserStatisticsModel> GetOrBuildStatisticsForUser(PlayTogetherDbContext db, Guid userId)
-            => await UserStatisticsCache.GetOrAdd(userId, _ => new AsyncLazy<UserStatisticsModel>(() => BuildStatisticsForUserAsync(db, userId)));
+        {
+            var model = await UserStatisticsCache.GetOrAdd(userId, _ => new AsyncLazy<UserStatisticsModel>(() => BuildStatisticsForUserAsync(db, userId)));
+            if(model.ExpiresOn < DateTime.Now)
+            {
+                UserStatisticsCache.TryRemove(userId, out var _);
+                model = await UserStatisticsCache.GetOrAdd(userId, _ => new AsyncLazy<UserStatisticsModel>(() => BuildStatisticsForUserAsync(db, userId)));
+            }
+            return model;
+        }
 
         public async Task<UserStatisticsModel> BuildStatisticsForUserAsync(PlayTogetherDbContext db, Guid userId)
         {
