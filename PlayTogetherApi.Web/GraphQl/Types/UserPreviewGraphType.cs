@@ -42,7 +42,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 },
                 description: "Url of the avatar image."
             );
-                    }
+        }
 
         private string md5(string text)
         {

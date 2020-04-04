@@ -14,7 +14,7 @@ namespace PlayTogetherApi.Web.GraphQl
 {
     public class PlayTogetherMutation : ObjectGraphType
     {
-        public PlayTogetherMutation(PlayTogetherDbContext db, AuthenticationService authenticationService, ObservablesService observables, PushMessageService pushMessageService, FriendLogicService friendLogicService)
+        public PlayTogetherMutation(PlayTogetherDbContext db, AuthenticationService authenticationService, ObservablesService observables, PushMessageService pushMessageService, FriendLogicService friendLogicService, UserStatisticsService userStatisticsService)
         {
             Name = "Mutation";
 
@@ -79,6 +79,8 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     observables.UserEventSignupStream.OnNext(signup);
 
+                    userStatisticsService.InvalidateCache(userId); // todo: could update it instead
+
                     var _ = pushMessageService.PushMessageAsync(
                         "JoinEvent",
                         "A player has joined!",
@@ -129,6 +131,8 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     db.UserEventSignups.Remove(signup);
                     await db.SaveChangesAsync();
+
+                    userStatisticsService.InvalidateCache(userId); // todo: could update it instead
 
                     signup.Status = UserEventStatus.Cancelled;
                     observables.UserEventSignupStream.OnNext(signup);
@@ -184,6 +188,8 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     db.UserEventSignups.Update(signup);
                     await db.SaveChangesAsync();
+
+                    userStatisticsService.InvalidateCache(userId); // todo: could update it instead
 
                     observables.UserEventSignupStream.OnNext(signup);
 
@@ -266,6 +272,13 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     var friendIds = friendsOfChangingUser.Select(n => n.UserAId == callingUserId ? n.UserBId : n.UserAId).ToList();
                     var friendEmails = await db.Users.Where(n => friendIds.Contains(n.UserId)).Select(n => n.Email).ToListAsync();
+
+                    userStatisticsService.InvalidateCache(callingUserId); // todo: could update it instead
+                    foreach(var friendId in friendIds)
+                    {
+                        userStatisticsService.InvalidateCache(friendId); // todo: could update it instead
+                    }
+
                     foreach (var email in friendEmails)
                     {
                         _ = pushMessageService.PushMessageAsync(
@@ -351,6 +364,8 @@ namespace PlayTogetherApi.Web.GraphQl
                     };
                     db.Events.Add(newEvent);
                     await db.SaveChangesAsync();
+
+                    userStatisticsService.InvalidateCache(userId); // todo: could update it instead
 
                     observables.GameEventStream.OnNext(new EventChangedModel
                     {
@@ -498,6 +513,11 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.Events.Update(editedEvent);
                     await db.SaveChangesAsync();
 
+                    if(action.HasValue && action.Value.HasFlag(EventAction.EditedPeriod))
+                    {
+                        userStatisticsService.InvalidateCache(userId); // todo: could update it instead
+                    }
+
                     observables.GameEventStream.OnNext(new EventChangedModel
                     {
                         Event = editedEvent,
@@ -548,6 +568,8 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     db.Events.Remove(dbEvent);
                     await db.SaveChangesAsync();
+
+                    userStatisticsService.InvalidateCache(userId); // todo: could update it instead
 
                     observables.GameEventStream.OnNext(new EventChangedModel
                     {
