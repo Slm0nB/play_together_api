@@ -10,11 +10,53 @@ namespace PlayTogetherApi.Services
 {
     public class UserStatisticsService
     {
-        ConcurrentDictionary<Guid, AsyncLazy<UserStatisticsModel>> UserStatisticsCache = new ConcurrentDictionary<Guid, AsyncLazy<UserStatisticsModel>>();
+        private readonly ConcurrentDictionary<Guid, AsyncLazy<UserStatisticsModel>> UserStatisticsCache = new ConcurrentDictionary<Guid, AsyncLazy<UserStatisticsModel>>();
+        private readonly ObservablesService _observablesService;
+
+        public UserStatisticsService(ObservablesService observablesService)
+        {
+            _observablesService = observablesService;
+        }
 
         public void InvalidateCache(Guid userId)
         {
             UserStatisticsCache.TryRemove(userId, out var _);
+        }
+
+        public async Task UpdateStatisticsAsync(PlayTogetherDbContext db, Guid userId)
+        {
+            // todo: it's possibly to optimize this slightly, by letting the caller pass in a delegate that recalculates only the fields it knows were changed,
+            // but since this only happens when the user performs an action, I'm not concerned now.
+
+            var stream = _observablesService.GetUserStatisticsStream(userId, false);
+            if(stream == null)
+            {
+                InvalidateCache(userId);
+                return;
+            }
+
+            UserStatisticsModel oldModel = null;
+            if(UserStatisticsCache.TryGetValue(userId, out var oldModelTask))
+            {
+                oldModel = await oldModelTask;
+            }
+
+            var model = await BuildStatisticsForUserAsync(db, userId);
+            UserStatisticsCache[userId] = new AsyncLazy<UserStatisticsModel>(() => model);
+
+            if(oldModel != null)
+            {
+                var modelsAreIdentical = oldModel.ExpiresOn == model.ExpiresOn
+                    && oldModel.EventsCompletedTodayCount == model.EventsCompletedTodayCount
+                    && oldModel.EventsCompletedTotalCount == model.EventsCompletedTotalCount
+                    && oldModel.EventsCreatedTotalCount == model.EventsCreatedTotalCount
+                    && oldModel.FriendsCurrentCount == model.FriendsCurrentCount;
+
+                if (modelsAreIdentical)
+                    return;
+            }
+
+            stream.OnNext(model);
         }
 
         public async Task<UserStatisticsModel> GetOrBuildStatisticsForUser(PlayTogetherDbContext db, Guid userId)

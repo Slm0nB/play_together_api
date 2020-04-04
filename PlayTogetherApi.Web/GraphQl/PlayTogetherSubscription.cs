@@ -178,6 +178,32 @@ namespace PlayTogetherApi.Web.GraphQl
                         .AsObservable();
                 })
             });
+
+            AddField(new EventStreamFieldType
+            {
+                Name = "userStatistics",
+                Description = "Changes to the user statistics. This only returns changed relevant to the authenticated user.",
+                Type = typeof(UserStatisticsGraphType),
+                Arguments = new QueryArguments(
+                    new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "token", Description = "Access-token. Because it currently can't be provided as a header for subscriptions." }
+                ),
+                Resolver = new FuncFieldResolver<UserStatisticsModel>(context => context.Source as UserStatisticsModel),
+                Subscriber = new EventStreamResolver<UserStatisticsModel>(context =>
+                {
+                    var jwt = authenticationService.ValidateJwt(context.GetArgument<string>("token"));
+                    var userIdClaim = jwt?.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+                    if (!Guid.TryParse(userIdClaim, out var callingUserId))
+                    {
+                        context.Errors.Add(new ExecutionError("Unauthorized"));
+                        return null;
+                    }
+
+                    IObservable<UserStatisticsModel> observable = observables.GetUserStatisticsStream(callingUserId);
+
+                    return observable
+                        .AsObservable();
+                })
+            });
         }
     }
 }
