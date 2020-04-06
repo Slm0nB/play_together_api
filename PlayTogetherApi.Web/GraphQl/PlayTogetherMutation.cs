@@ -588,7 +588,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 arguments: new QueryArguments(
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "displayName" },
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "email" },
-                    new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "password" }
+                    new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "password" },
+                    new QueryArgument<TimeSpanSecondsGraphType> { Name = "utOffset" }
                 ),
                 resolve: async context =>
                 {
@@ -629,6 +630,17 @@ namespace PlayTogetherApi.Web.GraphQl
                     }
                     var displayId = GetUniqueDisplayId(usedDisplayIds);
 
+                    var utcOffset = TimeSpan.FromSeconds(0);
+                    if(context.HasArgument("utcOffset"))
+                    {
+                        utcOffset = context.GetArgument<TimeSpan>("utcOffset");
+                        if(utcOffset < -TimeSpan.FromHours(24) || utcOffset > TimeSpan.FromHours(24))
+                        {
+                            context.Errors.Add(new ExecutionError("UtcOffset larger than 24 hours."));
+                            return null;
+                        }
+                    }
+
                     var passwordHash = authenticationService.CreatePasswordHash(password);
 
                     var newUser = new User
@@ -636,7 +648,8 @@ namespace PlayTogetherApi.Web.GraphQl
                         DisplayName = displayName,
                         DisplayId = displayId,
                         Email = email,
-                        PasswordHash = passwordHash
+                        PasswordHash = passwordHash,
+                        UtcOffset = utcOffset
                     };
 
                     db.Users.Add(newUser);
@@ -653,7 +666,8 @@ namespace PlayTogetherApi.Web.GraphQl
                     new QueryArgument<StringGraphType> { Name = "displayName" },
                     new QueryArgument<StringGraphType> { Name = "email" },
                     new QueryArgument<StringGraphType> { Name = "password" },
-                    new QueryArgument<StringGraphType> { Name = "avatar", Description = "Filename of the new avatar image" }
+                    new QueryArgument<StringGraphType> { Name = "avatar", Description = "Filename of the new avatar image" },
+                    new QueryArgument<TimeSpanSecondsGraphType> { Name = "utOffset" }
                 ),
                 resolve: async context =>
                 {
@@ -738,6 +752,21 @@ namespace PlayTogetherApi.Web.GraphQl
                                 editedUser.AvatarFilename = avatar;
                                 wasChangedRelevantForSubscription = true;
                             }
+                        }
+                    }
+
+                    if (context.HasArgument("utcOffset"))
+                    {
+                        var utcOffset = context.GetArgument<TimeSpan>("utcOffset");
+                        if (utcOffset < -TimeSpan.FromHours(24) || utcOffset > TimeSpan.FromHours(24))
+                        {
+                            context.Errors.Add(new ExecutionError("UtcOffset larger than 24 hours."));
+                            return null;
+                        }
+                        if(utcOffset != editedUser.UtcOffset)
+                        {
+                            editedUser.UtcOffset = utcOffset;
+                            // todo: update to statistics subscription
                         }
                     }
 
