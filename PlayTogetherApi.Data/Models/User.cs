@@ -23,5 +23,7 @@ namespace PlayTogetherApi.Data
         public ICollection<UserEventSignup> Signups { get; } = new List<UserEventSignup>();
 
         public string AvatarFilename { get; set; }
+
+        public TimeSpan? UtcOffset { get; set; }
     }
 }
