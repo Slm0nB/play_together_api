@@ -25,7 +25,13 @@ namespace PlayTogetherApi.Data
 
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 
+        /// <summary>
+        /// Should be UTC.
+        /// </summary>
         public DateTime EventDate { get; set; }
+        /// <summary>
+        /// Should be UTC.
+        /// </summary>
         public DateTime EventEndDate { get; set; }
 
         public bool FriendsOnly { get; set; }
