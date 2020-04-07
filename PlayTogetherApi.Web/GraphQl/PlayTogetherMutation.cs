@@ -79,7 +79,7 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     observables.UserEventSignupStream.OnNext(signup);
 
-                    _ = userStatisticsService.UpdateStatisticsAsync(db, userId);
+                    _ = userStatisticsService.UpdateStatisticsAsync(db, userId, user);
 
                     _ = pushMessageService.PushMessageAsync(
                         "JoinEvent",
@@ -273,7 +273,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     var friendIds = friendsOfChangingUser.Select(n => n.UserAId == callingUserId ? n.UserBId : n.UserAId).ToList();
                     var friendEmails = await db.Users.Where(n => friendIds.Contains(n.UserId)).Select(n => n.Email).ToListAsync();
 
-                    _ = userStatisticsService.UpdateStatisticsAsync(db, callingUserId);
+                    _ = userStatisticsService.UpdateStatisticsAsync(db, callingUserId, callingUser);
                     foreach (var friendId in friendIds)
                     {
                         _ = userStatisticsService.UpdateStatisticsAsync(db, friendId);
@@ -365,7 +365,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.Events.Add(newEvent);
                     await db.SaveChangesAsync();
 
-                    _ = userStatisticsService.UpdateStatisticsAsync(db, userId);
+                    _ = userStatisticsService.UpdateStatisticsAsync(db, userId, user);
 
                     observables.GameEventStream.OnNext(new EventChangedModel
                     {
@@ -515,7 +515,7 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     if(action.HasValue && action.Value.HasFlag(EventAction.EditedPeriod))
                     {
-                        _ = userStatisticsService.UpdateStatisticsAsync(db, userId);
+                        _ = userStatisticsService.UpdateStatisticsAsync(db, userId, user);
                     }
 
                     observables.GameEventStream.OnNext(new EventChangedModel
@@ -569,7 +569,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.Events.Remove(dbEvent);
                     await db.SaveChangesAsync();
 
-                    _ = userStatisticsService.UpdateStatisticsAsync(db, userId);
+                    _ = userStatisticsService.UpdateStatisticsAsync(db, userId, user);
 
                     observables.GameEventStream.OnNext(new EventChangedModel
                     {
@@ -630,7 +630,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     }
                     var displayId = GetUniqueDisplayId(usedDisplayIds);
 
-                    var utcOffset = TimeSpan.FromSeconds(0);
+                    var utcOffset = TimeSpan.Zero;
                     if(context.HasArgument("utcOffset"))
                     {
                         utcOffset = context.GetArgument<TimeSpan>("utcOffset");
@@ -766,6 +766,7 @@ namespace PlayTogetherApi.Web.GraphQl
                         if(utcOffset != editedUser.UtcOffset)
                         {
                             editedUser.UtcOffset = utcOffset;
+
                             // todo: update to statistics subscription
                         }
                     }

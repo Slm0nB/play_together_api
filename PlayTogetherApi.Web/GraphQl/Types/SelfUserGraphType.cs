@@ -20,7 +20,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
             Field(user => user.Email).Description("Email property from the user object.");
 
             FieldAsync<UserStatisticsGraphType>("statistics", resolve: async context => {
-                var statistics = await statisticsService.GetOrBuildStatisticsForUser(db, context.Source.UserId);
+                var statistics = await statisticsService.GetOrBuildStatisticsForUserAsync(db, context.Source.UserId, context.Source);
                 return statistics;
             });
         }
