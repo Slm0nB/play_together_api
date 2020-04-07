@@ -761,9 +761,45 @@ namespace PlayTogetherApi.Web.GraphQl
                 }
             );
 
+            FieldAsync<BooleanGraphType>(
+                "deleteUser",
+                description: "Delete the logged-in user. This requires the caller to be authorized. (STILL A WORK IN PROGRESS)",
+                resolve: async context =>
+                {
+                    var principal = context.UserContext as ClaimsPrincipal;
+                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+                    if (!Guid.TryParse(userIdClaim, out var userId))
+                    {
+                        context.Errors.Add(new ExecutionError("Unauthorized"));
+                        return null;
+                    }
+
+                    var user = await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
+                    if (user == null)
+                    {
+                        context.Errors.Add(new ExecutionError("User not found."));
+                        return null;
+                    }
+
+                    //user.DisplayName = "DELETED"; // todo: this might cause conflict with with the constraint on displayname+displayid uniqueness
+                    user.Email = "DELETED";
+                    user.PasswordHash = "DELETED";
+                    db.Users.Update(user);
+
+                    var relations = await db.UserRelations.Where(n => n.UserAId == userId || n.UserBId == userId).ToArrayAsync();
+                    db.UserRelations.RemoveRange(relations);
+
+                    // todo: all the rest that needs to be done.
+
+                    await db.SaveChangesAsync();
+
+                    return true;
+                }
+            );
+
             FieldAsync<UserRelationGraphType>(
                 "changeUserRelation",
-                description: "Invite a user to your friendlist, or accept an invitation from a user.  This requires the caller to be authorized.",
+                description: "Invite a user to your friendlist, or accept an invitation from a user. This requires the caller to be authorized.",
                 arguments: new QueryArguments(
                     new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "user" },
                     new QueryArgument<NonNullGraphType<UserRelationActionGraphType>> { Name = "status" }
