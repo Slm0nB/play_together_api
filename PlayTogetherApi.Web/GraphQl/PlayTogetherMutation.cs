@@ -589,7 +589,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "displayName" },
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "email" },
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "password" },
-                    new QueryArgument<TimeSpanSecondsGraphType> { Name = "utOffset" }
+                    new QueryArgument<TimeSpanSecondsGraphType> { Name = "utcOffset" }
                 ),
                 resolve: async context =>
                 {
@@ -667,7 +667,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     new QueryArgument<StringGraphType> { Name = "email" },
                     new QueryArgument<StringGraphType> { Name = "password" },
                     new QueryArgument<StringGraphType> { Name = "avatar", Description = "Filename of the new avatar image" },
-                    new QueryArgument<TimeSpanSecondsGraphType> { Name = "utOffset" }
+                    new QueryArgument<TimeSpanSecondsGraphType> { Name = "utcOffset" }
                 ),
                 resolve: async context =>
                 {
