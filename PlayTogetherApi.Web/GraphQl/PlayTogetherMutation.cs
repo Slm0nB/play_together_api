@@ -589,7 +589,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "displayName" },
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "email" },
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "password" },
-                    new QueryArgument<TimeSpanSecondsGraphType> { Name = "utcOffset" }
+                    new QueryArgument<IntGraphType> { Name = "utcOffset", Description = "UTC offset in seconds" }
                 ),
                 resolve: async context =>
                 {
@@ -633,7 +633,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     var utcOffset = TimeSpan.Zero;
                     if(context.HasArgument("utcOffset"))
                     {
-                        utcOffset = context.GetArgument<TimeSpan>("utcOffset");
+                        utcOffset = TimeSpan.FromSeconds(context.GetArgument<int>("utcOffset"));
                         if(utcOffset < -TimeSpan.FromHours(24) || utcOffset > TimeSpan.FromHours(24))
                         {
                             context.Errors.Add(new ExecutionError("UtcOffset larger than 24 hours."));
@@ -667,7 +667,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     new QueryArgument<StringGraphType> { Name = "email" },
                     new QueryArgument<StringGraphType> { Name = "password" },
                     new QueryArgument<StringGraphType> { Name = "avatar", Description = "Filename of the new avatar image" },
-                    new QueryArgument<TimeSpanSecondsGraphType> { Name = "utcOffset" }
+                    new QueryArgument<IntGraphType> { Name = "utcOffset", Description = "UTC offset in seconds" }
                 ),
                 resolve: async context =>
                 {
@@ -757,7 +757,7 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     if (context.HasArgument("utcOffset"))
                     {
-                        var utcOffset = context.GetArgument<TimeSpan>("utcOffset");
+                        var utcOffset = TimeSpan.FromSeconds(context.GetArgument<int>("utcOffset"));
                         if (utcOffset < -TimeSpan.FromHours(24) || utcOffset > TimeSpan.FromHours(24))
                         {
                             context.Errors.Add(new ExecutionError("UtcOffset larger than 24 hours."));

@@ -22,7 +22,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
             Field(user => user.DisplayName).Description("DisplayName property from the user object.");
             Field(user => user.DisplayId).Description("DisplayId property from the user object.");
 
-            Field<TimeSpanSecondsGraphType>("utcOffset", resolve: context => context.Source.UtcOffset ?? TimeSpan.Zero, description: "UTC offset in seconds.");
+            Field<IntGraphType>("utcOffset", resolve: context => context.Source.UtcOffset.HasValue ? context.Source.UtcOffset.Value.TotalSeconds : 0, description: "UTC offset in seconds.");
 
             Field<StringGraphType>("avatar",
                 arguments: new QueryArguments(
