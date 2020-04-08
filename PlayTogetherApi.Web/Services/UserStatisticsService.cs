@@ -49,6 +49,8 @@ namespace PlayTogetherApi.Services
                 var modelsAreIdentical = oldModel.ExpiresOn == model.ExpiresOn
                     && oldModel.EventsCompletedTodayCount == model.EventsCompletedTodayCount
                     && oldModel.EventsCompletedTotalCount == model.EventsCompletedTotalCount
+                    && oldModel.EventsPendingTodayCount == model.EventsPendingTodayCount
+                    && oldModel.EventsPendingTotalCount == model.EventsPendingTotalCount
                     && oldModel.EventsCreatedTotalCount == model.EventsCreatedTotalCount
                     && oldModel.FriendsCurrentCount == model.FriendsCurrentCount;
 
@@ -102,6 +104,12 @@ namespace PlayTogetherApi.Services
                                           + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate < userNow).CountAsync(),
                 EventsCompletedTodayCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate > userToday && n.Event.EventEndDate < userNow).CountAsync()
                                           + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate > userToday && n.EventEndDate < userNow).CountAsync(),
+
+                EventsPendingTotalCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate > userNow).CountAsync()
+                                          + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate > userNow).CountAsync(),
+
+                EventsPendingTodayCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate < userTomorrow && n.Event.EventEndDate > userNow).CountAsync()
+                                          + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate < userTomorrow && n.EventEndDate > userNow).CountAsync(),
             };
 
             return model;

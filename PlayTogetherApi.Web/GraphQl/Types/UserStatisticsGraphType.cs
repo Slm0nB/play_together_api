@@ -23,6 +23,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
             Field("eventsCreatedTotalCount", user => user.EventsCreatedTotalCount, type: typeof(NonNullGraphType<IntGraphType>));
             Field("eventsCompletedTodayCount", user => user.EventsCompletedTodayCount, type: typeof(NonNullGraphType<IntGraphType>));
             Field("eventsCompletedTotalCount", user => user.EventsCompletedTotalCount, type: typeof(NonNullGraphType<IntGraphType>));
+            Field("eventsPendingTodayCount", user => user.EventsPendingTodayCount, type: typeof(NonNullGraphType<IntGraphType>));
+            Field("eventsPendingTotalCount", user => user.EventsPendingTotalCount, type: typeof(NonNullGraphType<IntGraphType>));
         }
     }
 }

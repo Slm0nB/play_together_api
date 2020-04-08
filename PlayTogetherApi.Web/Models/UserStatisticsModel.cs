@@ -15,6 +15,8 @@ namespace PlayTogetherApi.Web.Models
         public int EventsCreatedTotalCount;
         public int EventsCompletedTodayCount;
         public int EventsCompletedTotalCount;
+        public int EventsPendingTodayCount;
+        public int EventsPendingTotalCount;
 
     }
 }
