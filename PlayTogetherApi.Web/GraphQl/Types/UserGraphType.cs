@@ -19,24 +19,43 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 
             Field<EventCollectionGraphType>("events",
                 arguments: new QueryArguments(
-                   new QueryArgument<DateTimeGraphType> { Name = "beforeDate", Description = "Event occurs before or on this datetime." },
-                   new QueryArgument<DateTimeGraphType> { Name = "afterDate", Description = "Event occurs on or after this datetime." },
+                   new QueryArgument<DateTimeGraphType> { Name = "startsBeforeDate", Description = "Event starts before or on this datetime." },
+                   new QueryArgument<DateTimeGraphType> { Name = "startsAfterDate", Description = "Event starts on or after this datetime." },
+                   new QueryArgument<DateTimeGraphType> { Name = "endsBeforeDate", Description = "Event ends before or on this datetime." },
+                   new QueryArgument<DateTimeGraphType> { Name = "endsAfterDate", Description = "Event ends on or after this datetime. If no start/end arguments are given, this default to 'now'." },
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many items to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many items to return." }
                 ),
                 resolve: context => {
                     var query = db.Events.Where(n => n.CreatedByUserId == context.Source.UserId);
 
-                    var afterDate = context.GetArgument<DateTime>("afterDate");
-                    if (afterDate != default(DateTime))
+                    bool dateWasGiven = false;
+                    var startsBeforeDate = context.GetArgument<DateTime>("startsBeforeDate");
+                    if (startsBeforeDate != default(DateTime))
                     {
-                        query = query.Where(n => n.EventEndDate >= afterDate);
+                        dateWasGiven = true;
+                        query = query.Where(n => n.EventDate <= startsBeforeDate);
                     }
-
-                    var beforeDate = context.GetArgument<DateTime>("beforeDate");
-                    if (beforeDate != default(DateTime))
+                    var startsAfterDate = context.GetArgument<DateTime>("startsAfterDate");
+                    if (startsAfterDate != default(DateTime))
                     {
-                        query = query.Where(n => n.EventDate <= beforeDate);
+                        dateWasGiven = true;
+                        query = query.Where(n => n.EventDate >= startsAfterDate);
+                    }
+                    var endsBeforeDate = context.GetArgument<DateTime>("endsBeforeDate");
+                    if (endsBeforeDate != default(DateTime))
+                    {
+                        dateWasGiven = true;
+                        query = query.Where(n => n.EventEndDate <= endsBeforeDate);
+                    }
+                    var endsAfterDate = context.GetArgument<DateTime>("endsAfterDate");
+                    if (endsAfterDate == default(DateTime) && !dateWasGiven)
+                    {
+                        endsAfterDate = DateTime.UtcNow;
+                    }
+                    if (endsAfterDate != default(DateTime))
+                    {
+                        query = query.Where(n => n.EventEndDate >= endsAfterDate);
                     }
 
                     var skip = context.GetArgument<int>("skip");
@@ -61,8 +80,10 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 
             Field<UserEventSignupCollectionGraphType>("signups",
                 arguments: new QueryArguments(
-                   new QueryArgument<DateTimeGraphType> { Name = "beforeDate", Description = "Event occurs before or on this datetime." },
-                   new QueryArgument<DateTimeGraphType> { Name = "afterDate", Description = "Event occurs on or after this datetime." },
+                   new QueryArgument<DateTimeGraphType> { Name = "startsBeforeDate", Description = "Event starts before or on this datetime." },
+                   new QueryArgument<DateTimeGraphType> { Name = "startsAfterDate", Description = "Event starts on or after this datetime." },
+                   new QueryArgument<DateTimeGraphType> { Name = "endsBeforeDate", Description = "Event ends before or on this datetime." },
+                   new QueryArgument<DateTimeGraphType> { Name = "endsAfterDate", Description = "Event ends on or after this datetime. If no start/end arguments are given, this default to 'now'." },
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many items to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many items to return." }
                 ),
@@ -74,16 +95,33 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                         .Include(n => n.Event)
                         .OrderBy(n => n.SignupDate);
 
-                    var afterDate = context.GetArgument<DateTime>("afterDate");
-                    if (afterDate != default(DateTime))
+                    bool dateWasGiven = false;
+                    var startsBeforeDate = context.GetArgument<DateTime>("startsBeforeDate");
+                    if (startsBeforeDate != default(DateTime))
                     {
-                        signups = signups.Where(n => n.Event.EventEndDate >= afterDate);
+                        dateWasGiven = true;
+                        signups = signups.Where(n => n.Event.EventDate <= startsBeforeDate);
                     }
-
-                    var beforeDate = context.GetArgument<DateTime>("beforeDate");
-                    if (beforeDate != default(DateTime))
+                    var startsAfterDate = context.GetArgument<DateTime>("startsAfterDate");
+                    if (startsAfterDate != default(DateTime))
                     {
-                        signups = signups.Where(n => n.Event.EventDate <= beforeDate);
+                        dateWasGiven = true;
+                        signups = signups.Where(n => n.Event.EventDate >= startsAfterDate);
+                    }
+                    var endsBeforeDate = context.GetArgument<DateTime>("endsBeforeDate");
+                    if (endsBeforeDate != default(DateTime))
+                    {
+                        dateWasGiven = true;
+                        signups = signups.Where(n => n.Event.EventEndDate <= endsBeforeDate);
+                    }
+                    var endsAfterDate = context.GetArgument<DateTime>("endsAfterDate");
+                    if (endsAfterDate == default(DateTime) && !dateWasGiven)
+                    {
+                        endsAfterDate = DateTime.UtcNow;
+                    }
+                    if (endsAfterDate != default(DateTime))
+                    {
+                        signups = signups.Where(n => n.Event.EventEndDate >= endsAfterDate);
                     }
 
                     var skip = context.GetArgument<int>("skip");
