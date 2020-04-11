@@ -28,6 +28,7 @@ namespace PlayTogetherApi.Web.GraphQl
 
                    new QueryArgument<BooleanGraphType> { Name = "onlyPrivate", Description = "Only show events that are friends-only." },
                    new QueryArgument<BooleanGraphType> { Name = "onlyByFriends", Description = "Only show events that are created by friends. This requires the caller to be authorized." },
+                   new QueryArgument<ListGraphType<NonNullGraphType<IdGraphType>>> { Name = "onlyByUsers", Description = "Only show events created by these users." },
 
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many events to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return. Maximum 100.", DefaultValue = 100 }
@@ -117,6 +118,19 @@ namespace PlayTogetherApi.Web.GraphQl
                        if (onlyByFriends && friendIds != null)
                        {
                            query = query.Where(n => friendIds.Contains(n.CreatedByUserId));
+                       }
+                   }
+
+
+                   if (context.HasArgument("onlyByUsers"))
+                   {
+                       var onlyByUsers = context.GetArgument<Guid[]>("onlyByUsers");
+                       if (onlyByUsers != null && onlyByUsers.Any())
+                       {
+                           var first = onlyByUsers.First();
+                           query = onlyByUsers.Count() == 1
+                                    ? query.Where(n => n.CreatedByUserId == first)
+                                    : query.Where(n => onlyByUsers.Contains(n.CreatedByUserId));
                        }
                    }
 
