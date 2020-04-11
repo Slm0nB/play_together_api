@@ -25,11 +25,10 @@ namespace PlayTogetherApi.Web.GraphQl
                    new QueryArgument<DateTimeGraphType> { Name = "startsAfterDate", Description = "Event starts on or after this datetime." },
                    new QueryArgument<DateTimeGraphType> { Name = "endsBeforeDate", Description = "Event ends before or on this datetime." },
                    new QueryArgument<DateTimeGraphType> { Name = "endsAfterDate", Description = "Event ends on or after this datetime. If no start/end arguments are given, this default to 'now'." },
-
                    new QueryArgument<BooleanGraphType> { Name = "onlyPrivate", Description = "Only show events that are friends-only." },
                    new QueryArgument<BooleanGraphType> { Name = "onlyByFriends", Description = "Only show events that are created by friends. This requires the caller to be authorized." },
                    new QueryArgument<ListGraphType<NonNullGraphType<IdGraphType>>> { Name = "onlyByUsers", Description = "Only show events created by these users." },
-
+                   new QueryArgument<ListGraphType<NonNullGraphType<IdGraphType>>> { Name = "onlyGames", Description = "Only show events for these games." },
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many events to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return. Maximum 100.", DefaultValue = 100 }
                 ),
@@ -133,6 +132,20 @@ namespace PlayTogetherApi.Web.GraphQl
                                     : query.Where(n => onlyByUsers.Contains(n.CreatedByUserId));
                        }
                    }
+
+
+                   if (context.HasArgument("onlyGames"))
+                   {
+                       var onlyGames = context.GetArgument<Guid[]>("onlyGames");
+                       if (onlyGames != null && onlyGames.Any())
+                       {
+                           var first = onlyGames.First();
+                           query = onlyGames.Count() == 1
+                                    ? query.Where(n => n.GameId == first)
+                                    : query.Where(n => n.GameId.HasValue && onlyGames.Contains(n.GameId.Value));
+                       }
+                   }
+
 
 
                    var skip = context.GetArgument<int>("skip");
