@@ -74,45 +74,52 @@ namespace PlayTogetherApi.Services
 
         public async Task<UserStatisticsModel> BuildStatisticsForUserAsync(PlayTogetherDbContext db, Guid userId, User user = null)
         {
-            user = user ?? await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
-
-            var utcOffset = user.UtcOffset ?? TimeSpan.Zero;
-            var userNow = DateTime.UtcNow + utcOffset;
-            var userToday = userNow - new TimeSpan(0, userNow.Hour, userNow.Minute, userNow.Second, userNow.Millisecond);
-            var userTomorrow = userToday.AddDays(1);
-
-            DateTime? expiration = null;
-            var nextCreatedEvent = await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate > userNow).OrderBy(n => n.EventEndDate).FirstOrDefaultAsync();
-            expiration = nextCreatedEvent?.EventEndDate;
-            var nextSignupEvent = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate > userNow).OrderBy(n => n.Event.EventEndDate).Select(n => n.Event).FirstOrDefaultAsync();
-            if(nextSignupEvent != null && (!expiration.HasValue || expiration > nextSignupEvent.EventEndDate))
+            try
             {
-                expiration = nextSignupEvent.EventEndDate;
+                user = user ?? await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
+
+                var utcOffset = user.UtcOffset ?? TimeSpan.Zero;
+                var userNow = DateTime.UtcNow + utcOffset;
+                var userToday = userNow - new TimeSpan(0, userNow.Hour, userNow.Minute, userNow.Second, userNow.Millisecond);
+                var userTomorrow = userToday.AddDays(1);
+
+                DateTime? expiration = null;
+                var nextCreatedEvent = await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate > userNow).OrderBy(n => n.EventEndDate).FirstOrDefaultAsync();
+                expiration = nextCreatedEvent?.EventEndDate;
+                var nextSignupEvent = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate > userNow).OrderBy(n => n.Event.EventEndDate).Select(n => n.Event).FirstOrDefaultAsync();
+                if (nextSignupEvent != null && (!expiration.HasValue || expiration > nextSignupEvent.EventEndDate))
+                {
+                    expiration = nextSignupEvent.EventEndDate;
+                }
+                if (!expiration.HasValue || expiration > userTomorrow)
+                {
+                    expiration = userTomorrow;
+                }
+
+                var model = new UserStatisticsModel
+                {
+                    UserId = userId,
+                    ExpiresOn = expiration.Value,
+                    FriendsCurrentCount = await db.UserRelations.Where(n => n.Status == FriendLogicService.Relation_MutualFriends && (n.UserAId == userId || n.UserBId == userId)).CountAsync(),
+                    EventsCreatedTotalCount = await db.Events.Where(n => n.CreatedByUserId == userId).CountAsync(),
+                    EventsCompletedTotalCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate < userNow).CountAsync()
+                                              + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate < userNow).CountAsync(),
+                    EventsCompletedTodayCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate > userToday && n.Event.EventEndDate < userNow).CountAsync()
+                                              + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate > userToday && n.EventEndDate < userNow).CountAsync(),
+
+                    EventsPendingTotalCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate > userNow).CountAsync()
+                                              + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate > userNow).CountAsync(),
+
+                    EventsPendingTodayCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate < userTomorrow && n.Event.EventEndDate > userNow).CountAsync()
+                                              + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate < userTomorrow && n.EventEndDate > userNow).CountAsync(),
+                };
+
+                return model;
             }
-            if(!expiration.HasValue || expiration > userTomorrow)
+            catch(Exception ex)
             {
-                expiration = userTomorrow;
+                return null;
             }
-
-            var model = new UserStatisticsModel
-            {
-                UserId = userId,
-                ExpiresOn = expiration.Value,
-                FriendsCurrentCount = await db.UserRelations.Where(n => n.Status == FriendLogicService.Relation_MutualFriends && (n.UserAId == userId || n.UserBId == userId)).CountAsync(),
-                EventsCreatedTotalCount = await db.Events.Where(n => n.CreatedByUserId == userId).CountAsync(),
-                EventsCompletedTotalCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate < userNow).CountAsync()
-                                          + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate < userNow).CountAsync(),
-                EventsCompletedTodayCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate > userToday && n.Event.EventEndDate < userNow).CountAsync()
-                                          + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate > userToday && n.EventEndDate < userNow).CountAsync(),
-
-                EventsPendingTotalCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate > userNow).CountAsync()
-                                          + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate > userNow).CountAsync(),
-
-                EventsPendingTodayCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate < userTomorrow && n.Event.EventEndDate > userNow).CountAsync()
-                                          + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate < userTomorrow && n.EventEndDate > userNow).CountAsync(),
-            };
-
-            return model;
         }
     }
 }

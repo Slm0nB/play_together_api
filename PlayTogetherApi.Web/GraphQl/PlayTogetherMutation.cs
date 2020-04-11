@@ -79,7 +79,7 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     observables.UserEventSignupStream.OnNext(signup);
 
-                    _ = userStatisticsService.UpdateStatisticsAsync(db, userId, user);
+                    await userStatisticsService.UpdateStatisticsAsync(db, userId, user);
 
                     _ = pushMessageService.PushMessageAsync(
                         "JoinEvent",
@@ -132,10 +132,10 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.UserEventSignups.Remove(signup);
                     await db.SaveChangesAsync();
 
-                    _ = userStatisticsService.UpdateStatisticsAsync(db, userId);
-
                     signup.Status = UserEventStatus.Cancelled;
                     observables.UserEventSignupStream.OnNext(signup);
+
+                    await userStatisticsService.UpdateStatisticsAsync(db, userId);
 
                     return true;
                 }
@@ -189,9 +189,9 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.UserEventSignups.Update(signup);
                     await db.SaveChangesAsync();
 
-                    _ = userStatisticsService.UpdateStatisticsAsync(db, userId);
-
                     observables.UserEventSignupStream.OnNext(signup);
+
+                    await userStatisticsService.UpdateStatisticsAsync(db, userId);
 
                     // todo: if the new status was AcceptedInvitation, maybe push a message to the owner of the event?
 
@@ -273,10 +273,10 @@ namespace PlayTogetherApi.Web.GraphQl
                     var friendIds = friendsOfChangingUser.Select(n => n.UserAId == callingUserId ? n.UserBId : n.UserAId).ToList();
                     var friendEmails = await db.Users.Where(n => friendIds.Contains(n.UserId)).Select(n => n.Email).ToListAsync();
 
-                    _ = userStatisticsService.UpdateStatisticsAsync(db, callingUserId, callingUser);
+                    await userStatisticsService.UpdateStatisticsAsync(db, callingUserId, callingUser);
                     foreach (var friendId in friendIds)
                     {
-                        _ = userStatisticsService.UpdateStatisticsAsync(db, friendId);
+                        await userStatisticsService.UpdateStatisticsAsync(db, friendId);
                     }
 
                     foreach (var email in friendEmails)
@@ -365,8 +365,6 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.Events.Add(newEvent);
                     await db.SaveChangesAsync();
 
-                    _ = userStatisticsService.UpdateStatisticsAsync(db, userId, user);
-
                     observables.GameEventStream.OnNext(new EventChangedModel
                     {
                         Event = newEvent,
@@ -374,6 +372,8 @@ namespace PlayTogetherApi.Web.GraphQl
                         FriendsOfChangingUser = !newEvent.FriendsOnly ? null : await db.UserRelations.Where(n => n.Status == FriendLogicService.Relation_MutualFriends && (n.UserAId == user.UserId || n.UserBId == user.UserId)).ToArrayAsync(),
                         Action = EventAction.Created,
                     }); ;
+
+                    await userStatisticsService.UpdateStatisticsAsync(db, userId, user);
 
                     return newEvent;
                 }
@@ -513,11 +513,6 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.Events.Update(editedEvent);
                     await db.SaveChangesAsync();
 
-                    if(action.HasValue && action.Value.HasFlag(EventAction.EditedPeriod))
-                    {
-                        _ = userStatisticsService.UpdateStatisticsAsync(db, userId, user);
-                    }
-
                     observables.GameEventStream.OnNext(new EventChangedModel
                     {
                         Event = editedEvent,
@@ -525,6 +520,11 @@ namespace PlayTogetherApi.Web.GraphQl
                         FriendsOfChangingUser = !editedEvent.FriendsOnly ? null : await db.UserRelations.Where(n => n.Status == FriendLogicService.Relation_MutualFriends && (n.UserAId == user.UserId || n.UserBId == user.UserId)).ToArrayAsync(),
                         Action = action
                     });
+
+                    if (action.HasValue && action.Value.HasFlag(EventAction.EditedPeriod))
+                    {
+                        await userStatisticsService.UpdateStatisticsAsync(db, userId, user);
+                    }
 
                     return editedEvent;
                 }
@@ -569,14 +569,14 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.Events.Remove(dbEvent);
                     await db.SaveChangesAsync();
 
-                    _ = userStatisticsService.UpdateStatisticsAsync(db, userId, user);
-
                     observables.GameEventStream.OnNext(new EventChangedModel
                     {
                         Event = dbEvent,
                         ChangingUser = user,
                         Action = EventAction.Deleted
                     });
+
+                    await userStatisticsService.UpdateStatisticsAsync(db, userId, user);
 
                     return true;
                 }
