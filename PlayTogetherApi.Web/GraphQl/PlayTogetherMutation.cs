@@ -915,6 +915,9 @@ namespace PlayTogetherApi.Web.GraphQl
                     };
                     observables.UserRelationChangeStream.OnNext(observableModel);
 
+                    await userStatisticsService.UpdateStatisticsAsync(db, callingUser.UserId, callingUser);
+                    await userStatisticsService.UpdateStatisticsAsync(db, friendUser.UserId, friendUser);
+
                     var result = new UserRelationExtModel
                     {
                         Relation = relation,
