@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +27,7 @@ namespace PlayTogetherApi.Web.GraphQl
                    new QueryArgument<DateTimeGraphType> { Name = "endsAfterDate", Description = "Event ends on or after this datetime. If no start/end arguments are given, this default to 'now'." },
 
                    new QueryArgument<BooleanGraphType> { Name = "onlyPrivate", Description = "Only show events that are friends-only." },
+                   new QueryArgument<BooleanGraphType> { Name = "onlyByFriends", Description = "Only show events that are created by friends. This requires the caller to be authorized." },
 
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many events to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return. Maximum 100.", DefaultValue = 100 }
@@ -34,26 +36,21 @@ namespace PlayTogetherApi.Web.GraphQl
                {
                    IQueryable<Event> query = db.Events;
 
+                   List<UserRelation> friends = null;
+                   List<Guid> friendIds = null;
                    var principal = context.UserContext as ClaimsPrincipal;
                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
                    if (Guid.TryParse(userIdClaim, out var userId))
                    {
                        // Authenticated users get an additional criteria to include friendsonly-events
-                       var friends = await db.UserRelations.Where(
+                       friends = await db.UserRelations.Where(
                            rel => rel.Status == (UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended) &&
                             (rel.UserAId == userId || rel.UserBId == userId))
                            .ToListAsync();
-                       var friendIds = friends.Select(rel => rel.UserAId == userId ? rel.UserBId : rel.UserAId).ToList();
+                       friendIds = friends.Select(rel => rel.UserAId == userId ? rel.UserBId : rel.UserAId).ToList();
 
                        query = query.Where(n => !n.FriendsOnly || n.CreatedByUserId == userId || friendIds.Contains(n.CreatedByUserId));
                    }
-                   //{
-                   //    // Authenticated users get an additional criteria to include friendsonly-events
-                   //    query = query.Where(n => !n.FriendsOnly || n.CreatedByUserId == userId || db.UserRelations.Any(
-                   //        rel => rel.Status == (UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended) &&
-                   //         ((rel.UserAId == n.CreatedByUserId && rel.UserBId == userId) || (rel.UserAId == userId && rel.UserBId == n.CreatedByUserId))
-                   //     ));
-                   //}
                    else
                    {
                        // Unauthenticated users never see friendsonly-events
@@ -110,6 +107,16 @@ namespace PlayTogetherApi.Web.GraphQl
                        if (onlyPrivate)
                        {
                            query = query.Where(n => n.FriendsOnly == true);
+                       }
+                   }
+
+
+                   if (context.HasArgument("onlyByFriends"))
+                   {
+                       var onlyByFriends = context.GetArgument<bool>("onlyByFriends");
+                       if (onlyByFriends && friendIds != null)
+                       {
+                           query = query.Where(n => friendIds.Contains(n.CreatedByUserId));
                        }
                    }
 
