@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,11 +14,12 @@ using Newtonsoft.Json;
 using GraphQL;
 using GraphQL.Server;
 using GraphQL.Server.Ui.Playground;
+using ElastiLog;
+using ElastiLog.Middleware;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.GraphQl;
 using PlayTogetherApi.Services;
-using ElastiLog;
-using ElastiLog.Middleware;
+using PlayTogetherApi.Web.Services;
 
 namespace PlayTogetherApi.Web
 {
@@ -97,6 +94,8 @@ namespace PlayTogetherApi.Web
                 .AddJsonOptions(options => options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore);
 
             services.AddElastiLog();
+
+            services.AddHostedService<StatisticsUpdateScheduler>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

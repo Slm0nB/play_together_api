@@ -23,6 +23,28 @@ namespace PlayTogetherApi.Services
             UserStatisticsCache.TryRemove(userId, out var _);
         }
 
+        public async Task UpdateExpiredStatisticsAsync(PlayTogetherDbContext db)
+        {
+            var userIds = _observablesService.UserStatisticsStreams.Keys.ToArray();
+
+            foreach(var userId in userIds)
+            {
+                if (UserStatisticsCache.TryGetValue(userId, out var oldModelTask))
+                {
+                    var oldModel = await oldModelTask;
+                    if(oldModel.ExpiresOn > DateTime.UtcNow)
+                    {
+                        continue; // its not expired
+                    }
+                }
+
+                var model = await BuildStatisticsForUserAsync(db, userId);
+                UserStatisticsCache[userId] = new AsyncLazy<UserStatisticsModel>(() => model);
+                var stream = _observablesService.GetUserStatisticsStream(userId, false);
+                stream?.OnNext(model);
+            }
+        }
+
         public async Task UpdateStatisticsAsync(PlayTogetherDbContext db, Guid userId, User user = null)
         {
             // todo: it's possibly to optimize this slightly, by letting the caller pass in a delegate that recalculates only the fields it knows were changed,
@@ -79,27 +101,14 @@ namespace PlayTogetherApi.Services
                 user = user ?? await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
 
                 var utcOffset = user.UtcOffset ?? TimeSpan.Zero;
-                var userNow = DateTime.UtcNow + utcOffset;
+                var utcNow = DateTime.UtcNow;
+                var userNow = utcNow + utcOffset;
                 var userToday = userNow - new TimeSpan(0, userNow.Hour, userNow.Minute, userNow.Second, userNow.Millisecond);
                 var userTomorrow = userToday.AddDays(1);
-
-                DateTime? expiration = null;
-                var nextCreatedEvent = await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate > userNow).OrderBy(n => n.EventEndDate).FirstOrDefaultAsync();
-                expiration = nextCreatedEvent?.EventEndDate;
-                var nextSignupEvent = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate > userNow).OrderBy(n => n.Event.EventEndDate).Select(n => n.Event).FirstOrDefaultAsync();
-                if (nextSignupEvent != null && (!expiration.HasValue || expiration > nextSignupEvent.EventEndDate))
-                {
-                    expiration = nextSignupEvent.EventEndDate;
-                }
-                if (!expiration.HasValue || expiration > userTomorrow)
-                {
-                    expiration = userTomorrow;
-                }
 
                 var model = new UserStatisticsModel
                 {
                     UserId = userId,
-                    ExpiresOn = expiration.Value,
                     FriendsCurrentCount = await db.UserRelations.Where(n => n.Status == FriendLogicService.Relation_MutualFriends && (n.UserAId == userId || n.UserBId == userId)).CountAsync(),
                     EventsCreatedTotalCount = await db.Events.Where(n => n.CreatedByUserId == userId).CountAsync(),
                     EventsCompletedTotalCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate < userNow).CountAsync()
@@ -113,6 +122,20 @@ namespace PlayTogetherApi.Services
                     EventsPendingTodayCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate < userTomorrow && n.Event.EventEndDate > userNow).CountAsync()
                                               + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate < userTomorrow && n.EventEndDate > userNow).CountAsync(),
                 };
+
+                DateTime? expiration = null;
+                var nextCreatedEvent = await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate > utcNow).OrderBy(n => n.EventEndDate).FirstOrDefaultAsync();
+                expiration = nextCreatedEvent?.EventEndDate;
+                var nextSignupEvent = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate > utcNow).OrderBy(n => n.Event.EventEndDate).Select(n => n.Event).FirstOrDefaultAsync();
+                if (nextSignupEvent != null && (!expiration.HasValue || expiration > nextSignupEvent.EventEndDate))
+                {
+                    expiration = nextSignupEvent.EventEndDate;
+                }
+                if (!expiration.HasValue || (expiration > userTomorrow && model.EventsCompletedTodayCount>0))
+                {
+                    expiration = userTomorrow;
+                }
+                model.ExpiresOn = expiration.Value;
 
                 return model;
             }
