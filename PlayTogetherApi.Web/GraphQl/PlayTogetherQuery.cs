@@ -24,6 +24,9 @@ namespace PlayTogetherApi.Web.GraphQl
                    new QueryArgument<DateTimeGraphType> { Name = "startsAfterDate", Description = "Event starts on or after this datetime." },
                    new QueryArgument<DateTimeGraphType> { Name = "endsBeforeDate", Description = "Event ends before or on this datetime." },
                    new QueryArgument<DateTimeGraphType> { Name = "endsAfterDate", Description = "Event ends on or after this datetime. If no start/end arguments are given, this default to 'now'." },
+
+                   new QueryArgument<BooleanGraphType> { Name = "onlyPrivate", Description = "Only show events that are friends-only." },
+
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many events to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return. Maximum 100.", DefaultValue = 100 }
                 ),
@@ -98,6 +101,18 @@ namespace PlayTogetherApi.Web.GraphQl
                    {
                        query = query.Where(n => n.EventEndDate >= endsAfterDate);
                    }
+
+
+
+                   if(context.HasArgument("onlyPrivate"))
+                   {
+                       var onlyPrivate = context.GetArgument<bool>("onlyPrivate");
+                       if (onlyPrivate)
+                       {
+                           query = query.Where(n => n.FriendsOnly == true);
+                       }
+                   }
+
 
                    var skip = context.GetArgument<int>("skip");
                    if (skip > 0)
