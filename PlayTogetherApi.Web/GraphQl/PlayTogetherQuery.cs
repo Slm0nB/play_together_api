@@ -29,6 +29,7 @@ namespace PlayTogetherApi.Web.GraphQl
                    new QueryArgument<BooleanGraphType> { Name = "onlyByFriends", Description = "Only show events that are created by friends. This requires the caller to be authorized." },
                    new QueryArgument<ListGraphType<NonNullGraphType<IdGraphType>>> { Name = "onlyByUsers", Description = "Only show events created by these users." },
                    new QueryArgument<ListGraphType<NonNullGraphType<IdGraphType>>> { Name = "onlyGames", Description = "Only show events for these games." },
+                   new QueryArgument<BooleanGraphType> { Name = "onlyJoined", Description = "Only show events that are joined by the user. This requires the caller to be authorized." },
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many events to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return. Maximum 100.", DefaultValue = 100 }
                 ),
@@ -146,6 +147,19 @@ namespace PlayTogetherApi.Web.GraphQl
                        }
                    }
 
+
+
+                   if(context.HasArgument("onlyJoined"))
+                   {
+                       var onlyJoined = context.GetArgument<bool>("onlyJoined");
+                       if (onlyJoined)
+                       {
+                           query = query.Where(n => n.Signups.Any(nn => nn.UserId == userId));
+                       }
+                   }
+
+
+                   query = query.OrderBy(n => n.EventDate);
 
 
                    var skip = context.GetArgument<int>("skip");
