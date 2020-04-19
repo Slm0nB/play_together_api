@@ -7,6 +7,7 @@ using GraphQL.Types;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.GraphQl.Types;
 using PlayTogetherApi.Web.Models;
+using PlayTogetherApi.Web.Services;
 
 namespace PlayTogetherApi.Web.GraphQl
 {
@@ -37,6 +38,9 @@ namespace PlayTogetherApi.Web.GraphQl
                {
                    IQueryable<Event> query = db.Events;
 
+                   var queryService = new EventsQueryService();
+
+
                    List<UserRelation> friends = null;
                    List<Guid> friendIds = null;
                    var principal = context.UserContext as ClaimsPrincipal;
@@ -50,6 +54,9 @@ namespace PlayTogetherApi.Web.GraphQl
                            .ToListAsync();
                        friendIds = friends.Select(rel => rel.UserAId == userId ? rel.UserBId : rel.UserAId).ToList();
 
+                       queryService.UserId = userId;
+                       queryService.FriendIds = friendIds;
+
                        query = query.Where(n => !n.FriendsOnly || n.CreatedByUserId == userId || friendIds.Contains(n.CreatedByUserId));
                    }
                    else
@@ -57,6 +64,12 @@ namespace PlayTogetherApi.Web.GraphQl
                        // Unauthenticated users never see friendsonly-events
                        query = query.Where(n => !n.FriendsOnly);
                    }
+
+
+
+
+
+
 
                    var id = context.GetArgument<string>("id");
                    if (Guid.TryParse(id, out var uid))
@@ -102,7 +115,23 @@ namespace PlayTogetherApi.Web.GraphQl
 
 
 
-                   if(context.HasArgument("onlyPrivate"))
+
+
+
+                   var onlyPrivate = context.HasArgument("onlyPrivate") ? context.GetArgument<bool>("onlyPrivate") : false;
+                   var onlyByFriends = context.HasArgument("onlyByFriends") ? context.GetArgument<bool>("onlyByFriends") : false;
+                   var onlyJoined = context.HasArgument("onlyJoined") ? context.GetArgument<bool>("onlyJoined") : false;
+
+                   var onlyByUsers = context.HasArgument("onlyByUsers") ? context.GetArgument<Guid[]>("onlyByUsers") : null;
+                   var onlyGames = context.HasArgument("onlyGames") ? context.GetArgument<Guid[]>("onlyGames") : null;
+
+                   query = queryService.ProcessFilter(query,
+                       userId: userId,
+                       friendIds: friendIds,
+                       onlyPrivate, onlyByFriends, onlyJoined, onlyByUsers, onlyGames);
+
+                   /*
+                   if (context.HasArgument("onlyPrivate"))
                    {
                        var onlyPrivate = context.GetArgument<bool>("onlyPrivate");
                        if (onlyPrivate)
@@ -110,7 +139,6 @@ namespace PlayTogetherApi.Web.GraphQl
                            query = query.Where(n => n.FriendsOnly == true);
                        }
                    }
-
 
                    if (context.HasArgument("onlyByFriends"))
                    {
@@ -120,7 +148,6 @@ namespace PlayTogetherApi.Web.GraphQl
                            query = query.Where(n => friendIds.Contains(n.CreatedByUserId));
                        }
                    }
-
 
                    if (context.HasArgument("onlyByUsers"))
                    {
@@ -134,7 +161,6 @@ namespace PlayTogetherApi.Web.GraphQl
                        }
                    }
 
-
                    if (context.HasArgument("onlyGames"))
                    {
                        var onlyGames = context.GetArgument<Guid[]>("onlyGames");
@@ -147,8 +173,6 @@ namespace PlayTogetherApi.Web.GraphQl
                        }
                    }
 
-
-
                    if(context.HasArgument("onlyJoined"))
                    {
                        var onlyJoined = context.GetArgument<bool>("onlyJoined");
@@ -157,6 +181,16 @@ namespace PlayTogetherApi.Web.GraphQl
                            query = query.Where(n => n.Signups.Any(nn => nn.UserId == userId));
                        }
                    }
+                   */
+
+
+
+
+
+
+
+
+
 
 
                    query = query.OrderBy(n => n.EventDate);
