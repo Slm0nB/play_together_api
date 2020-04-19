@@ -20,5 +20,9 @@ namespace PlayTogetherApi.Web.Models
         // for the "api_key" grant type
         public Guid? Api_key { get; set; }
 
+
+        public int? RefreshTokenLifetime { get; set; }
+        public int? AccessTokenLifetime { get; set; }
+
     }
 }

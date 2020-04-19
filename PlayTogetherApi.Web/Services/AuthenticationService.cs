@@ -27,6 +27,15 @@ namespace PlayTogetherApi.Services
 
         public async Task<TokenResponseModel> RequestTokenAsync(TokenRequestModel dto)
         {
+            var defaultAccessTokenLifetime = 90;
+            var defaultRefreshTokenLifetime = 60 * 24 * 30;
+
+            dto.AccessTokenLifetime = Math.Min(defaultAccessTokenLifetime, Math.Max(2, dto.AccessTokenLifetime ?? defaultAccessTokenLifetime));
+            dto.RefreshTokenLifetime = Math.Min(defaultRefreshTokenLifetime, Math.Max(2, dto.RefreshTokenLifetime ?? defaultRefreshTokenLifetime));
+
+            var accessTokenLifetime = TimeSpan.FromMinutes(dto.AccessTokenLifetime.Value);
+            var refreshTokenLifetime = TimeSpan.FromMinutes(dto.RefreshTokenLifetime.Value);
+
             switch (dto?.Grant_type?.ToLowerInvariant())
             {
                 case "password":
@@ -36,14 +45,15 @@ namespace PlayTogetherApi.Services
                         var user = await _dbContext.Users.FirstOrDefaultAsync(n => n.Email == dto.Username && n.PasswordHash == passwordHash);
                         if (user != null)
                         {
-                            var refreshToken = await CreateRefreshTokenForUserAsync(user.UserId);
+                            var refreshToken = await CreateRefreshTokenForUserAsync(user.UserId, refreshTokenLifetime);
                             var refreshTokenString = refreshToken.Token.ToString("N");
-                            var accessTokenString = BuildJwt(user);
+                            var accessTokenString = BuildJwt(user, accessTokenLifetime);
 
                             return new TokenResponseModel
                             {
                                 Access_token = accessTokenString,
-                                Refresh_token = refreshTokenString
+                                Refresh_token = refreshTokenString,
+                                Expires_in = Convert.ToInt32(accessTokenLifetime.TotalMinutes)
                             };
                         }
                     }
@@ -59,11 +69,13 @@ namespace PlayTogetherApi.Services
                                 var user = await _dbContext.Users.FirstOrDefaultAsync(n => n.UserId == refreshToken.UserId);
                                 if (user != null)
                                 {
-                                    var accessTokenString = BuildJwt(user);
+                                    var accessTokenString = BuildJwt(user, accessTokenLifetime);
 
                                     return new TokenResponseModel
                                     {
-                                        Access_token = accessTokenString
+                                        Access_token = accessTokenString,
+                                        Expires_in = Convert.ToInt32(accessTokenLifetime.TotalMinutes)
+                                        // todo: add a new refresh token if the old one is close to expiry
                                     };
                                 }
                             }
@@ -78,14 +90,14 @@ namespace PlayTogetherApi.Services
             return null;
         }
 
-        public async Task<Data.RefreshToken> CreateRefreshTokenForUserAsync(Guid userId, TimeSpan? lifetime = null)
+        public async Task<Data.RefreshToken> CreateRefreshTokenForUserAsync(Guid userId, TimeSpan lifetime)
         {
             var refreshToken = new Data.RefreshToken
             {
                 Token = Guid.NewGuid(),
                 UserId = userId,
                 CreatedDate = DateTime.Now,
-                ExpirationDate = DateTime.Now + (lifetime ?? TimeSpan.FromDays(30))
+                ExpirationDate = DateTime.Now + lifetime
             };
 
             _dbContext.RefreshTokens.Add(refreshToken);
@@ -110,13 +122,13 @@ namespace PlayTogetherApi.Services
 
         #region JWT
 
-        public string BuildJwt(Data.User user)
+        public string BuildJwt(Data.User user, TimeSpan lifetime)
         {
             return BuildJwt(
                 new[] {
                     new Claim("userid", user.UserId.ToString()),
-                  },
-                TimeSpan.FromMinutes(90));
+                },
+                lifetime);
         }
 
         public string BuildJwt(Claim[] claims, TimeSpan expiration)

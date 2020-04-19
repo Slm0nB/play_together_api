@@ -935,7 +935,9 @@ namespace PlayTogetherApi.Web.GraphQl
                 arguments: new QueryArguments(
                     new QueryArgument<StringGraphType> { Name = "email" },
                     new QueryArgument<StringGraphType> { Name = "password" },
-                    new QueryArgument<StringGraphType> { Name = "refreshToken" }
+                    new QueryArgument<StringGraphType> { Name = "refreshToken" },
+                    new QueryArgument<IntGraphType> { Name = "accessTokenLifetime", Description = "Optional lifetime in minutes. Max: 90." },
+                    new QueryArgument<IntGraphType> { Name = "refreshTokenLifetime", Description = "Optional lifetime in minutes. Max: 43200 (30 days)." }
                 ),
                 resolve: async context =>
                 {
@@ -951,6 +953,15 @@ namespace PlayTogetherApi.Web.GraphQl
                                 Username = context.GetArgument<string>("email"),
                                 Password = context.GetArgument<string>("password")
                             };
+
+                    if(context.HasArgument("accessTokenLifetime"))
+                    {
+                        requestDto.AccessTokenLifetime = context.GetArgument<int>("accessTokenLifetime");
+                    }
+                    if (context.HasArgument("refreshTokenLifetime"))
+                    {
+                        requestDto.RefreshTokenLifetime = context.GetArgument<int>("refreshTokenLifetime");
+                    }
 
                     var response = await authenticationService.RequestTokenAsync(requestDto);
 
