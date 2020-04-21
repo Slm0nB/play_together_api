@@ -20,17 +20,25 @@ namespace PlayTogetherApi.Web.GraphQl
             FieldAsync<EventCollectionGraphType>(
                "events",
                 arguments: new QueryArguments(
-                   new QueryArgument<StringGraphType> { Name = "id", Description = "Id of the event." },
+                   new QueryArgument<StringGraphType> { Name = "id", Description = "Id of the event.  If this is specified, all other arguments are ignored." },
                    new QueryArgument<StringGraphType> { Name = "search", Description = "Search term applied to the title or description." },
                    new QueryArgument<DateTimeGraphType> { Name = "startsBeforeDate", Description = "Event starts before or on this datetime." },
                    new QueryArgument<DateTimeGraphType> { Name = "startsAfterDate", Description = "Event starts on or after this datetime." },
                    new QueryArgument<DateTimeGraphType> { Name = "endsBeforeDate", Description = "Event ends before or on this datetime." },
                    new QueryArgument<DateTimeGraphType> { Name = "endsAfterDate", Description = "Event ends on or after this datetime. If no start/end arguments are given, this default to 'now'." },
+
                    new QueryArgument<BooleanGraphType> { Name = "onlyPrivate", Description = "Only show events that are friends-only." },
                    new QueryArgument<BooleanGraphType> { Name = "onlyByFriends", Description = "Only show events that are created by friends. This requires the caller to be authorized." },
                    new QueryArgument<ListGraphType<NonNullGraphType<IdGraphType>>> { Name = "onlyByUsers", Description = "Only show events created by these users." },
                    new QueryArgument<ListGraphType<NonNullGraphType<IdGraphType>>> { Name = "onlyGames", Description = "Only show events for these games." },
                    new QueryArgument<BooleanGraphType> { Name = "onlyJoined", Description = "Only show events that are joined by the user. This requires the caller to be authorized." },
+
+                   new QueryArgument<BooleanGraphType> { Name = "includePrivate", Description = "Only show events that are friends-only." },
+                   new QueryArgument<BooleanGraphType> { Name = "includeByFriends", Description = "Only show events that are created by friends. This requires the caller to be authorized." },
+                   new QueryArgument<ListGraphType<NonNullGraphType<IdGraphType>>> { Name = "includeByUsers", Description = "Only show events created by these users." },
+                   new QueryArgument<ListGraphType<NonNullGraphType<IdGraphType>>> { Name = "includeGames", Description = "Only show events for these games." },
+                   new QueryArgument<BooleanGraphType> { Name = "includeJoined", Description = "Only show events that are joined by the user. This requires the caller to be authorized." },
+
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many events to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return. Maximum 100.", DefaultValue = 100 }
                 ),
@@ -39,7 +47,6 @@ namespace PlayTogetherApi.Web.GraphQl
                    IQueryable<Event> query = db.Events;
 
                    var queryService = new EventsQueryService();
-
 
                    List<UserRelation> friends = null;
                    List<Guid> friendIds = null;
@@ -57,159 +64,41 @@ namespace PlayTogetherApi.Web.GraphQl
                        queryService.UserId = userId;
                        queryService.FriendIds = friendIds;
 
-                       query = query.Where(n => !n.FriendsOnly || n.CreatedByUserId == userId || friendIds.Contains(n.CreatedByUserId));
+                       //query = query.Where(n => !n.FriendsOnly || n.CreatedByUserId == userId || friendIds.Contains(n.CreatedByUserId));
                    }
                    else
                    {
                        // Unauthenticated users never see friendsonly-events
-                       query = query.Where(n => !n.FriendsOnly);
+                       //query = query.Where(n => !n.FriendsOnly);
                    }
-
-
-
-
-
-
 
                    var id = context.GetArgument<string>("id");
                    if (Guid.TryParse(id, out var uid))
                    {
                        query = query.Where(n => n.EventId == uid);
                    }
-
-                   var search = context.GetArgument<string>("search");
-                   if (!string.IsNullOrWhiteSpace(search))
-                   {
-                       search = search.ToLowerInvariant();
-                       query = query.Where(n => n.Title.ToLower().Contains(search) || n.Description.ToLower().Contains(search)); // todo: verify sql isnt retarded
-                   }
-
-                   bool dateWasGiven = false;
-                   var startsBeforeDate = context.GetArgument<DateTime>("startsBeforeDate");
-                   if (startsBeforeDate != default(DateTime))
-                   {
-                       dateWasGiven = true;
-                       query = query.Where(n => n.EventDate <= startsBeforeDate);
-                   }
-                   var startsAfterDate = context.GetArgument<DateTime>("startsAfterDate");
-                   if (startsAfterDate != default(DateTime))
-                   {
-                       dateWasGiven = true;
-                       query = query.Where(n => n.EventDate >= startsAfterDate);
-                   }
-                   var endsBeforeDate = context.GetArgument<DateTime>("endsBeforeDate");
-                   if (endsBeforeDate != default(DateTime))
-                   {
-                       dateWasGiven = true;
-                       query = query.Where(n => n.EventEndDate <= endsBeforeDate);
-                   }
-                   var endsAfterDate = context.GetArgument<DateTime>("endsAfterDate");
-                   if (endsAfterDate == default(DateTime) && !dateWasGiven)
-                   {
-                       endsAfterDate = DateTime.UtcNow;
-                   }
-                   if (endsAfterDate != default(DateTime))
-                   {
-                       query = query.Where(n => n.EventEndDate >= endsAfterDate);
-                   }
-
-
-
-
-
-
-                   var onlyPrivate = context.HasArgument("onlyPrivate") ? context.GetArgument<bool>("onlyPrivate") : false;
-                   var onlyByFriends = context.HasArgument("onlyByFriends") ? context.GetArgument<bool>("onlyByFriends") : false;
-                   var onlyJoined = context.HasArgument("onlyJoined") ? context.GetArgument<bool>("onlyJoined") : false;
-
-                   var onlyByUsers = context.HasArgument("onlyByUsers") ? context.GetArgument<Guid[]>("onlyByUsers") : null;
-                   var onlyGames = context.HasArgument("onlyGames") ? context.GetArgument<Guid[]>("onlyGames") : null;
-
-                   query = queryService.ProcessFilter(query,
-                       userId: userId,
-                       friendIds: friendIds,
-                       onlyPrivate, onlyByFriends, onlyJoined, onlyByUsers, onlyGames);
-
-                   /*
-                   if (context.HasArgument("onlyPrivate"))
-                   {
-                       var onlyPrivate = context.GetArgument<bool>("onlyPrivate");
-                       if (onlyPrivate)
-                       {
-                           query = query.Where(n => n.FriendsOnly == true);
-                       }
-                   }
-
-                   if (context.HasArgument("onlyByFriends"))
-                   {
-                       var onlyByFriends = context.GetArgument<bool>("onlyByFriends");
-                       if (onlyByFriends && friendIds != null)
-                       {
-                           query = query.Where(n => friendIds.Contains(n.CreatedByUserId));
-                       }
-                   }
-
-                   if (context.HasArgument("onlyByUsers"))
-                   {
-                       var onlyByUsers = context.GetArgument<Guid[]>("onlyByUsers");
-                       if (onlyByUsers != null && onlyByUsers.Any())
-                       {
-                           var first = onlyByUsers.First();
-                           query = onlyByUsers.Count() == 1
-                                    ? query.Where(n => n.CreatedByUserId == first)
-                                    : query.Where(n => onlyByUsers.Contains(n.CreatedByUserId));
-                       }
-                   }
-
-                   if (context.HasArgument("onlyGames"))
-                   {
-                       var onlyGames = context.GetArgument<Guid[]>("onlyGames");
-                       if (onlyGames != null && onlyGames.Any())
-                       {
-                           var first = onlyGames.First();
-                           query = onlyGames.Count() == 1
-                                    ? query.Where(n => n.GameId == first)
-                                    : query.Where(n => n.GameId.HasValue && onlyGames.Contains(n.GameId.Value));
-                       }
-                   }
-
-                   if(context.HasArgument("onlyJoined"))
-                   {
-                       var onlyJoined = context.GetArgument<bool>("onlyJoined");
-                       if (onlyJoined)
-                       {
-                           query = query.Where(n => n.Signups.Any(nn => nn.UserId == userId));
-                       }
-                   }
-                   */
-
-
-
-
-
-
-
-
-
-
-
-                   query = query.OrderBy(n => n.EventDate);
-
-
-                   var skip = context.GetArgument<int>("skip");
-                   if (skip > 0)
-                   {
-                       query = query.Skip(skip);
-                   }
-
-                   var take = Math.Min(100, context.GetArgument<int>("take", 100));
-                   if (take > 0)
-                   {
-                       query = query.Take(take);
-                   }
                    else
                    {
-                       return null;
+                       queryService.ReadParametersFromContext(context);
+
+                       query = queryService.Process(query);
+                       query = query.OrderBy(n => n.EventDate);
+
+                       var skip = context.GetArgument<int>("skip");
+                       if (skip > 0)
+                       {
+                           query = query.Skip(skip);
+                       }
+
+                       var take = Math.Min(100, context.GetArgument<int>("take", 100));
+                       if (take > 0)
+                       {
+                           query = query.Take(take);
+                       }
+                       else
+                       {
+                           return null;
+                       }
                    }
 
                    return new EventCollectionModel

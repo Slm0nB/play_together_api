@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using GraphQL.Types;
 using PlayTogetherApi.Data;
 
 namespace PlayTogetherApi.Web.Services
@@ -10,20 +11,110 @@ namespace PlayTogetherApi.Web.Services
     {
         public Guid? UserId;
         public List<Guid> FriendIds;
-        public Guid[] CreatedByUserIds;
-        public Guid[] GameIds;
+
+        public string SearchTerm;
+
+        public DateTime? StartsBeforeDate;
+        public DateTime? StartsAfterDate;
+        public DateTime? EndsBeforeDate;
+        public DateTime? EndsAfterDate;
 
         public bool OnlyPrivateFilter;
         public bool OnlyByFriendsFilter;
-        public bool OnlyByUsersFilter;
-        public bool OnlyGamesFilter;
+        public Guid[] OnlyByUsersFilter;
+        public Guid[] OnlyGamesFilter;
         public bool OnlyJoinedFilter;
 
         public bool IncludePrivateFilter;
         public bool IncludeByFriendsFilter;
-        public bool IncludeByUsersFilter;
-        public bool IncludeGamesFilter;
+        public Guid[] IncludeByUsersFilter;
+        public Guid[] IncludeGamesFilter;
         public bool IncludeJoinedFilter;
+
+        public IQueryable<Event> Process(IQueryable<Event> query)
+        {
+            if (UserId.HasValue)
+            {
+                // Authenticated users get an additional criteria to include friendsonly-events
+                query = query.Where(n => !n.FriendsOnly || n.CreatedByUserId == UserId.Value || FriendIds.Contains(n.CreatedByUserId));
+            }
+            else
+            {
+                // Unauthenticated users never see friendsonly-events
+                query = query.Where(n => !n.FriendsOnly);
+            }
+
+            if (!string.IsNullOrWhiteSpace(SearchTerm))
+            {
+                var search = SearchTerm.ToLowerInvariant();
+                query = query.Where(n => n.Title.ToLower().Contains(search) || n.Description.ToLower().Contains(search)); // todo: verify sql isnt retarded
+            }
+
+            query = ProcessDates(query);
+            query = ProcessExclusiveFilter(query);
+            query = ProcessInclusiveFilter(query);
+
+            return query;
+        }
+
+        public void ReadParametersFromContext(ResolveFieldContext<object> context)
+        {
+            SearchTerm = context.GetArgument<string>("search");
+
+            StartsBeforeDate = context.HasArgument("startsBeforeDate") ? context.GetArgument<DateTime>("startsBeforeDate") : (DateTime?)null;
+            StartsAfterDate = context.HasArgument("startsAfterDate") ? context.GetArgument<DateTime>("startsAfterDate") : (DateTime?)null;
+            EndsBeforeDate = context.HasArgument("endsBeforeDate") ? context.GetArgument<DateTime>("endsBeforeDate") : (DateTime?)null;
+            EndsAfterDate = context.HasArgument("endsAfterDate") ? context.GetArgument<DateTime>("endsAfterDate") : (DateTime?)null;
+
+            OnlyPrivateFilter = context.HasArgument("onlyPrivate") ? context.GetArgument<bool>("onlyPrivate") : false;
+            OnlyByFriendsFilter = context.HasArgument("onlyByFriends") ? context.GetArgument<bool>("onlyByFriends") : false;
+            OnlyJoinedFilter = context.HasArgument("onlyJoined") ? context.GetArgument<bool>("onlyJoined") : false;
+            OnlyByUsersFilter = context.HasArgument("onlyByUsers") ? context.GetArgument<Guid[]>("onlyByUsers") : null;
+            OnlyGamesFilter = context.HasArgument("onlyGames") ? context.GetArgument<Guid[]>("onlyGames") : null;
+
+            IncludePrivateFilter = context.HasArgument("includePrivate") ? context.GetArgument<bool>("includePrivate") : false;
+            IncludeByFriendsFilter = context.HasArgument("includeByFriends") ? context.GetArgument<bool>("includeByFriends") : false;
+            IncludeJoinedFilter = context.HasArgument("includeJoined") ? context.GetArgument<bool>("includeJoined") : false;
+            IncludeByUsersFilter = context.HasArgument("includeByUsers") ? context.GetArgument<Guid[]>("includeByUsers") : null;
+            IncludeGamesFilter = context.HasArgument("includeGames") ? context.GetArgument<Guid[]>("includeGames") : null;
+        }
+
+        IQueryable<Event> ProcessDates(IQueryable<Event> query)
+        {
+            bool dateWasGiven = false;
+
+            if (StartsBeforeDate.HasValue && StartsBeforeDate != default(DateTime))
+            {
+                dateWasGiven = true;
+                query = query.Where(n => n.EventDate <= StartsBeforeDate);
+            }
+
+            if (StartsAfterDate.HasValue && StartsAfterDate != default(DateTime))
+            {
+                dateWasGiven = true;
+                query = query.Where(n => n.EventDate >= StartsAfterDate);
+            }
+
+            if (EndsBeforeDate.HasValue && EndsBeforeDate != default(DateTime))
+            {
+                dateWasGiven = true;
+                query = query.Where(n => n.EventEndDate <= EndsBeforeDate);
+            }
+
+            var actualEndsAfterDate = EndsAfterDate;
+
+            if ((!actualEndsAfterDate.HasValue || actualEndsAfterDate == default(DateTime)) && !dateWasGiven)
+            {
+                actualEndsAfterDate = DateTime.UtcNow;
+            }
+
+            if (actualEndsAfterDate != default(DateTime))
+            {
+                query = query.Where(n => n.EventEndDate >= actualEndsAfterDate);
+            }
+
+            return query;
+        }
 
         IQueryable<Event> ProcessExclusiveFilter(IQueryable<Event> query)
         {
@@ -82,60 +173,6 @@ namespace PlayTogetherApi.Web.Services
                 (actualByUsersFilter && CreatedByUserIds.Contains(n.CreatedByUserId)) ||
                 (actualGamesFilter && n.GameId.HasValue && GameIds.Contains(n.GameId.Value))
             );
-
-            return query;
-        }
-
-        IQueryable<Event> ProcessDates(IQueryable<Event> query, DateTime? startsBeforeDate, DateTime? startsAfterDate, DateTime? endsBeforeDate, DateTime? endsAfterDate)
-        {
-            bool dateWasGiven = false;
-
-            if (startsBeforeDate.HasValue && startsBeforeDate != default(DateTime))
-            {
-                dateWasGiven = true;
-                query = query.Where(n => n.EventDate <= startsBeforeDate);
-            }
-
-            if (startsAfterDate.HasValue && startsAfterDate != default(DateTime))
-            {
-                dateWasGiven = true;
-                query = query.Where(n => n.EventDate >= startsAfterDate);
-            }
-
-            if (endsBeforeDate.HasValue && endsBeforeDate != default(DateTime))
-            {
-                dateWasGiven = true;
-                query = query.Where(n => n.EventEndDate <= endsBeforeDate);
-            }
-
-            if ((!endsAfterDate.HasValue || endsAfterDate == default(DateTime)) && !dateWasGiven)
-            {
-                endsAfterDate = DateTime.UtcNow;
-            }
-
-            if (endsAfterDate != default(DateTime))
-            {
-                query = query.Where(n => n.EventEndDate >= endsAfterDate);
-            }
-
-            return query;
-        }
-
-        public IQueryable<Event> Process(IQueryable<Event> query)
-        {
-            if (UserId.HasValue)
-            {
-                // Authenticated users get an additional criteria to include friendsonly-events
-                query = query.Where(n => !n.FriendsOnly || n.CreatedByUserId == UserId.Value || FriendIds.Contains(n.CreatedByUserId));
-            }
-            else
-            {
-                // Unauthenticated users never see friendsonly-events
-                query = query.Where(n => !n.FriendsOnly);
-            }
-
-            query = ProcessExclusiveFilter(query);
-            query = ProcessInclusiveFilter(query);
 
             return query;
         }
