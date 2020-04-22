@@ -19,8 +19,9 @@ namespace PlayTogetherApi.Test
 
             var result = query.ToArray();
 
-            Assert.AreEqual(1, result.Count());
-            Assert.AreSame(MockData.Events[1], result[0]);
+            Assert.AreEqual(2, result.Count());
+            Assert.AreSame(MockData.Events[2], result[0]);
+            Assert.AreSame(MockData.Events[3], result[1]);
         }
 
         [TestMethod]
@@ -31,7 +32,7 @@ namespace PlayTogetherApi.Test
                 StartsAfterDate = DateTime.UtcNow.AddYears(-10)
             }).Process(MockData.Events.AsQueryable()).ToArray();
 
-            Assert.AreEqual(2, result.Count());
+            Assert.AreEqual(4, result.Count());
         }
 
         [TestMethod]
@@ -42,8 +43,9 @@ namespace PlayTogetherApi.Test
                 StartsAfterDate = DateTime.UtcNow
             }).Process(MockData.Events.AsQueryable()).ToArray();
 
-            Assert.AreEqual(1, result.Count());
-            Assert.AreSame(MockData.Events[1], result[0]);
+            Assert.AreEqual(2, result.Count());
+            Assert.AreSame(MockData.Events[2], result[0]);
+            Assert.AreSame(MockData.Events[3], result[1]);
         }
 
         [TestMethod]
@@ -54,8 +56,48 @@ namespace PlayTogetherApi.Test
                 StartsBeforeDate = DateTime.UtcNow
             }).Process(MockData.Events.AsQueryable()).ToArray();
 
-            Assert.AreEqual(1, result.Count());
+            Assert.AreEqual(2, result.Count());
             Assert.AreSame(MockData.Events[0], result[0]);
+            Assert.AreSame(MockData.Events[1], result[1]);
+        }
+
+        [TestMethod]
+        public void QueryInclusiveEvents()
+        {
+            var result = (new EventsQueryService
+            {
+                StartsAfterDate = DateTime.UtcNow.AddYears(-10),
+                IncludeByUsersFilter = new[] { MockData.Events[0].CreatedByUserId },
+                IncludeGamesFilter = new [] { MockData.Events[3].GameId.Value }
+            }).Process(MockData.Events.AsQueryable()).ToArray();
+
+            Assert.AreEqual(2, result.Count());
+            Assert.AreSame(MockData.Events[0], result[0]);
+            Assert.AreSame(MockData.Events[3], result[1]);
+        }
+
+
+        [TestMethod]
+        public void QueryExclusiveEvents()
+        {
+            var result = (new EventsQueryService
+            {
+                StartsAfterDate = DateTime.UtcNow.AddYears(-10),
+                OnlyByUsersFilter = new[] { MockData.Events[0].CreatedByUserId },
+                OnlyGamesFilter = new[] { MockData.Events[3].GameId.Value }
+            }).Process(MockData.Events.AsQueryable()).ToArray();
+
+            Assert.AreEqual(0, result.Count());
+
+            result = (new EventsQueryService
+            {
+                StartsAfterDate = DateTime.UtcNow.AddYears(-10),
+                OnlyByUsersFilter = new[] { MockData.Events[1].CreatedByUserId },
+                OnlyGamesFilter = new[] { MockData.Events[1].GameId.Value, MockData.Events[3].GameId.Value }
+            }).Process(MockData.Events.AsQueryable()).ToArray();
+
+            Assert.AreEqual(1, result.Count());
+            Assert.AreSame(MockData.Events[1], result[0]);
         }
     }
 }
