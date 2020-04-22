@@ -33,11 +33,11 @@ namespace PlayTogetherApi.Web.GraphQl
                    new QueryArgument<ListGraphType<NonNullGraphType<IdGraphType>>> { Name = "onlyGames", Description = "Only show events for these games." },
                    new QueryArgument<BooleanGraphType> { Name = "onlyJoined", Description = "Only show events that are joined by the user. This requires the caller to be authorized." },
 
-                   new QueryArgument<BooleanGraphType> { Name = "includePrivate", Description = "Only show events that are friends-only." },
-                   new QueryArgument<BooleanGraphType> { Name = "includeByFriends", Description = "Only show events that are created by friends. This requires the caller to be authorized." },
-                   new QueryArgument<ListGraphType<NonNullGraphType<IdGraphType>>> { Name = "includeByUsers", Description = "Only show events created by these users." },
-                   new QueryArgument<ListGraphType<NonNullGraphType<IdGraphType>>> { Name = "includeGames", Description = "Only show events for these games." },
-                   new QueryArgument<BooleanGraphType> { Name = "includeJoined", Description = "Only show events that are joined by the user. This requires the caller to be authorized." },
+                   new QueryArgument<BooleanGraphType> { Name = "includePrivate", Description = "Include events that are friends-only." },
+                   new QueryArgument<BooleanGraphType> { Name = "includeByFriends", Description = "Include events that are created by friends. This requires the caller to be authorized." },
+                   new QueryArgument<ListGraphType<NonNullGraphType<IdGraphType>>> { Name = "includeByUsers", Description = "Include events created by these users." },
+                   new QueryArgument<ListGraphType<NonNullGraphType<IdGraphType>>> { Name = "includeGames", Description = "Include events for these games." },
+                   new QueryArgument<BooleanGraphType> { Name = "includeJoined", Description = "Include events that are joined by the user. This requires the caller to be authorized." },
 
                    new QueryArgument<IntGraphType> { Name = "skip", Description = "How many events to skip." },
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many events to return. Maximum 100.", DefaultValue = 100 }

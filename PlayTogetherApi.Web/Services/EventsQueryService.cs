@@ -102,13 +102,11 @@ namespace PlayTogetherApi.Web.Services
             }
 
             var actualEndsAfterDate = EndsAfterDate;
-
             if ((!actualEndsAfterDate.HasValue || actualEndsAfterDate == default(DateTime)) && !dateWasGiven)
             {
                 actualEndsAfterDate = DateTime.UtcNow;
             }
-
-            if (actualEndsAfterDate != default(DateTime))
+            if (actualEndsAfterDate.HasValue && actualEndsAfterDate != default(DateTime))
             {
                 query = query.Where(n => n.EventEndDate >= actualEndsAfterDate);
             }
@@ -128,20 +126,20 @@ namespace PlayTogetherApi.Web.Services
                 query = query.Where(n => FriendIds.Contains(n.CreatedByUserId));
             }
 
-            if (OnlyByUsersFilter && CreatedByUserIds != null && CreatedByUserIds.Any())
+            if (OnlyByUsersFilter != null && OnlyByUsersFilter.Any())
             {
-                var first = CreatedByUserIds.First();
-                query = CreatedByUserIds.Count() == 1
+                var first = OnlyByUsersFilter.First();
+                query = OnlyByUsersFilter.Count() == 1
                          ? query.Where(n => n.CreatedByUserId == first)
-                         : query.Where(n => CreatedByUserIds.Contains(n.CreatedByUserId));
+                         : query.Where(n => OnlyByUsersFilter.Contains(n.CreatedByUserId));
             }
 
-            if (OnlyGamesFilter && GameIds != null && GameIds.Any())
+            if (OnlyGamesFilter != null && OnlyGamesFilter.Any())
             {
-                var first = GameIds.First();
-                query = GameIds.Count() == 1
+                var first = OnlyGamesFilter.First();
+                query = OnlyGamesFilter.Count() == 1
                          ? query.Where(n => n.GameId == first)
-                         : query.Where(n => n.GameId.HasValue && GameIds.Contains(n.GameId.Value));
+                         : query.Where(n => n.GameId.HasValue && OnlyGamesFilter.Contains(n.GameId.Value));
             }
 
             if (OnlyJoinedFilter)
@@ -155,12 +153,12 @@ namespace PlayTogetherApi.Web.Services
         IQueryable<Event> ProcessInclusiveFilter(IQueryable<Event> query)
         {
             FriendIds = FriendIds ?? new List<Guid>();
-            CreatedByUserIds = CreatedByUserIds ?? Array.Empty<Guid>();
-            GameIds = GameIds ?? Array.Empty<Guid>();
+            IncludeByUsersFilter = IncludeByUsersFilter ?? Array.Empty<Guid>();
+            IncludeGamesFilter = IncludeGamesFilter ?? Array.Empty<Guid>();
 
             bool actualJoinedFilter = IncludeJoinedFilter && UserId.HasValue;
-            bool actualByUsersFilter = IncludeByUsersFilter && CreatedByUserIds.Any();
-            bool actualGamesFilter = IncludeGamesFilter && GameIds.Any();
+            bool actualByUsersFilter = IncludeByUsersFilter.Any();
+            bool actualGamesFilter = IncludeGamesFilter.Any();
 
             bool anyFilter = IncludePrivateFilter || IncludeByFriendsFilter || actualByUsersFilter || actualByUsersFilter || actualGamesFilter;
             if (!anyFilter)
@@ -170,8 +168,8 @@ namespace PlayTogetherApi.Web.Services
                 (OnlyPrivateFilter && n.FriendsOnly)||
                 (IncludeByFriendsFilter && FriendIds.Contains(n.CreatedByUserId))  ||
                 (actualJoinedFilter && n.Signups.Any(nn => nn.UserId == UserId)) ||
-                (actualByUsersFilter && CreatedByUserIds.Contains(n.CreatedByUserId)) ||
-                (actualGamesFilter && n.GameId.HasValue && GameIds.Contains(n.GameId.Value))
+                (actualByUsersFilter && IncludeByUsersFilter.Contains(n.CreatedByUserId)) ||
+                (actualGamesFilter && n.GameId.HasValue && IncludeGamesFilter.Contains(n.GameId.Value))
             );
 
             return query;
