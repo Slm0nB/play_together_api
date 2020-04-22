@@ -918,6 +918,15 @@ namespace PlayTogetherApi.Web.GraphQl
                     await userStatisticsService.UpdateStatisticsAsync(db, callingUser.UserId, callingUser);
                     await userStatisticsService.UpdateStatisticsAsync(db, friendUser.UserId, friendUser);
 
+
+
+
+                    // todo: if the users became friends, then send each of them VISIBLE-subscription for private-only events created by the other user
+                    // todo: if the users stopped being friends, then send each of them NOT VISIBLE-subscriptions for private-only events created by the other user
+
+
+
+
                     var result = new UserRelationExtModel
                     {
                         Relation = relation,
