@@ -76,7 +76,6 @@ namespace PlayTogetherApi.Test
             Assert.AreSame(MockData.Events[3], result[1]);
         }
 
-
         [TestMethod]
         public void QueryExclusiveEvents()
         {
@@ -98,6 +97,20 @@ namespace PlayTogetherApi.Test
 
             Assert.AreEqual(1, result.Count());
             Assert.AreSame(MockData.Events[1], result[0]);
+        }
+
+        [TestMethod]
+        public void QueryPrivateEvents()
+        {
+            var result = (new EventsQueryService
+            {
+                OnlyPrivateFilter = true,
+                UserId = MockData.Users[0].UserId,
+                FriendIds = MockData.Users.Select(n => n.UserId).ToList()
+            }).Process(MockData.Events.AsQueryable()).ToArray();
+
+            Assert.AreEqual(1, result.Count());
+            Assert.AreSame(MockData.Events[4], result[0]);
         }
     }
 }

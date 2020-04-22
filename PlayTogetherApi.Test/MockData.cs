@@ -90,6 +90,17 @@ namespace PlayTogetherApi.Test
                 Game = Games[2],
                 EventDate = DateTime.UtcNow.AddHours(28),
                 EventEndDate = DateTime.UtcNow.AddHours(29)
+           },
+           new Event {
+                Title = "Tomorrows event 3",
+                CreatedByUserId = Users[3].UserId,
+                CreatedByUser = Users[3],
+                EventId = Guid.Parse("00000000-0000-0000-0000-000000000005"),
+                GameId = Games[2].GameId,
+                Game = Games[2],
+                EventDate = DateTime.UtcNow.AddHours(38),
+                EventEndDate = DateTime.UtcNow.AddHours(39),
+                FriendsOnly = true
            }
         };
     }
