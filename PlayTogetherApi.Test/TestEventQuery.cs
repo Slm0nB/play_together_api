@@ -35,6 +35,19 @@ namespace PlayTogetherApi.Test
             Assert.AreEqual(4, result.Count());
         }
 
+
+        [TestMethod]
+        public void QueryTitles()
+        {
+            var result = (new EventsQueryService
+            {
+                StartsAfterDate = DateTime.UtcNow.AddYears(-10),
+                SearchTerm = "Yesterday"
+            }).Process(MockData.Events.AsQueryable()).ToArray();
+
+            Assert.AreEqual(2, result.Count());
+        }
+
         [TestMethod]
         public void QueryFutureEvents()
         {

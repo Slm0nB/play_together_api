@@ -53,6 +53,7 @@ namespace PlayTogetherApi.Test
         {
             new Event {
                 Title = "Yesterdays event 1",
+                Description = "",
                 CreatedByUserId = Users[0].UserId,
                 CreatedByUser = Users[0],
                 EventId = Guid.Parse("00000000-0000-0000-0000-000000000001"),
@@ -63,6 +64,7 @@ namespace PlayTogetherApi.Test
             },
             new Event {
                 Title = "Yesterdays event 2",
+                Description = "",
                 CreatedByUserId = Users[1].UserId,
                 CreatedByUser = Users[1],
                 EventId = Guid.Parse("00000000-0000-0000-0000-000000000002"),
@@ -73,6 +75,7 @@ namespace PlayTogetherApi.Test
             },
             new Event {
                 Title = "Tomorrows event 1",
+                Description = "",
                 CreatedByUserId = Users[2].UserId,
                 CreatedByUser = Users[2],
                 EventId = Guid.Parse("00000000-0000-0000-0000-000000000003"),
@@ -83,6 +86,7 @@ namespace PlayTogetherApi.Test
            },
            new Event {
                 Title = "Tomorrows event 2",
+                Description = "",
                 CreatedByUserId = Users[3].UserId,
                 CreatedByUser = Users[3],
                 EventId = Guid.Parse("00000000-0000-0000-0000-000000000004"),
@@ -93,6 +97,7 @@ namespace PlayTogetherApi.Test
            },
            new Event {
                 Title = "Tomorrows event 3",
+                Description = "",
                 CreatedByUserId = Users[3].UserId,
                 CreatedByUser = Users[3],
                 EventId = Guid.Parse("00000000-0000-0000-0000-000000000005"),
