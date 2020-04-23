@@ -18,13 +18,29 @@ namespace PlayTogetherApi.Web.GraphQl.Types
             Name = "UserPreview";
 
             Field("id", user => user.UserId, type: typeof(IdGraphType)).Description("Id property from the user object.");
-            Field<StringGraphType>("displayNameFull", resolve: context => context.Source.DisplayName + "#" + context.Source.DisplayId.ToString("D3"), description: "Full Displayname.");
+
+            Field<StringGraphType>("displayNameFull",
+                description: "Full Displayname.",
+                resolve: context => context.Source.DisplayName + "#" + context.Source.DisplayId.ToString("D3"));
+
             Field(user => user.DisplayName).Description("DisplayName property from the user object.");
+
             Field(user => user.DisplayId).Description("DisplayId property from the user object.");
 
-            Field<IntGraphType>("utcOffset", resolve: context => context.Source.UtcOffset.HasValue ? context.Source.UtcOffset.Value.TotalSeconds : 0, description: "UTC offset in seconds.");
+            Field<IntGraphType>("utcOffset",
+                description: "UTC offset in seconds.",
+                resolve: context => context.Source.UtcOffset.HasValue ? context.Source.UtcOffset.Value.TotalSeconds : 0);
+
+            Field<DateTimeGraphType>("temp_utcTime",
+                description: "UTC timme. (this will be removed)",
+                resolve: context => DateTime.UtcNow);
+
+            Field<DateTimeGraphType>("temp_localTime",
+                description: "Local time.  UTC timm + Offset. (this will be removed)",
+                resolve: context => DateTime.UtcNow + ( context.Source.UtcOffset ?? TimeSpan.Zero));
 
             Field<StringGraphType>("avatar",
+                description: "Url of the avatar image.",
                 arguments: new QueryArguments(
                     new QueryArgument<IntGraphType> { Name = "width", DefaultValue = 128 }
                 ),
@@ -41,8 +57,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                     var width = context.GetArgument<int>("width", 128);
                     var hash = md5(context.Source.Email);
                     return $"http://gravatar.com/avatar/{hash}?s={width}&d=mm";
-                },
-                description: "Url of the avatar image."
+                }
             );
         }
 
