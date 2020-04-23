@@ -102,17 +102,21 @@ namespace PlayTogetherApi.Services
 
                 var utcOffset = user.UtcOffset ?? TimeSpan.Zero;
                 var utcNow = DateTime.UtcNow;
-                var userNow = utcNow + utcOffset;
-                var userToday = userNow - new TimeSpan(0, userNow.Hour, userNow.Minute, userNow.Second, userNow.Millisecond);
+                var userNow = utcNow - utcOffset;
+                var userToday = new DateTime(userNow.Year, userNow.Month, userNow.Day, 0, 0, 0);
                 var userTomorrow = userToday.AddDays(1);
 
                 var model = new UserStatisticsModel
                 {
                     UserId = userId,
+
                     FriendsCurrentCount = await db.UserRelations.Where(n => n.Status == FriendLogicService.Relation_MutualFriends && (n.UserAId == userId || n.UserBId == userId)).CountAsync(),
+
                     EventsCreatedTotalCount = await db.Events.Where(n => n.CreatedByUserId == userId).CountAsync(),
+
                     EventsCompletedTotalCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate < userNow).CountAsync()
                                               + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate < userNow).CountAsync(),
+
                     EventsCompletedTodayCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate > userToday && n.Event.EventEndDate < userNow).CountAsync()
                                               + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate > userToday && n.EventEndDate < userNow).CountAsync(),
 
