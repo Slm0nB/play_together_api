@@ -160,7 +160,7 @@ namespace PlayTogetherApi.Web.Services
             bool actualByUsersFilter = IncludeByUsersFilter.Any();
             bool actualGamesFilter = IncludeGamesFilter.Any();
 
-            bool anyFilter = IncludePrivateFilter || IncludeByFriendsFilter || actualByUsersFilter || actualByUsersFilter || actualGamesFilter;
+            bool anyFilter = IncludePrivateFilter || IncludeByFriendsFilter || actualByUsersFilter || actualJoinedFilter || actualGamesFilter;
             if (!anyFilter)
                 return query;
 
