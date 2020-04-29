@@ -811,22 +811,22 @@ namespace PlayTogetherApi.Web.GraphQl
                         return null;
                     }
 
-                    //user.DisplayName = "DELETED"; // todo: if we want to do this, we also have to set displayid, although its easy to just set it to the number of deleted users
+                    user.DisplayName = "DELETED_USER";
+                    user.DisplayId = await db.Users.CountAsync(n => n.SoftDelete) + 2;
                     user.AvatarFilename = "avatar_deleted.jpg";
                     user.SoftDelete = true;
                     user.Email = "DELETED";
                     user.PasswordHash = "DELETED";
                     db.Users.Update(user);
 
-                    /*
-                    var signups = db.UserEventSignups.Where(n => n.UserId == userId);
-                    db.UserEventSignups.RemoveRange(signups);
+                    var futureSignups = db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventDate > DateTime.Now);
+                    db.UserEventSignups.RemoveRange(futureSignups);
 
-                    var relations = db.UserRelations.Where(n => n.UserAId == userId || n.UserBId == userId);//.ToArrayAsync();
+                    var relations = db.UserRelations.Where(n => n.UserAId == userId || n.UserBId == userId);
                     db.UserRelations.RemoveRange(relations);
-                    */
 
-                    // todo: all the rest that needs to be done.
+                    var eventsWithNoSignups = db.Events.Where(n => n.CreatedByUserId == userId && !n.Signups.Any(nn => nn.UserId != userId));
+                    db.Events.RemoveRange(eventsWithNoSignups);
 
                     await db.SaveChangesAsync();
 
