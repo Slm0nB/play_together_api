@@ -27,6 +27,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 
             Field(user => user.DisplayId).Description("DisplayId property from the user object.");
 
+            Field(user => user.SoftDelete).Description("Indicates if this is a deleted user.");
+
             Field<IntGraphType>("utcOffset",
                 description: "UTC offset in seconds.",
                 resolve: context => context.Source.UtcOffset.HasValue ? context.Source.UtcOffset.Value.TotalSeconds : 0);

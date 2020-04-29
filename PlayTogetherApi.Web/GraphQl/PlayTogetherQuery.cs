@@ -127,6 +127,10 @@ namespace PlayTogetherApi.Web.GraphQl
                    {
                        query = query.Where(n => n.UserId == uid);
                    }
+                   else
+                   {
+                       query = query.Where(n => !n.SoftDelete);
+                   }
 
                    var email = context.GetArgument<string>("email");
                    if (!string.IsNullOrWhiteSpace(email))

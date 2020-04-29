@@ -16,10 +16,10 @@ namespace PlayTogetherApi.Web.GraphQl.Types
             Name = "UserCollection";
 
             FieldAsync<IntGraphType>("total",
-                description: "The total number of users registered",
+                description: "The total number of active users",
                 resolve: async context =>
                 {
-                    var total = await db.Users.CountAsync();
+                    var total = await db.Users.Where(n => !n.SoftDelete).CountAsync();
                     return total;
                 }
             );

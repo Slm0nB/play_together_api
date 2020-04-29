@@ -811,7 +811,8 @@ namespace PlayTogetherApi.Web.GraphQl
                         return null;
                     }
 
-                    //user.DisplayName = "DELETED"; // todo: this might cause conflict with with the constraint on displayname+displayid uniqueness
+                    //user.DisplayName = "DELETED"; // todo: if we want to do this, we also have to set displayid, although its easy to just set it to the number of deleted users
+                    user.SoftDelete = true;
                     user.Email = "DELETED";
                     user.PasswordHash = "DELETED";
                     db.Users.Update(user);

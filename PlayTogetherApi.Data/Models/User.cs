@@ -25,5 +25,7 @@ namespace PlayTogetherApi.Data
         public string AvatarFilename { get; set; }
 
         public TimeSpan? UtcOffset { get; set; }
+
+        public bool SoftDelete { get; set; }
     }
 }
