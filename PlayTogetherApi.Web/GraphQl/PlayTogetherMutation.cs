@@ -812,13 +812,19 @@ namespace PlayTogetherApi.Web.GraphQl
                     }
 
                     //user.DisplayName = "DELETED"; // todo: if we want to do this, we also have to set displayid, although its easy to just set it to the number of deleted users
+                    user.AvatarFilename = "avatar_deleted.jpg";
                     user.SoftDelete = true;
                     user.Email = "DELETED";
                     user.PasswordHash = "DELETED";
                     db.Users.Update(user);
 
-                    var relations = await db.UserRelations.Where(n => n.UserAId == userId || n.UserBId == userId).ToArrayAsync();
+                    /*
+                    var signups = db.UserEventSignups.Where(n => n.UserId == userId);
+                    db.UserEventSignups.RemoveRange(signups);
+
+                    var relations = db.UserRelations.Where(n => n.UserAId == userId || n.UserBId == userId);//.ToArrayAsync();
                     db.UserRelations.RemoveRange(relations);
+                    */
 
                     // todo: all the rest that needs to be done.
 
