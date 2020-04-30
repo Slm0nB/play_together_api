@@ -381,7 +381,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     {
                         EventId = newEvent.EventId,
                         UserId = userId,
-                        Status = UserEventStatus.Approved
+                        Status = UserEventStatus.AcceptedInvitation
                     };
                     db.UserEventSignups.Add(signup);
                     await db.SaveChangesAsync();
