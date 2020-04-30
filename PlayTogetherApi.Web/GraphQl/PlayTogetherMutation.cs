@@ -27,12 +27,6 @@ namespace PlayTogetherApi.Web.GraphQl
                 ),
                 resolve: async context =>
                 {
-
-
-                    // todo: if it's a friendsonly event, then verify that the caller is a friend
-
-
-
                     var principal = context.UserContext as ClaimsPrincipal;
                     var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
                     if (!Guid.TryParse(userIdClaim, out var userId))
@@ -61,6 +55,16 @@ namespace PlayTogetherApi.Web.GraphQl
                         context.Errors.Add(new ExecutionError("Invalid event; the creator no longer exists."));
                         return false;
                     }
+
+
+
+                    // todo: if it's a friendsonly event, then verify that the caller is the creator or a friend of the creator
+                    if(gameEvent.FriendsOnly)
+                    {
+
+                    }
+
+
 
                     var signup = await db.UserEventSignups.FirstOrDefaultAsync(n => n.EventId == eventId && n.UserId == userId);
                     if (signup != null)
@@ -372,6 +376,17 @@ namespace PlayTogetherApi.Web.GraphQl
                         FriendsOfChangingUser = !newEvent.FriendsOnly ? null : await db.UserRelations.Where(n => n.Status == FriendLogicService.Relation_MutualFriends && (n.UserAId == user.UserId || n.UserBId == user.UserId)).ToArrayAsync(),
                         Action = EventAction.Created,
                     }); ;
+
+                    var signup = new UserEventSignup
+                    {
+                        EventId = newEvent.EventId,
+                        UserId = userId,
+                        Status = UserEventStatus.Approved
+                    };
+                    db.UserEventSignups.Add(signup);
+                    await db.SaveChangesAsync();
+
+                    observables.UserEventSignupStream.OnNext(signup);
 
                     await userStatisticsService.UpdateStatisticsAsync(db, userId, user);
 
