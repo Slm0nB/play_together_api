@@ -200,8 +200,7 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     IObservable<UserStatisticsModel> observable = observables.GetUserStatisticsStream(callingUserId);
 
-                    return observable
-                        .AsObservable();
+                    return observable;
                 })
             });
         }

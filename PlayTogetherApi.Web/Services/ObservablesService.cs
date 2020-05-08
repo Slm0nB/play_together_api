@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.Models;
+using PlayTogetherApi.Web.Services;
 
 namespace PlayTogetherApi.Services
 {
@@ -22,7 +22,7 @@ namespace PlayTogetherApi.Services
         
         public ISubject<UserStatisticsModel> GetUserStatisticsStream(Guid userId, bool createIfMissing = true)
             => createIfMissing
-                ? UserStatisticsStreams.GetOrAdd(userId, _ => new Countingubject<UserStatisticsModel>(() => { UserStatisticsStreams.TryRemove(userId, out var __); }))
+                ? UserStatisticsStreams.GetOrAdd(userId, _ => new CountingSubject<UserStatisticsModel>(() => { UserStatisticsStreams.TryRemove(userId, out var __); }))
                 : UserStatisticsStreams.TryGetValue(userId, out var existingSubject)
                     ? existingSubject
                     : null;
