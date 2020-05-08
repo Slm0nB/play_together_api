@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Services
@@ -19,10 +20,9 @@ namespace PlayTogetherApi.Services
 
         public ConcurrentDictionary<Guid, ISubject<UserStatisticsModel>> UserStatisticsStreams = new ConcurrentDictionary<Guid, ISubject<UserStatisticsModel>>();
         
-        // todo: it would be nice to wrap this in a custom IDisposable that removes it from the collection when there are no subscribers!
         public ISubject<UserStatisticsModel> GetUserStatisticsStream(Guid userId, bool createIfMissing = true)
             => createIfMissing
-                ? UserStatisticsStreams.GetOrAdd(userId, _ => new ReplaySubject<UserStatisticsModel>(0))
+                ? UserStatisticsStreams.GetOrAdd(userId, _ => new Countingubject<UserStatisticsModel>(() => { UserStatisticsStreams.TryRemove(userId, out var __); }))
                 : UserStatisticsStreams.TryGetValue(userId, out var existingSubject)
                     ? existingSubject
                     : null;

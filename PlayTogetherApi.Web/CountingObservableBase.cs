@@ -6,26 +6,47 @@ using System.Threading;
 
 namespace PlayTogetherApi
 {
-	public abstract class CountingObservableBase<T>
+	public abstract class CountingObservableBase<T> : IObservable<T>
 	{
-		private ISubject<T> _internalSubject;
 		private int _subscriberCount;
+		protected ISubject<T> InternalSubject { get; private set; }
+		public int SubscriberCount => _subscriberCount;
 
 		public IDisposable Subscribe(Action<T> observer)
 		{
 			if (1 == Interlocked.Increment(ref _subscriberCount))
 			{
-				_internalSubject = Setup();
+				InternalSubject = Setup();
 			}
 
 			return new CompositeDisposable(
-				_internalSubject.Subscribe(observer),
+				InternalSubject.Subscribe(observer),
 				Disposable.Create(() =>
 				{
 					if (0 == Interlocked.Decrement(ref _subscriberCount))
 					{
-						Teardown(_internalSubject);
-						_internalSubject = null;
+						Teardown(InternalSubject);
+						InternalSubject = null;
+					}
+				}
+			));
+		}
+
+		public IDisposable Subscribe(IObserver<T> observer)
+		{
+			if (1 == Interlocked.Increment(ref _subscriberCount))
+			{
+				InternalSubject = Setup();
+			}
+
+			return new CompositeDisposable(
+				InternalSubject.Subscribe(observer),
+				Disposable.Create(() =>
+				{
+					if (0 == Interlocked.Decrement(ref _subscriberCount))
+					{
+						Teardown(InternalSubject);
+						InternalSubject = null;
 					}
 				}
 			));
@@ -34,9 +55,5 @@ namespace PlayTogetherApi
 		protected abstract ISubject<T> Setup();
 
 		protected abstract void Teardown(ISubject<T> subject);
-
-		protected ISubject<T> InternalSubject => _internalSubject;
-
-		public int SubscriberCount => _subscriberCount;
 	}
 }
