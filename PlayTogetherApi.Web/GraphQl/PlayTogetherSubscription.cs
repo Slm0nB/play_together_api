@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -203,7 +204,6 @@ namespace PlayTogetherApi.Web.GraphQl
                 })
             });
 
-
             AddField(new EventStreamFieldType
             {
                 Name = "eventSearch",
@@ -233,6 +233,9 @@ namespace PlayTogetherApi.Web.GraphQl
                 Resolver = new FuncFieldResolver<EventSearchUpdateModel>(context => context.Source as EventSearchUpdateModel),
                 Subscriber = new EventStreamResolver<EventSearchUpdateModel>(context =>
                 {
+                    var queryService = new EventsQueryService();
+                    List<Guid> friendIds = null;
+
                     var jwt = authenticationService.ValidateJwt(context.GetArgument<string>("token"));
                     var userIdClaim = jwt?.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
                     if (!Guid.TryParse(userIdClaim, out var callingUserId))
@@ -240,10 +243,17 @@ namespace PlayTogetherApi.Web.GraphQl
                         context.Errors.Add(new ExecutionError("Unauthorized"));
                         return null;
                     }
+                    else
+                    {
+                        var friends = db.UserRelations.Where(
+                            rel => rel.Status == (UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended) &&
+                             (rel.UserAId == callingUserId || rel.UserBId == callingUserId))
+                            .ToList(); // // todo: look into turning it async!
+                        friendIds = friends.Select(rel => rel.UserAId == callingUserId ? rel.UserBId : rel.UserAId).ToList();
 
-                    var queryService = new EventsQueryService();
-
-                    // todo: populate userid and friends etc, like in PlayTogetherQuery
+                        queryService.UserId = callingUserId;
+                        queryService.FriendIds = friendIds;
+                    }
 
                     queryService.ReadParametersFromContext(context);
                     var initialEvents = queryService.Process(db.Events).ToList();  // todo: look into turning it async!

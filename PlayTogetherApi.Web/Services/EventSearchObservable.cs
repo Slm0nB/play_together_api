@@ -101,8 +101,6 @@ namespace PlayTogetherApi.Services
 
             subscription3?.Dispose();
             subscription3 = null;
-
-            // todo: remove this from the ObservablesService ?
         }
     }
 
