@@ -17,7 +17,7 @@ namespace PlayTogetherApi
 
 		protected override ISubject<T> Setup() => new Subject<T>();
 
-		protected override void Teardown(ISubject<T> subject) => cleanup?.Invoke();
+		protected override void Teardown() => cleanup?.Invoke();
 
 		public void OnNext(T value) => InternalSubject.OnNext(value);
 

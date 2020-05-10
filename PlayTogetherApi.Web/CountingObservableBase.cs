@@ -1,5 +1,4 @@
-﻿using Amazon.S3.Encryption.Internal;
-using System;
+﻿using System;
 using System.Reactive.Disposables;
 using System.Reactive.Subjects;
 using System.Threading;
@@ -25,7 +24,7 @@ namespace PlayTogetherApi
 				{
 					if (0 == Interlocked.Decrement(ref _subscriberCount))
 					{
-						Teardown(InternalSubject);
+						Teardown();
 						InternalSubject = null;
 					}
 				}
@@ -45,7 +44,7 @@ namespace PlayTogetherApi
 				{
 					if (0 == Interlocked.Decrement(ref _subscriberCount))
 					{
-						Teardown(InternalSubject);
+						Teardown();
 						InternalSubject = null;
 					}
 				}
@@ -54,6 +53,6 @@ namespace PlayTogetherApi
 
 		protected abstract ISubject<T> Setup();
 
-		protected abstract void Teardown(ISubject<T> subject);
+		protected abstract void Teardown();
 	}
 }
