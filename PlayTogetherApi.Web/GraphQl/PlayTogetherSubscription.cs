@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using GraphQL;
@@ -12,6 +11,7 @@ using PlayTogetherApi.Services;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.Models;
 using PlayTogetherApi.Web.GraphQl.Types;
+using PlayTogetherApi.Web.Services;
 
 namespace PlayTogetherApi.Web.GraphQl
 {
@@ -200,8 +200,67 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     IObservable<UserStatisticsModel> observable = observables.GetUserStatisticsStream(callingUserId);
 
-                    return observable
-                        .AsObservable();
+                    return observable;
+                })
+            });
+
+            AddField(new EventStreamFieldType
+            {
+                Name = "eventSearch",
+                Description = "Changes to a search for events.",
+                Type = typeof(EventSearchUpdateGraphType),
+                Arguments = new QueryArguments(
+                   new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "token", Description = "Access-token. Because it currently can't be provided as a header for subscriptions." },
+
+                   new QueryArgument<StringGraphType> { Name = "search", Description = "Search term applied to the title or description." },
+                   new QueryArgument<DateTimeGraphType> { Name = "startsBeforeDate", Description = "Event starts before or on this datetime." },
+                   new QueryArgument<DateTimeGraphType> { Name = "startsAfterDate", Description = "Event starts on or after this datetime." },
+                   new QueryArgument<DateTimeGraphType> { Name = "endsBeforeDate", Description = "Event ends before or on this datetime." },
+                   new QueryArgument<DateTimeGraphType> { Name = "endsAfterDate", Description = "Event ends on or after this datetime. If no start/end arguments are given, this default to 'now'." },
+
+                   new QueryArgument<BooleanGraphType> { Name = "onlyPrivate", Description = "Only show events that are friends-only." },
+                   new QueryArgument<BooleanGraphType> { Name = "onlyByFriends", Description = "Only show events that are created by friends. This requires the caller to be authorized." },
+                   new QueryArgument<ListGraphType<NonNullGraphType<IdGraphType>>> { Name = "onlyByUsers", Description = "Only show events created by these users." },
+                   new QueryArgument<ListGraphType<NonNullGraphType<IdGraphType>>> { Name = "onlyGames", Description = "Only show events for these games." },
+                   new QueryArgument<BooleanGraphType> { Name = "onlyJoined", Description = "Only show events that are joined by the user. This requires the caller to be authorized." },
+
+                   new QueryArgument<BooleanGraphType> { Name = "includePrivate", Description = "Include events that are friends-only." },
+                   new QueryArgument<BooleanGraphType> { Name = "includeByFriends", Description = "Include events that are created by friends. This requires the caller to be authorized." },
+                   new QueryArgument<ListGraphType<NonNullGraphType<IdGraphType>>> { Name = "includeByUsers", Description = "Include events created by these users." },
+                   new QueryArgument<ListGraphType<NonNullGraphType<IdGraphType>>> { Name = "includeGames", Description = "Include events for these games." },
+                   new QueryArgument<BooleanGraphType> { Name = "includeJoined", Description = "Include events that are joined by the user. This requires the caller to be authorized." }
+                ),
+                Resolver = new FuncFieldResolver<EventSearchUpdateModel>(context => context.Source as EventSearchUpdateModel),
+                Subscriber = new EventStreamResolver<EventSearchUpdateModel>(context =>
+                {
+                    var queryService = new EventsQueryService();
+                    List<Guid> friendIds = null;
+
+                    var jwt = authenticationService.ValidateJwt(context.GetArgument<string>("token"));
+                    var userIdClaim = jwt?.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+                    if (!Guid.TryParse(userIdClaim, out var callingUserId))
+                    {
+                        context.Errors.Add(new ExecutionError("Unauthorized"));
+                        return null;
+                    }
+                    else
+                    {
+                        var friends = db.UserRelations.Where(
+                            rel => rel.Status == (UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended) &&
+                             (rel.UserAId == callingUserId || rel.UserBId == callingUserId))
+                            .ToList(); // // todo: look into turning it async!
+                        friendIds = friends.Select(rel => rel.UserAId == callingUserId ? rel.UserBId : rel.UserAId).ToList();
+
+                        queryService.UserId = callingUserId;
+                        queryService.FriendIds = friendIds;
+                    }
+
+                    queryService.ReadParametersFromContext(context);
+                    var initialEvents = queryService.Process(db.Events).ToList();  // todo: look into turning it async!
+
+                    var observable = new EventSearchObservable(observables, queryService, initialEvents);
+
+                    return observable;
                 })
             });
         }
