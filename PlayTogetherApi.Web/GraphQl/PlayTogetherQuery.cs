@@ -233,6 +233,32 @@ namespace PlayTogetherApi.Web.GraphQl
                }
            );
 
+            Field<PlaceholderImageCollectionGraphType>(
+               "placeholderImages",
+               arguments: new QueryArguments(
+                   new QueryArgument<IntGraphType> { Name = "skip", Description = "How many images to skip." },
+                   new QueryArgument<IntGraphType> { Name = "take", Description = "How many images to return." }
+                ),
+               resolve: context =>
+               {
+                   IQueryable<PlaceholderImage> query = db.PlaceholderImages;
+
+                   var skip = context.GetArgument<int>("skip");
+                   if (skip > 0)
+                   {
+                       query = query.Skip(skip);
+                   }
+
+                   var take = context.GetArgument<int>("take");
+                   if (take > 0)
+                   {
+                       query = query.Take(take);
+                   }
+
+                   return query;
+               }
+           );
+
             FieldAsync<SelfUserGraphType>(
                "me",
                description: "The details of the authorized user.",

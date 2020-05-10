@@ -12,7 +12,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 {
     public class BuiltinAvatarGraphType : ObjectGraphType<BuiltinAvatar>
     {
-        public BuiltinAvatarGraphType(PlayTogetherDbContext db, IConfiguration config)
+        public BuiltinAvatarGraphType(IConfiguration config)
         {
             Name = "Avatar";
 

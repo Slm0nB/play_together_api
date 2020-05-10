@@ -15,6 +15,7 @@ namespace PlayTogetherApi.Data
         public DbSet<BuiltinAvatar> Avatars { get; set; }
         public DbSet<UserEventSignup> UserEventSignups { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<PlaceholderImage> PlaceholderImages { get; set; }
 
         public PlayTogetherDbContext()
         {
