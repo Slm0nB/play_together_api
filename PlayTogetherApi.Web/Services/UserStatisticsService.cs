@@ -114,17 +114,13 @@ namespace PlayTogetherApi.Services
 
                     EventsCreatedTotalCount = await db.Events.Where(n => n.CreatedByUserId == userId).CountAsync(),
 
-                    EventsCompletedTotalCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate < utcNow).CountAsync()
-                                              + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate < utcNow).CountAsync(),
+                    EventsCompletedTotalCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate < utcNow).CountAsync(),
 
-                    EventsCompletedTodayCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate > userToday && n.Event.EventEndDate < utcNow).CountAsync()
-                                              + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate > userToday && n.EventEndDate < utcNow).CountAsync(),
+                    EventsCompletedTodayCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate > userToday && n.Event.EventEndDate < utcNow).CountAsync(),
 
-                    EventsPendingTotalCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate > utcNow).CountAsync()
-                                              + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate > utcNow).CountAsync(),
+                    EventsPendingTotalCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate > utcNow).CountAsync(),
 
                     EventsPendingTodayCount = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventEndDate < userTomorrow && n.Event.EventEndDate > utcNow).CountAsync()
-                                              + await db.Events.Where(n => n.CreatedByUserId == userId && n.EventEndDate < userTomorrow && n.EventEndDate > utcNow).CountAsync(),
                 };
 
                 DateTime? expiration = null;
