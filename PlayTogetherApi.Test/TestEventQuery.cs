@@ -139,10 +139,8 @@ namespace PlayTogetherApi.Test
             }).Process(MockData.Events.AsQueryable()).ToArray();
 
             Assert.AreEqual(1, result.Count());
-
         }
 
-        /*
         [TestMethod]
         public void QueryExclusiveEventsJoinedByUser()
         {
@@ -152,10 +150,10 @@ namespace PlayTogetherApi.Test
                 OnlyJoinedFilter = true
             }).Process(MockData.Events.AsQueryable()).ToArray();
 
-            Assert.AreEqual(222, result.Count());
-
+            Assert.AreEqual(1, result.Count());
         }
 
+        /*
         [TestMethod]
         public void QueryIncludeEventsJoinedByFriends()
         {

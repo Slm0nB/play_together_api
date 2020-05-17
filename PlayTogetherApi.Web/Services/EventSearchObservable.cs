@@ -52,17 +52,62 @@ namespace PlayTogetherApi.Services
 
             subscription2 = observablesService.UserEventSignupStream.Subscribe(eventSignup =>
             {
-                // todo: if the signup is the subscriber or a friend, determine if this moves the event in or out of the collection
+                if (query.UserId.HasValue)
+                {
+                    if (eventSignup.UserId == query.UserId.Value)
+                    {
+                        // todo: if the signup is the subscriber or a friend, determine if this moves the event in or out of the collection
 
+                    }
+                    else if((query.IncludeByFriendsFilter || query.OnlyByFriendsFilter) && query.FriendIds?.Contains(eventSignup.UserId) == true)
+                    {
+
+                    }
+                    else if(query.IncludeByUsersFilter?.Contains(eventSignup.UserId) == true)
+                    {
+
+                    }
+                    else if (query.OnlyByUsersFilter?.Contains(eventSignup.UserId) == true)
+                    {
+
+                    }
+                }
             });
 
-            subscription3 = observablesService.UserRelationChangeStream.Subscribe(userRelationChanged =>
+            if (query.UserId.HasValue)
             {
-                // todo: determine if this updates the friendlist of the subscribing user (if this is relevant to the query!)
+                subscription3 = observablesService.UserRelationChangeStream.Subscribe(userRelationChanged =>
+                {
+                    if (query.IncludeByFriendsFilter || query.OnlyByFriendsFilter) // todo: joinedbyfriends filter when it gets added
+                    {
+                        // todo: determine if this updates the friendlist of the subscribing user (if this is relevant to the query!)
+                        // todo: if the friendlist is updated, determine if this affects events in the collection or outside the collection (ie rerun the whole query
 
-                // todo: if the friendlist is updated, determine if this affects events in the collection
+                        if (userRelationChanged.Relation.UserAId == query.UserId || userRelationChanged.Relation.UserBId == query.UserId)
+                        {
+                            var areFriends = userRelationChanged.Relation.Status == (UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended);
+                            var friendId = userRelationChanged.Relation.UserAId == query.UserId
+                                ? userRelationChanged.Relation.UserBId
+                                : userRelationChanged.Relation.UserAId;
 
-            });
+                            if(areFriends && query.FriendIds?.Contains(friendId) != true)
+                            {
+                                query.FriendIds = query.FriendIds ?? new List<Guid>();
+                                query.FriendIds.Add(friendId);
+
+                                // todo: now we should run the query on all events created by or joing by the new friend
+                            }
+                            else if(!areFriends && query.FriendIds?.Contains(friendId) == true)
+                            {
+                                query.FriendIds.Remove(friendId);
+
+                                // todo: now we should retun the query on the existing list of events
+                            }
+                        }
+                    }
+
+                });
+            }
 
             return subject;
         }
