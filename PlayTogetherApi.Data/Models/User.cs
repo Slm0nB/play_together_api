@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Text;
 
 namespace PlayTogetherApi.Data
 {
@@ -20,7 +19,7 @@ namespace PlayTogetherApi.Data
 
         public string PasswordHash { get; set; }
 
-        public ICollection<UserEventSignup> Signups { get; } = new List<UserEventSignup>();
+        public ICollection<UserEventSignup> Signups { get; set; } = new List<UserEventSignup>();
 
         public string AvatarFilename { get; set; }
 

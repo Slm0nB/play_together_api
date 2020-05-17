@@ -125,5 +125,61 @@ namespace PlayTogetherApi.Test
             Assert.AreEqual(1, result.Count());
             Assert.AreSame(MockData.Events[4], result[0]);
         }
+
+        // todo find out out to mock and test signups
+
+        [TestMethod]
+        public void QueryIncludeEventsJoinedByUser()
+        {
+            var result = (new EventsQueryService
+            {
+                UserId = MockData.Users[0].UserId,
+                IncludeJoinedFilter = true
+                
+            }).Process(MockData.Events.AsQueryable()).ToArray();
+
+            Assert.AreEqual(1, result.Count());
+
+        }
+
+        /*
+        [TestMethod]
+        public void QueryExclusiveEventsJoinedByUser()
+        {
+            var result = (new EventsQueryService
+            {
+                UserId = MockData.Users[0].UserId,
+                OnlyJoinedFilter = true
+            }).Process(MockData.Events.AsQueryable()).ToArray();
+
+            Assert.AreEqual(222, result.Count());
+
+        }
+
+        [TestMethod]
+        public void QueryIncludeEventsJoinedByFriends()
+        {
+            var result = (new EventsQueryService
+            {
+                UserId = MockData.Users[0].UserId,
+            }).Process(MockData.Events.AsQueryable()).ToArray();
+
+            Assert.AreEqual(222, result.Count());
+
+        }
+
+        [TestMethod]
+        public void QueryExclusiveEventsJoinedByFriends()
+        {
+            var result = (new EventsQueryService
+            {
+                UserId = MockData.Users[0].UserId,
+                OnlyByFriendsFilter = true
+            }).Process(MockData.Events.AsQueryable()).ToArray();
+
+            Assert.AreEqual(222, result.Count());
+
+        }
+        */
     }
 }
