@@ -95,7 +95,7 @@ namespace PlayTogetherApi.Services
                                 query.FriendIds = query.FriendIds ?? new List<Guid>();
                                 query.FriendIds.Add(friendId);
 
-                                // todo: now we should run the query on all events created by or joing by the new friend
+                                // todo: now we should run the query on all events created by or joined by the new friend
                             }
                             else if(!areFriends && query.FriendIds?.Contains(friendId) == true)
                             {
