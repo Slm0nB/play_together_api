@@ -132,17 +132,9 @@ namespace PlayTogetherApi.Web.GraphQl
                         return null;
                     }
 
-                    IObservable<UserRelationChangedModel> observable = observables.UserRelationChangeStream
-                        .Where(rel => rel.Relation.UserAId == callingUserId || rel.Relation.UserBId == callingUserId);
+                    var excludeChangesFromCaller = context.GetArgument<bool>("excludeChangesFromCaller");
 
-                    if (context.GetArgument<bool>("excludeChangesFromCaller"))
-                    {
-                        observable = observable.Where(rel => rel.ActiveUser.UserId != callingUserId);
-                    }
-
-                    return observable
-                        .Select(n => new UserRelationChangedExtModel(n, callingUserId))
-                        .AsObservable();
+                    return observables.GetRelationChangedSubscription(callingUserId, excludeChangesFromCaller);
                 })
             });
 

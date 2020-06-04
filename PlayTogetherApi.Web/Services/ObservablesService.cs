@@ -26,5 +26,20 @@ namespace PlayTogetherApi.Services
                 : UserStatisticsStreams.TryGetValue(userId, out var existingSubject)
                     ? existingSubject
                     : null;
+
+        public IObservable<UserRelationChangedExtModel> GetRelationChangedSubscription(Guid callingUserId, bool excludeChangesFromCaller)
+        {
+            IObservable<UserRelationChangedModel> observable = this.UserRelationChangeStream
+                .Where(rel => rel.Relation.UserAId == callingUserId || rel.Relation.UserBId == callingUserId);
+
+            if (excludeChangesFromCaller)
+            {
+                observable = observable.Where(rel => rel.ActiveUser.UserId != callingUserId);
+            }
+
+            return observable
+                .Select(n => new UserRelationChangedExtModel(n, callingUserId))
+                .AsObservable();
+        }
     }
 }
