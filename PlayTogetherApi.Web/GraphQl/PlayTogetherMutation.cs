@@ -294,7 +294,8 @@ namespace PlayTogetherApi.Web.GraphQl
                                 type = "CallToArms",
                                 userId = callingUserId.ToString("N"),
                                 userName = callingUser.DisplayName,
-                                eventId = newEvent.EventId.ToString("N")
+                                eventId = newEvent.EventId.ToString("N"),
+                                eventTitle = newEvent.Title
                             },
                             email
                         );
@@ -319,14 +320,14 @@ namespace PlayTogetherApi.Web.GraphQl
                 {
                     var principal = context.UserContext as ClaimsPrincipal;
                     var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
-                    if (!Guid.TryParse(userIdClaim, out var userId))
+                    if (!Guid.TryParse(userIdClaim, out var callingUserId))
                     {
                         context.Errors.Add(new ExecutionError("Unauthorized"));
                         return null;
                     }
 
-                    var user = await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
-                    if (user == null)
+                    var callingUser = await db.Users.FirstOrDefaultAsync(n => n.UserId == callingUserId);
+                    if (callingUser == null)
                     {
                         context.Errors.Add(new ExecutionError("User not found."));
                         return null;
@@ -359,7 +360,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     var newEvent = new Event
                     {
                         Title = context.GetArgument<string>("title"),
-                        CreatedByUserId = userId,
+                        CreatedByUserId = callingUserId,
                         EventDate = startdate,
                         EventEndDate = enddate,
                         Description = context.GetArgument<string>("description"),
@@ -369,18 +370,22 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.Events.Add(newEvent);
                     await db.SaveChangesAsync();
 
+                    var friends = await db.UserRelations.Where(n => n.Status == FriendLogicService.Relation_MutualFriends && (n.UserAId == callingUser.UserId || n.UserBId == callingUser.UserId)).ToArrayAsync();
+                    var friendIds = friends.Select(n => n.UserAId == callingUserId ? n.UserBId : n.UserAId).ToList();
+                    var friendEmails = await db.Users.Where(n => friendIds.Contains(n.UserId)).Select(n => n.Email).ToListAsync();
+
                     observables.GameEventStream.OnNext(new EventChangedModel
                     {
                         Event = newEvent,
-                        ChangingUser = user,
-                        FriendsOfChangingUser = !newEvent.FriendsOnly ? null : await db.UserRelations.Where(n => n.Status == FriendLogicService.Relation_MutualFriends && (n.UserAId == user.UserId || n.UserBId == user.UserId)).ToArrayAsync(),
+                        ChangingUser = callingUser,
+                        FriendsOfChangingUser = !newEvent.FriendsOnly ? null : friends,
                         Action = EventAction.Created,
                     }); ;
 
                     var signup = new UserEventSignup
                     {
                         EventId = newEvent.EventId,
-                        UserId = userId,
+                        UserId = callingUserId,
                         Status = UserEventStatus.AcceptedInvitation
                     };
                     db.UserEventSignups.Add(signup);
@@ -388,7 +393,25 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     observables.UserEventSignupStream.OnNext(signup);
 
-                    await userStatisticsService.UpdateStatisticsAsync(db, userId, user);
+                    await userStatisticsService.UpdateStatisticsAsync(db, callingUserId, callingUser);
+
+                    foreach(var email in friendEmails)
+                    {
+                        _ = pushMessageService.PushMessageAsync(
+                            "FriendEvent",
+                            $"{callingUser.DisplayName} created an event.",
+                            newEvent.Title,
+                            new
+                            {
+                                type = "FriendEvent",
+                                userId = callingUserId.ToString("N"),
+                                userName = callingUser.DisplayName,
+                                eventId = newEvent.EventId.ToString("N"),
+                                eventTitle = newEvent.Title
+                            },
+                            email
+                        );
+                    }
 
                     return newEvent;
                 }
