@@ -15,7 +15,7 @@ namespace PlayTogetherApi.Services
 
         public PushMessageService (IConfiguration conf)
         {
-            ApiKey = conf.GetSection("PlayTogetherPushKey").Value;
+            ApiKey = conf?.GetSection("PlayTogetherPushKey").Value;
         }
 
         public async Task<string> PushMessageAsync<T>(string name, string title, string body, T payload = null, params string[] recipients) where T : class

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using PlayTogetherApi.Data;
 
 namespace PlayTogetherApi.Test
@@ -149,12 +151,29 @@ namespace PlayTogetherApi.Test
             usr.Signups.Add(signup);
         }
 
-        static public async Task PopulateDbAsync(PlayTogetherDbContext db)
+        static public async Task ClearDbAsync(PlayTogetherDbContext db)
         {
-            db.Games.AddRange(Games);
-            db.Users.AddRange(Users);
-            db.Events.AddRange(Events);
+            db.Games.RemoveRange(await db.Games.ToListAsync());
+            db.Users.RemoveRange(await db.Users.ToListAsync());
+            db.Events.RemoveRange(await db.Events.ToListAsync());
+            db.UserEventSignups.RemoveRange(await db.UserEventSignups.ToListAsync());
             await db.SaveChangesAsync();
+        }
+
+        static public async Task PopulateDbAsync(PlayTogetherDbContext db, bool force = false)
+        {
+            if(force)
+            {
+                await ClearDbAsync(db);
+            }
+
+            if (!await db.Games.AnyAsync())
+            {
+                db.Games.AddRange(Games);
+                db.Users.AddRange(Users);
+                db.Events.AddRange(Events);
+                await db.SaveChangesAsync();
+            }
         }
     }
 }

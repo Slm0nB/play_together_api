@@ -32,6 +32,7 @@ namespace PlayTogetherApi.Test
             services.AddSingleton<FriendLogicService>();
             services.AddSingleton<UserStatisticsService>();
 
+            services.AddScoped<PushMessageService, DummyPushMessageService>();
             services.AddScoped<InteractionsService>();
 
             services.AddDbContext<PlayTogetherDbContext>(opt =>
