@@ -46,7 +46,7 @@ namespace PlayTogetherApi.Test
         }
 
         [TestMethod]
-        public async Task TestInviteFriend()
+        public async Task TestInviteFriendAndAcceptInvitation()
         {
             IDisposable sub1 = null, sub2 = null;
             PlayTogetherDbContext db = di.GetService<PlayTogetherDbContext>();
@@ -82,7 +82,7 @@ namespace PlayTogetherApi.Test
                     userChange2 = model;
                 });
 
-                // Create the relation
+                // Create the invitation
                 var relationExt = await interactionsService.ChangeUserRelationAsync(user1.UserId, user2.UserId, UserRelationAction.Invite);
 
                 // The extended relation should reflect that they had no relation earlier
@@ -92,7 +92,7 @@ namespace PlayTogetherApi.Test
                 Assert.AreEqual(UserRelationInternalStatus.A_Invited, relationExt.Relation.Status);
                 Assert.AreEqual(UserRelationStatus.None, relationExt.PreviousStatusForTargetUser);
 
-                // User2 should be getting an update
+                // User1 should be getting an update
                 Assert.IsNotNull(userChange1);
                 Assert.AreEqual(user1.UserId, userChange1.SubscribingUserId);
                 Assert.AreEqual(UserRelationAction.Invite, userChange1.ActiveUserAction);
@@ -118,6 +118,45 @@ namespace PlayTogetherApi.Test
                 Assert.AreEqual(user1.UserId, relations[0].UserAId);
                 Assert.AreEqual(user2.UserId, relations[0].UserBId);
                 Assert.AreEqual(UserRelationInternalStatus.A_Invited, relations[0].Status);
+
+                userChange1 = userChange2 = null;
+
+                // Accept the invitation
+                relationExt = await interactionsService.ChangeUserRelationAsync(user2.UserId, user1.UserId, UserRelationAction.Accept);
+
+                // The extended relation should reflect that their previous state was an invitation
+                Assert.IsNotNull(relationExt);
+                Assert.AreEqual(user1.UserId, relationExt.Relation.UserAId);
+                Assert.AreEqual(user2.UserId, relationExt.Relation.UserBId);
+                Assert.AreEqual(UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended, relationExt.Relation.Status);
+                Assert.AreEqual(UserRelationStatus.Inviting, relationExt.PreviousStatusForTargetUser);
+
+                // User1 should be getting an update
+                Assert.IsNotNull(userChange1);
+                Assert.AreEqual(user1.UserId, userChange1.SubscribingUserId);
+                Assert.AreEqual(UserRelationAction.Accept, userChange1.ActiveUserAction);
+                Assert.AreEqual(user1.UserId, userChange1.Relation.UserAId);
+                Assert.AreEqual(user2.UserId, userChange1.Relation.UserBId);
+                Assert.AreEqual(UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended, userChange1.Relation.Status);
+                Assert.AreEqual(UserRelationStatus.Friends, friendLogic.GetStatusForUser(userChange1.Relation, user1.UserId));
+
+                // User2 should be getting an update
+                Assert.IsNotNull(userChange2);
+                Assert.AreEqual(user2.UserId, userChange2.SubscribingUserId);
+                Assert.AreEqual(UserRelationAction.Accept, userChange2.ActiveUserAction);
+                Assert.AreEqual(user1.UserId, userChange2.Relation.UserAId);
+                Assert.AreEqual(user2.UserId, userChange2.Relation.UserBId);
+                Assert.AreEqual(UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended, userChange2.Relation.Status);
+                Assert.AreEqual(UserRelationStatus.Friends, friendLogic.GetStatusForUser(userChange2.Relation, user2.UserId));
+
+                // The db should still contain a relation
+                relations = await db.UserRelations.Where(n =>
+                    (n.UserAId == user1.UserId && n.UserBId == user2.UserId) || (n.UserAId == user2.UserId && n.UserBId == user1.UserId)
+                ).ToListAsync();
+                Assert.AreEqual(1, relations.Count);
+                Assert.AreEqual(user1.UserId, relations[0].UserAId);
+                Assert.AreEqual(user2.UserId, relations[0].UserBId);
+                Assert.AreEqual(UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended, relations[0].Status);
             }
             finally
             {
