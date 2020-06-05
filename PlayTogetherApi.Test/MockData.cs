@@ -30,12 +30,12 @@ namespace PlayTogetherApi.Test
                 new User
                 {
                     DisplayName = "User3",
-                    UserId = Guid.Parse("00000000-0000-0000-0001-000000000003")
+                    UserId = Guid.Parse("00000000-0000-0000-0003-000000000000")
                 },
                 new User
                 {
                     DisplayName = "User4",
-                    UserId = Guid.Parse("00000000-0000-0000-0002-000000000004")
+                    UserId = Guid.Parse("00000000-0000-0000-0004-000000000000")
                 }
             };
 

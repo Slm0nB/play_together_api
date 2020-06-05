@@ -32,27 +32,30 @@ namespace PlayTogetherApi.Test
                 await MockData.PopulateDbAsync(db);
 
                 var games = await db.Games.ToListAsync();
-                Assert.AreEqual(3, games.Count);
+                Assert.AreEqual(MockData.Games.Length, games.Count);
 
                 var users = await db.Users.ToListAsync();
-                Assert.AreEqual(4, users.Count);
+                Assert.AreEqual(MockData.Users.Length, users.Count);
 
                 var events = await db.Events.ToListAsync();
-                Assert.AreEqual(5, events.Count);
+                Assert.AreEqual(MockData.Events.Length, events.Count);
 
                 var eventSignups = await db.UserEventSignups.ToListAsync();
-                Assert.AreEqual(13, eventSignups.Count);
+                Assert.AreEqual(MockData.Events.SelectMany(n => n.Signups).Distinct().Count(), eventSignups.Count);
             }
         }
-
 
         [TestMethod]
         public async Task TestInviteFriend()
         {
-            using (var db = di.GetService<PlayTogetherDbContext>())
+            IDisposable sub1 = null, sub2 = null;
+            PlayTogetherDbContext db = di.GetService<PlayTogetherDbContext>();
+            try
             {
                 await MockData.PopulateDbAsync(db);
 
+                var observables = di.GetService<ObservablesService>();
+                var friendLogic = di.GetService<FriendLogicService>();
                 var interactionsService = di.GetService<InteractionsService>();
                 interactionsService.EnablePushMessages = false;
 
@@ -61,26 +64,67 @@ namespace PlayTogetherApi.Test
                 var user1 = MockData.Users[1];
                 var user2 = MockData.Users[2];
 
+                // Make sure there weren't any relations in the db already
                 var relations = await db.UserRelations.Where(n =>
                     (n.UserAId == user1.UserId && n.UserBId == user2.UserId) || (n.UserAId == user2.UserId && n.UserBId == user1.UserId)
                 ).ToListAsync();
-
                 Assert.AreEqual(0, relations.Count);
 
-                var res = await interactionsService.ChangeUserRelationAsync(user1.UserId, user2.UserId, UserRelationAction.Invite);
+                // Set up observers of relation-changes for each user
+                UserRelationChangedExtModel userChange1 = null;
+                UserRelationChangedExtModel userChange2 = null;
+                sub1 = observables.GetRelationChangedSubscription(user1.UserId, false).Subscribe(model =>
+                {
+                    userChange1 = model;
+                });
+                sub2 = observables.GetRelationChangedSubscription(user2.UserId, false).Subscribe(model =>
+                {
+                    userChange2 = model;
+                });
 
-                Assert.IsNotNull(res);
+                // Create the relation
+                var relationExt = await interactionsService.ChangeUserRelationAsync(user1.UserId, user2.UserId, UserRelationAction.Invite);
 
+                // The extended relation should reflect that they had no relation earlier
+                Assert.IsNotNull(relationExt);
+                Assert.AreEqual(user1.UserId, relationExt.Relation.UserAId);
+                Assert.AreEqual(user2.UserId, relationExt.Relation.UserBId);
+                Assert.AreEqual(UserRelationInternalStatus.A_Invited, relationExt.Relation.Status);
+                Assert.AreEqual(UserRelationStatus.None, relationExt.PreviousStatusForTargetUser);
+
+                // User2 should be getting an update
+                Assert.IsNotNull(userChange1);
+                Assert.AreEqual(user1.UserId, userChange1.SubscribingUserId);
+                Assert.AreEqual(UserRelationAction.Invite, userChange1.ActiveUserAction);
+                Assert.AreEqual(user1.UserId, userChange1.Relation.UserAId);
+                Assert.AreEqual(user2.UserId, userChange1.Relation.UserBId);
+                Assert.AreEqual(UserRelationInternalStatus.A_Invited, userChange1.Relation.Status);
+                Assert.AreEqual(UserRelationStatus.Inviting, friendLogic.GetStatusForUser(userChange1.Relation, user1.UserId));
+
+                // User2 should be getting an update
+                Assert.IsNotNull(userChange2);
+                Assert.AreEqual(user2.UserId, userChange2.SubscribingUserId);
+                Assert.AreEqual(UserRelationAction.Invite, userChange2.ActiveUserAction);
+                Assert.AreEqual(user1.UserId, userChange2.Relation.UserAId);
+                Assert.AreEqual(user2.UserId, userChange2.Relation.UserBId);
+                Assert.AreEqual(UserRelationInternalStatus.A_Invited, userChange2.Relation.Status);
+                Assert.AreEqual(UserRelationStatus.Invited, friendLogic.GetStatusForUser(userChange2.Relation, user2.UserId));
+
+                // The db should now contain a relation
                 relations = await db.UserRelations.Where(n =>
                     (n.UserAId == user1.UserId && n.UserBId == user2.UserId) || (n.UserAId == user2.UserId && n.UserBId == user1.UserId)
                 ).ToListAsync();
-
                 Assert.AreEqual(1, relations.Count);
                 Assert.AreEqual(user1.UserId, relations[0].UserAId);
                 Assert.AreEqual(user2.UserId, relations[0].UserBId);
                 Assert.AreEqual(UserRelationInternalStatus.A_Invited, relations[0].Status);
             }
-
+            finally
+            {
+                db?.Dispose();
+                sub1?.Dispose();
+                sub2?.Dispose();
+            }
         }
     }
 }
