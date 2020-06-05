@@ -14,7 +14,14 @@ namespace PlayTogetherApi.Web.GraphQl
 {
     public class PlayTogetherMutation : ObjectGraphType
     {
-        public PlayTogetherMutation(PlayTogetherDbContext db, AuthenticationService authenticationService, ObservablesService observables, PushMessageService pushMessageService, FriendLogicService friendLogicService, UserStatisticsService userStatisticsService)
+        public PlayTogetherMutation(
+            PlayTogetherDbContext db,
+            AuthenticationService authenticationService,
+            ObservablesService observables,
+            PushMessageService pushMessageService,
+            FriendLogicService friendLogicService,
+            UserStatisticsService userStatisticsService,
+            InteractionsService interactionsService)
         {
             Name = "Mutation";
 
@@ -326,94 +333,25 @@ namespace PlayTogetherApi.Web.GraphQl
                         return null;
                     }
 
-                    var callingUser = await db.Users.FirstOrDefaultAsync(n => n.UserId == callingUserId);
-                    if (callingUser == null)
-                    {
-                        context.Errors.Add(new ExecutionError("User not found."));
-                        return null;
-                    }
-
-                    var startdate = context.GetArgument<DateTime>("startdate");
-                    var enddate = context.GetArgument<DateTime>("enddate");
-                    if (startdate > enddate)
-                    {
-                        context.Errors.Add(new ExecutionError("Start- and end-dates not in correct order."));
-                        return null;
-                    }
-
+                    var startDate = context.GetArgument<DateTime>("startdate");
+                    var endDate = context.GetArgument<DateTime>("enddate");
+                    var title = context.GetArgument<string>("title");
+                    var description = context.GetArgument<string>("description");
                     var gameId = context.GetArgument<Guid>("game");
-                    if (gameId != default(Guid))
+                    var friendsOnly = context.HasArgument("friendsOnly")
+                        ? context.GetArgument<bool>("friendsOnly")
+                        : false;
+
+                    try
                     {
-                        if (!await db.Games.AnyAsync(n => n.GameId == gameId))
-                        {
-                            context.Errors.Add(new ExecutionError("Game doesn't exist."));
-                            return null;
-                        }
+                        var newEvent = await interactionsService.CreateEventAsync(callingUserId, startDate, endDate, title, description, friendsOnly, gameId);
+                        return newEvent;
                     }
-
-                    var friendsOnly = false;
-                    if(context.HasArgument("friendsOnly"))
+                    catch(Exception ex)
                     {
-                        friendsOnly = context.GetArgument<bool>("friendsOnly");
+                        context.Errors.Add(new ExecutionError(ex.Message));
+                        return null;
                     }
-
-                    var newEvent = new Event
-                    {
-                        Title = context.GetArgument<string>("title"),
-                        CreatedByUserId = callingUserId,
-                        EventDate = startdate,
-                        EventEndDate = enddate,
-                        Description = context.GetArgument<string>("description"),
-                        FriendsOnly = friendsOnly,
-                        GameId = gameId
-                    };
-                    db.Events.Add(newEvent);
-                    await db.SaveChangesAsync();
-
-                    var friends = await db.UserRelations.Where(n => n.Status == FriendLogicService.Relation_MutualFriends && (n.UserAId == callingUser.UserId || n.UserBId == callingUser.UserId)).ToArrayAsync();
-                    var friendIds = friends.Select(n => n.UserAId == callingUserId ? n.UserBId : n.UserAId).ToList();
-                    var friendEmails = await db.Users.Where(n => friendIds.Contains(n.UserId)).Select(n => n.Email).ToListAsync();
-
-                    observables.GameEventStream.OnNext(new EventChangedModel
-                    {
-                        Event = newEvent,
-                        ChangingUser = callingUser,
-                        FriendsOfChangingUser = !newEvent.FriendsOnly ? null : friends,
-                        Action = EventAction.Created,
-                    }); ;
-
-                    var signup = new UserEventSignup
-                    {
-                        EventId = newEvent.EventId,
-                        UserId = callingUserId,
-                        Status = UserEventStatus.AcceptedInvitation
-                    };
-                    db.UserEventSignups.Add(signup);
-                    await db.SaveChangesAsync();
-
-                    observables.UserEventSignupStream.OnNext(signup);
-
-                    await userStatisticsService.UpdateStatisticsAsync(db, callingUserId, callingUser);
-
-                    foreach(var email in friendEmails)
-                    {
-                        _ = pushMessageService.PushMessageAsync(
-                            "FriendEvent",
-                            $"{callingUser.DisplayName} created an event.",
-                            newEvent.Title,
-                            new
-                            {
-                                type = "FriendEvent",
-                                userId = callingUserId.ToString("N"),
-                                userName = callingUser.DisplayName,
-                                eventId = newEvent.EventId.ToString("N"),
-                                eventTitle = newEvent.Title
-                            },
-                            email
-                        );
-                    }
-
-                    return newEvent;
                 }
             );
 
@@ -889,97 +827,19 @@ namespace PlayTogetherApi.Web.GraphQl
                         return null;
                     }
 
-                    var callingUser = await db.Users.FirstOrDefaultAsync(n => n.UserId == callingUserId);
-                    if (callingUser == null)
-                    {
-                        context.Errors.Add(new ExecutionError("Calling user not found."));
-                        return null;
-                    }
-
                     var friendUserId = context.GetArgument<Guid>("user");
-                    var friendUser = await db.Users.FirstOrDefaultAsync(n => n.UserId == friendUserId);
-                    if (friendUser == null)
-                    {
-                        context.Errors.Add(new ExecutionError("User not found."));
-                        return null;
-                    }
-
                     var action = context.GetArgument<UserRelationAction>("status");
 
-                    var relation = await db.UserRelations.FirstOrDefaultAsync(n => (n.UserAId == callingUserId && n.UserBId == friendUserId) || (n.UserAId == friendUserId && n.UserBId == callingUserId));
-
-                    var previousStatusForFriendUser = relation == null
-                        ? UserRelationStatus.None
-                        : friendLogicService.GetStatusForUser(relation, friendUserId);
-
-                    if (relation == null)
+                    try
                     {
-                        // Inviting (or blocking) an unrelated user
-                        if (action != UserRelationAction.Invite && action != UserRelationAction.Block)
-                        {
-                            context.Errors.Add(new ExecutionError("Can only invite or block unrelated users."));
-                            return null;
-                        }
-                        relation = new UserRelation
-                        {
-                            UserAId = callingUserId,
-                            UserBId = friendUserId,
-                            Status = action == UserRelationAction.Invite ? UserRelationInternalStatus.A_Invited : UserRelationInternalStatus.A_Blocked,
-                            CreatedDate = DateTime.Now
-                        };
-                        db.UserRelations.Add(relation);
+                        var result = await interactionsService.ChangeUserRelationAsync(callingUserId, friendUserId, action);
+                        return result;
                     }
-                    else {
-                        var newStatus = friendLogicService.GetUpdatedStatus(relation, callingUserId, action);
-                        relation.Status = newStatus;
+                    catch (Exception ex)
+                    {
+                        context.Errors.Add(new ExecutionError(ex.Message));
+                        return null;
                     }
-                    await db.SaveChangesAsync();
-
-                    if (friendLogicService.GetStatusForUser(relation, callingUserId) == UserRelationStatus.Inviting)
-                    {
-                        var _ = pushMessageService.PushMessageAsync(
-                            "InviteFriend",
-                            "You have a friend-request!",
-                            $"{callingUser.DisplayName} wants to be your friend.",
-                            new
-                            {
-                                type = "InviteFriend",
-                                userId = callingUserId,
-                                userName = callingUser.DisplayName
-                            },
-                            friendUser.Email
-                        );
-                    }
-
-                    var observableModel = new UserRelationChangedModel
-                    {
-                        Relation = relation,
-                        ActiveUser = callingUser,
-                        ActiveUserAction = action,
-                        TargetUser = friendUser
-                    };
-                    observables.UserRelationChangeStream.OnNext(observableModel);
-
-                    await userStatisticsService.UpdateStatisticsAsync(db, callingUser.UserId, callingUser);
-                    await userStatisticsService.UpdateStatisticsAsync(db, friendUser.UserId, friendUser);
-
-
-
-
-                    // todo: if the users became friends, then send each of them VISIBLE-subscription for private-only events created by the other user
-                    // todo: if the users stopped being friends, then send each of them NOT VISIBLE-subscriptions for private-only events created by the other user
-
-
-
-
-                    var result = new UserRelationExtModel
-                    {
-                        Relation = relation,
-                        ActiveUserId = callingUserId,
-                        ActiveUserAction = action,
-                        PreviousStatusForTargetUser = previousStatusForFriendUser
-                    };
-                    return result;
                 }
             );
 

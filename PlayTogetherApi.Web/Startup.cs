@@ -42,6 +42,7 @@ namespace PlayTogetherApi.Web
             services.AddSingleton<FriendLogicService>();
             services.AddSingleton<UserStatisticsService>();
 
+            services.AddScoped<InteractionsService>();
             services.AddScoped<AuthenticationService>();
             services.AddScoped<S3Service>();
             services.AddScoped<PushMessageService>();
