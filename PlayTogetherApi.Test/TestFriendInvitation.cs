@@ -9,13 +9,18 @@ using PlayTogetherApi.Services;
 namespace PlayTogetherApi.Test
 {
     [TestClass]
-    public class TestFriendInvitation
+    public sealed class TestFriendInvitation : IDisposable
     {
-        IServiceProvider serviceProvider;
+        DependencyInjection di;
 
         public TestFriendInvitation()
         {
-            serviceProvider = DependencyInjection.ConfigureServices();
+            di = new DependencyInjection();
+        }
+
+        public void Dispose()
+        {
+            di?.Dispose();
         }
 
         [TestMethod]
@@ -23,10 +28,21 @@ namespace PlayTogetherApi.Test
         {
             // todo
 
-            using (var db = serviceProvider.GetService<PlayTogetherDbContext>())
+            using (var db = di.GetService<PlayTogetherDbContext>())
             {
+                await MockData.PopulateDbAsync(db);
+
                 var games = await db.Games.ToListAsync();
-                Assert.AreEqual(0, games.Count);
+                Assert.AreEqual(3, games.Count);
+
+                var users = await db.Users.ToListAsync();
+                Assert.AreEqual(4, users.Count);
+
+                var events = await db.Events.ToListAsync();
+                Assert.AreEqual(5, events.Count);
+
+                var eventSignups = await db.UserEventSignups.ToListAsync();
+                Assert.AreEqual(13, eventSignups.Count);
             }
         }
     }

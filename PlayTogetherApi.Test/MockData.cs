@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using PlayTogetherApi.Data;
 
 namespace PlayTogetherApi.Test
@@ -146,6 +147,14 @@ namespace PlayTogetherApi.Test
             };
             evt.Signups.Add(signup);
             usr.Signups.Add(signup);
+        }
+
+        static public async Task PopulateDbAsync(PlayTogetherDbContext db)
+        {
+            db.Games.AddRange(Games);
+            db.Users.AddRange(Users);
+            db.Events.AddRange(Events);
+            await db.SaveChangesAsync();
         }
     }
 }
