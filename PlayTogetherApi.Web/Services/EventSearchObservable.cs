@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Internal;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.Models;
@@ -54,7 +55,10 @@ namespace PlayTogetherApi.Services
             {
                 if (query.UserId.HasValue)
                 {
-                    FilterAndUpdate(new[] { eventSignup.Event });
+                    if (eventSignup.UserId == query.UserId.Value) // update if it was the user that joined or left.  (we currently dont have a "joined by friends" filter!)
+                    {
+                        FilterAndUpdate(new[] { eventSignup.Event });
+                    }
 
                     /*
                     if (eventSignup.Status == UserEventStatus.Cancelled)
@@ -108,8 +112,11 @@ namespace PlayTogetherApi.Services
                                 query.FriendIds = query.FriendIds ?? new List<Guid>();
                                 query.FriendIds.Add(friendId);
 
-                                var events = GetEventsCreatedByorJoinedByUser(friendId);
-                                FilterAndUpdate(events);
+                                GetEventsCreatedByorJoinedByUser(friendId)
+                                    .ContinueWith(eventsTask =>
+                                    {
+                                        FilterAndUpdate(eventsTask.Result);
+                                    });
                             }
                             else if(!areFriends && query.FriendIds?.Contains(friendId) == true)
                             {
@@ -125,7 +132,7 @@ namespace PlayTogetherApi.Services
             return subject;
         }
 
-        List<Event> GetEventsCreatedByorJoinedByUser(Guid userId)
+        async Task<List<Event>> GetEventsCreatedByorJoinedByUser(Guid userId)
         {
             // query.ProcessDates( ... );
 
