@@ -54,23 +54,36 @@ namespace PlayTogetherApi.Services
             {
                 if (query.UserId.HasValue)
                 {
-                    if (eventSignup.UserId == query.UserId.Value)
-                    {
-                        // todo: if the signup is the subscriber or a friend, determine if this moves the event in or out of the collection
+                    FilterAndUpdate(new[] { eventSignup.Event });
 
-                    }
-                    else if((query.IncludeByFriendsFilter || query.OnlyByFriendsFilter) && query.FriendIds?.Contains(eventSignup.UserId) == true)
+                    /*
+                    if (eventSignup.Status == UserEventStatus.Cancelled)
                     {
 
                     }
-                    else if(query.IncludeByUsersFilter?.Contains(eventSignup.UserId) == true)
+                    else
                     {
 
-                    }
-                    else if (query.OnlyByUsersFilter?.Contains(eventSignup.UserId) == true)
-                    {
+                        if (eventSignup.UserId == query.UserId.Value)
+                        {
+                            // todo: if the signup is the subscriber or a friend, determine if this moves the event in or out of the collection
 
+                            FilterAndUpdate(new[] { eventSignup.Event });
+                        }
+                        else if ((query.IncludeByFriendsFilter || query.OnlyByFriendsFilter) && query.FriendIds?.Contains(eventSignup.UserId) == true)
+                        {
+                            FilterAndUpdate(new[] { eventSignup.Event });
+                        }
+                        else if (query.IncludeByUsersFilter?.Contains(eventSignup.UserId) == true)
+                        {
+                            FilterAndUpdate(new[] { eventSignup.Event });
+                        }
+                        else if (query.OnlyByUsersFilter?.Contains(eventSignup.UserId) == true)
+                        {
+                            FilterAndUpdate(new[] { eventSignup.Event });
+                        }
                     }
+                    */
                 }
             });
 
@@ -95,13 +108,13 @@ namespace PlayTogetherApi.Services
                                 query.FriendIds = query.FriendIds ?? new List<Guid>();
                                 query.FriendIds.Add(friendId);
 
-                                // todo: now we should run the query on all events created by or joined by the new friend
+                                var events = GetEventsCreatedByorJoinedByUser(friendId);
+                                FilterAndUpdate(events);
                             }
                             else if(!areFriends && query.FriendIds?.Contains(friendId) == true)
                             {
                                 query.FriendIds.Remove(friendId);
-
-                                // todo: now we should retun the query on the existing list of events
+                                RerunQuery();
                             }
                         }
                     }
@@ -110,6 +123,31 @@ namespace PlayTogetherApi.Services
             }
 
             return subject;
+        }
+
+        List<Event> GetEventsCreatedByorJoinedByUser(Guid userId)
+        {
+            // query.ProcessDates( ... );
+
+            // todo: instantiate db and run queries
+            return new List<Event>();
+        }
+
+        void RerunQuery()
+        {
+            var updatedEvents = query.Process(CurrentEvents.AsQueryable()).ToList();
+            var removed = CurrentEvents.Except(updatedEvents).ToList();
+            if(removed.Any())
+            {
+                Update(removed: removed);
+            }
+        }
+
+        void FilterAndUpdate(IEnumerable<Event> events)
+        {
+            var addedEvents = query.Process(CurrentEvents.AsQueryable()).ToList();
+            var removedEvents = events.Except(addedEvents).ToList();
+            Update(added: addedEvents, removed: removedEvents);
         }
 
         void Update(List<Data.Event> added = null, List<Data.Event> removed = null)

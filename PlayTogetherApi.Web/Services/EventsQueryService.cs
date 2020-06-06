@@ -79,7 +79,7 @@ namespace PlayTogetherApi.Web.Services
             IncludeGamesFilter = context.HasArgument("includeGames") ? context.GetArgument<Guid[]>("includeGames") : null;
         }
 
-        IQueryable<Event> ProcessDates(IQueryable<Event> query)
+        public IQueryable<Event> ProcessDates(IQueryable<Event> query)
         {
             bool dateWasGiven = false;
 
