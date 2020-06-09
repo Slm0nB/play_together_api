@@ -19,6 +19,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 
             Field(user => user.Email).Description("Email property from the user object.");
 
+            Field(user => user.DeviceToken).Description("FCM device token.");
+
             FieldAsync<UserStatisticsGraphType>("statistics", resolve: async context => {
                 var statistics = await statisticsService.GetOrBuildStatisticsForUserAsync(db, context.Source.UserId, context.Source);
                 return statistics;

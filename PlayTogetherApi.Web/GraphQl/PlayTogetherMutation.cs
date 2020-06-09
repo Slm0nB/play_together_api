@@ -627,7 +627,8 @@ namespace PlayTogetherApi.Web.GraphQl
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "displayName" },
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "email" },
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "password" },
-                    new QueryArgument<IntGraphType> { Name = "utcOffset", Description = "UTC offset in seconds" }
+                    new QueryArgument<IntGraphType> { Name = "utcOffset", Description = "UTC offset in seconds" },
+                    new QueryArgument<StringGraphType> { Name = "deviceToken", Description = "FCM device token" }
                 ),
                 resolve: async context =>
                 {
@@ -679,6 +680,8 @@ namespace PlayTogetherApi.Web.GraphQl
                         }
                     }
 
+                    var deviceToken = context.HasArgument("deviceToken") ? context.GetArgument<string>("deviceToken") : null;
+
                     var passwordHash = authenticationService.CreatePasswordHash(password);
 
                     var newUser = new User
@@ -687,7 +690,8 @@ namespace PlayTogetherApi.Web.GraphQl
                         DisplayId = displayId,
                         Email = email,
                         PasswordHash = passwordHash,
-                        UtcOffset = utcOffset
+                        UtcOffset = utcOffset,
+                        DeviceToken = deviceToken
                     };
 
                     db.Users.Add(newUser);
@@ -705,7 +709,8 @@ namespace PlayTogetherApi.Web.GraphQl
                     new QueryArgument<StringGraphType> { Name = "email" },
                     new QueryArgument<StringGraphType> { Name = "password" },
                     new QueryArgument<StringGraphType> { Name = "avatar", Description = "Filename of the new avatar image" },
-                    new QueryArgument<IntGraphType> { Name = "utcOffset", Description = "UTC offset in seconds" }
+                    new QueryArgument<IntGraphType> { Name = "utcOffset", Description = "UTC offset in seconds" },
+                    new QueryArgument<StringGraphType> { Name = "deviceToken", Description = "FCM device token" }
                 ),
                 resolve: async context =>
                 {
@@ -806,6 +811,15 @@ namespace PlayTogetherApi.Web.GraphQl
                             editedUser.UtcOffset = utcOffset;
 
                             // todo: update to statistics subscription
+                        }
+                    }
+
+                    if (context.HasArgument("deviceToken"))
+                    {
+                        var deviceToken = context.GetArgument<string>("deviceToken");
+                        if (deviceToken != null)
+                        {
+                            editedUser.DeviceToken = deviceToken;
                         }
                     }
 
