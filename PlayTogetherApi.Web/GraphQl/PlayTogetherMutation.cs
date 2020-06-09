@@ -96,7 +96,7 @@ namespace PlayTogetherApi.Web.GraphQl
                             eventName = gameEvent.Title,
                             userName = user.DisplayName
                         },
-                        eventOwner.Email
+                        eventOwner.DeviceToken
                     );
 
                     return true;
@@ -275,7 +275,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     });
 
                     var friendIds = friendsOfChangingUser.Select(n => n.UserAId == callingUserId ? n.UserBId : n.UserAId).ToList();
-                    var friendEmails = await db.Users.Where(n => friendIds.Contains(n.UserId)).Select(n => n.Email).ToListAsync();
+                    var friendDeviceTokens = await db.Users.Where(n => friendIds.Contains(n.UserId)).Select(n => n.DeviceToken).ToArrayAsync();
 
                     await userStatisticsService.UpdateStatisticsAsync(db, callingUserId, callingUser);
                     foreach (var friendId in friendIds)
@@ -283,8 +283,8 @@ namespace PlayTogetherApi.Web.GraphQl
                         await userStatisticsService.UpdateStatisticsAsync(db, friendId);
                     }
 
-                    foreach (var email in friendEmails)
-                    {
+                    //foreach (var deviceToken in friendDeviceTokens)
+                    //{
                         _ = pushMessageService.PushMessageAsync(
                             "CallToArms",
                             $"{callingUser.DisplayName} calls you to arms!",
@@ -297,9 +297,9 @@ namespace PlayTogetherApi.Web.GraphQl
                                 eventId = newEvent.EventId.ToString("N"),
                                 eventTitle = newEvent.Title
                             },
-                            email
+                            friendDeviceTokens
                         );
-                    }
+                    //}
 
                     return newEvent;
                 }
@@ -372,7 +372,7 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     var friends = await db.UserRelations.Where(n => n.Status == FriendLogicService.Relation_MutualFriends && (n.UserAId == callingUser.UserId || n.UserBId == callingUser.UserId)).ToArrayAsync();
                     var friendIds = friends.Select(n => n.UserAId == callingUserId ? n.UserBId : n.UserAId).ToList();
-                    var friendEmails = await db.Users.Where(n => friendIds.Contains(n.UserId)).Select(n => n.Email).ToListAsync();
+                    var friendDeviceTokens = await db.Users.Where(n => friendIds.Contains(n.UserId)).Select(n => n.DeviceToken).ToArrayAsync();
 
                     observables.GameEventStream.OnNext(new EventChangedModel
                     {
@@ -395,8 +395,8 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     await userStatisticsService.UpdateStatisticsAsync(db, callingUserId, callingUser);
 
-                    foreach(var email in friendEmails)
-                    {
+                    //foreach(var email in friendEmails)
+                    //{
                         _ = pushMessageService.PushMessageAsync(
                             "FriendEvent",
                             $"{callingUser.DisplayName} created an event.",
@@ -409,9 +409,9 @@ namespace PlayTogetherApi.Web.GraphQl
                                 eventId = newEvent.EventId.ToString("N"),
                                 eventTitle = newEvent.Title
                             },
-                            email
+                            friendDeviceTokens
                         );
-                    }
+                    //}
 
                     return newEvent;
                 }
@@ -961,7 +961,7 @@ namespace PlayTogetherApi.Web.GraphQl
                                 userId = callingUserId,
                                 userName = callingUser.DisplayName
                             },
-                            friendUser.Email
+                            friendUser.DeviceToken
                         );
                     }
 
