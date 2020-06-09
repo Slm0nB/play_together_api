@@ -69,7 +69,7 @@ namespace PlayTogetherApi.Services
 
             var friends = await db.UserRelations.Where(n => n.Status == FriendLogicService.Relation_MutualFriends && (n.UserAId == callingUser.UserId || n.UserBId == callingUser.UserId)).ToArrayAsync();
             var friendIds = friends.Select(n => n.UserAId == callingUserId ? n.UserBId : n.UserAId).ToList();
-            var friendEmails = await db.Users.Where(n => friendIds.Contains(n.UserId)).Select(n => n.Email).ToListAsync();
+            var friendDeviceTokens = await db.Users.Where(n => friendIds.Contains(n.UserId)).Select(n => n.DeviceToken).ToArrayAsync();
 
             observables.GameEventStream.OnNext(new EventChangedModel
             {
@@ -92,7 +92,7 @@ namespace PlayTogetherApi.Services
 
             if (EnablePushMessages && pushMessageService != null)
             {
-                foreach (var email in friendEmails)
+                //foreach (var email in friendEmails)
                 {
                     _ = pushMessageService.PushMessageAsync(
                         "FriendEvent",
@@ -106,7 +106,7 @@ namespace PlayTogetherApi.Services
                             eventId = newEvent.EventId.ToString("N"),
                             eventTitle = newEvent.Title
                         },
-                        email
+                        friendDeviceTokens
                     );
                 }
             }
@@ -180,7 +180,7 @@ namespace PlayTogetherApi.Services
                             userId = callingUserId,
                             userName = callingUser.DisplayName
                         },
-                        friendUser.Email
+                        friendUser.DeviceToken
                     );
                 }
             }

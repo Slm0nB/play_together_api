@@ -25,6 +25,8 @@ namespace PlayTogetherApi.Data
 
         public TimeSpan? UtcOffset { get; set; }
 
+        public string DeviceToken { get; set; }
+
         public bool SoftDelete { get; set; }
     }
 }
