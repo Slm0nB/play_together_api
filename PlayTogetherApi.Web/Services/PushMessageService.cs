@@ -51,7 +51,7 @@ namespace PlayTogetherApi.Services
                     },
                     Content = new StringContent(json, Encoding.UTF8, "application/json")
                 };
-                message.Headers.Authorization = new AuthenticationHeaderValue("key", "=foo");
+                message.Headers.Authorization = new AuthenticationHeaderValue("key", "=" + ApiKey);
 
                 using (var client = new HttpClient())
                 {
