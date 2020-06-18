@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using PlayTogetherApi.Web.Models;
 using PlayTogetherApi.Data;
@@ -14,6 +15,15 @@ namespace PlayTogetherApi.Web.Controllers
     [ApiController]
     public class TestController : ControllerBase
     {
+        [AllowAnonymous]
+        [HttpGet]
+        [Route("api/testkey")]
+        public async Task<IActionResult> TestKey([FromServices] IConfiguration conf)
+        {
+            var apiKey = "key: " + conf.GetSection("PlayTogetherPushKey").Value;
+            return Ok(apiKey);
+        }
+
         /*
         [AllowAnonymous]
         [HttpGet]

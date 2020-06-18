@@ -351,7 +351,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     {
                         context.Errors.Add(new ExecutionError(ex.Message));
                         return null;
-                    //}
+                    }
                 }
             );
 
