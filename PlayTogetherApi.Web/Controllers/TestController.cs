@@ -15,6 +15,7 @@ namespace PlayTogetherApi.Web.Controllers
     [ApiController]
     public class TestController : ControllerBase
     {
+        /*
         [AllowAnonymous]
         [HttpGet]
         [Route("api/testkey")]
@@ -23,6 +24,7 @@ namespace PlayTogetherApi.Web.Controllers
             var apiKey = "key: " + conf.GetSection("PlayTogetherPushKey").Value;
             return Ok(apiKey);
         }
+        */
 
         /*
         [AllowAnonymous]
