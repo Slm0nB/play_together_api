@@ -16,7 +16,7 @@ namespace PlayTogetherApi.Services
 
         public PushMessageService (IConfiguration conf)
         {
-            ApiKey = conf?.GetSection("PlayTogetherPushKey").Value;
+            ApiKey = "AAAAU42Cuv4:APA91bH7DuMNMEdS_zHG1Ba8gHJ6uKybfTiRfB23tgr19eaYOxwgl1EoUUe8yBGag5dIPRf3uE2mVdlJT3S-wNCJBx0_AJ93yRAJ6Q1nWeiqwr1pk8GpH1Xkrz9YcxoZR8a-LMUK-ZQa";// conf.GetSection("PlayTogetherPushKey").Value;
         }
 
         public async Task<string> PushMessageAsync<T>(string name, string title, string body, T payload = null, params string[] recipients) where T : class
@@ -51,7 +51,7 @@ namespace PlayTogetherApi.Services
                     },
                     Content = new StringContent(json, Encoding.UTF8, "application/json")
                 };
-                message.Headers.Authorization = new AuthenticationHeaderValue("key", "=foo");
+                message.Headers.Authorization = new AuthenticationHeaderValue("key", "=" + ApiKey);
 
                 using (var client = new HttpClient())
                 {
