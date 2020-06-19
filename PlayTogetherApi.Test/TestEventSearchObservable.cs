@@ -27,7 +27,7 @@ namespace PlayTogetherApi.Test
         }
 
         [TestMethod]
-        public async Task TestEventSearch_UserAddingEvent_ThenLeaving_ThenRejoining()
+        public async Task TestEventSearch_UserCreatingEvent_ThenLeaving_ThenRejoining()
         {
             IDisposable sub1 = null;
             try
@@ -42,23 +42,23 @@ namespace PlayTogetherApi.Test
 
                     var testUser = MockData.Users[0];
 
-                    // subscribe to events that the user has joined
+                    // search for future events that the user has joined
                     var queryService = new EventsQueryService
                     {
                         UserId = testUser.UserId,
                         StartsAfterDate = DateTime.Today.AddDays(-1),
                         IncludeJoinedFilter = true
-                        //IncludeByUsersFilter = new[] { testUser.UserId } // TODO: THIS SHOULDN'T BE NECESSARY, SINCE THE USER AUTOMATICALLY JOINS THE EVENT!
                     };
-
                     var searchObservable = new EventSearchObservable(observables, queryService, new List<Event>());
 
+                    // subscribe to updates from the search (the actual test)
                     EventSearchUpdateModel searchUpdate = null;
                     searchObservable.AsObservable().Subscribe(esum =>
                     {
                         searchUpdate = esum;
                     });
 
+                    // subscribe to eventchanges, as a sanity check
                     EventChangedModel eventChangeUpdate = null;
                     sub1 = observables.GameEventStream.AsObservable().Subscribe(ecm =>
                     {
@@ -114,7 +114,7 @@ namespace PlayTogetherApi.Test
 
 
         [TestMethod]
-        public async Task TestEventSearch_FriendAddingEvent()
+        public async Task TestEventSearch_FriendCreatingEvent_ThenUnfriending()
         {
             IDisposable sub1 = null, sub2 = null, sub3 = null;
             try
@@ -134,22 +134,24 @@ namespace PlayTogetherApi.Test
                     await interactions.ChangeUserRelationAsync(testUser.UserId, friendUser.UserId, UserRelationAction.Invite);
                     await interactions.ChangeUserRelationAsync(friendUser.UserId, testUser.UserId, UserRelationAction.Accept);
 
+                    // search for future events that are created by friends
                     var queryService = new EventsQueryService
                     {
                         UserId = testUser.UserId,
                         FriendIds = new List<Guid> { friendUser.UserId },
                         StartsAfterDate = DateTime.Today.AddDays(-1),
-                        IncludeByFriendsFilter = true
+                        IncludeByFriendsFilter = true,
                     };
-
                     var searchObservable = new EventSearchObservable(observables, queryService, new List<Event>());
 
+                    // subscribe to updates from the search (the actual test)
                     EventSearchUpdateModel searchUpdate = null;
                     sub1 = searchObservable.AsObservable().Subscribe(o_esum =>
                     {
                         searchUpdate = o_esum;
                     });
 
+                    // subscribe to eventchanges and userrelationchanges, as a sanity check
                     EventChangedModel eventChangeUpdate = null;
                     sub2 = observables.GameEventStream.AsObservable().Subscribe(o_ecm =>
                     {
@@ -173,7 +175,7 @@ namespace PlayTogetherApi.Test
                     Assert.IsNotNull(searchUpdate);
                     Assert.IsNotNull(searchUpdate.Added);
                     Assert.AreEqual(1, searchUpdate.Added.Count);
-                    Assert.IsNull(searchUpdate.Removed);
+                    Assert.IsTrue(searchUpdate.Removed == null || !searchUpdate.Removed.Any());
 
                     searchUpdate = null;
                     eventChangeUpdate = null;
@@ -183,15 +185,32 @@ namespace PlayTogetherApi.Test
                     await interactions.ChangeUserRelationAsync(friendUser.UserId, testUser.UserId, UserRelationAction.Reject);
 
                     Assert.IsNotNull(userRelationChangeUpdate);
-
-                    // todo: verify that the event was removed from the search
-                    Assert.IsNotNull(userRelationChangeUpdate);
                     Assert.AreEqual(UserRelationInternalStatus.A_Rejected | UserRelationInternalStatus.B_Rejected, userRelationChangeUpdate.Relation.Status);
-                    //Assert.IsNotNull(searchUpdate);
-                    //Assert.IsNotNull(eventChangeUpdate);
+                    Assert.AreEqual(testUser.UserId, userRelationChangeUpdate.Relation.UserAId);
+                    Assert.AreEqual(friendUser.UserId, userRelationChangeUpdate.Relation.UserBId);
 
+                    Assert.IsNotNull(searchUpdate);
+                    Assert.IsNotNull(searchUpdate.Removed);
+                    Assert.AreEqual(1, searchUpdate.Removed.Count);
+                    Assert.IsTrue(searchUpdate.Added == null || !searchUpdate.Added.Any());
 
+                    searchUpdate = null;
+                    eventChangeUpdate = null;
 
+                    // re-add the friendship, which should trigger the search to re-add the event
+                    await interactions.ChangeUserRelationAsync(testUser.UserId, friendUser.UserId, UserRelationAction.Invite);
+                    await interactions.ChangeUserRelationAsync(friendUser.UserId, testUser.UserId, UserRelationAction.Accept);
+
+                    Assert.IsNotNull(userRelationChangeUpdate);
+                    Assert.AreEqual(UserRelationInternalStatus.A_Befriended| UserRelationInternalStatus.B_Befriended, userRelationChangeUpdate.Relation.Status);
+                    Assert.AreEqual(testUser.UserId, userRelationChangeUpdate.Relation.UserAId);
+                    Assert.AreEqual(friendUser.UserId, userRelationChangeUpdate.Relation.UserBId);
+
+                    // verify that the event was added to the search
+                    Assert.IsNotNull(searchUpdate);
+                    Assert.IsNotNull(searchUpdate.Added);
+                    Assert.AreEqual(1, searchUpdate.Added.Count);
+                    Assert.IsTrue(searchUpdate.Removed == null || !searchUpdate.Removed.Any());
                 }
             }
             finally
