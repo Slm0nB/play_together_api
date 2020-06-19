@@ -15,6 +15,11 @@ namespace PlayTogetherApi.Test
 
         static MockData()
         {
+            Reset();
+        }
+
+        static public void Reset()
+        {
             Users = new[]
             {
                 new User
@@ -164,6 +169,7 @@ namespace PlayTogetherApi.Test
         {
             if(force)
             {
+                Reset();
                 await ClearDbAsync(db);
             }
 

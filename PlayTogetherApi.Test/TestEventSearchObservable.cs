@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Services;
@@ -79,6 +78,11 @@ namespace PlayTogetherApi.Test
                     Assert.AreEqual(1, searchUpdate.Added.Count);
                     Assert.IsNull(searchUpdate.Removed);
 
+                    searchUpdate = null;
+                    eventChangeUpdate = null;
+
+                    // leave the event, which should cause it to 
+                    await interactions.LeaveEvent(testUser.UserId, newEvent.EventId);
 
 
                     // todo: leave the event, and verify that we get an event-removed update

@@ -29,7 +29,7 @@ namespace PlayTogetherApi.Test
         {
             using (var db = di.GetService<PlayTogetherDbContext>())
             {
-                await MockData.PopulateDbAsync(db);
+                await MockData.PopulateDbAsync(db, true);
 
                 var games = await db.Games.ToListAsync();
                 Assert.AreEqual(MockData.Games.Length, games.Count);
