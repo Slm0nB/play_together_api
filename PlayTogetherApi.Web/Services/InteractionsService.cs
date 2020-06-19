@@ -65,6 +65,15 @@ namespace PlayTogetherApi.Services
                 GameId = gameId
             };
             db.Events.Add(newEvent);
+
+            var signup = new UserEventSignup
+            {
+                EventId = newEvent.EventId,
+                UserId = callingUserId,
+                Status = UserEventStatus.AcceptedInvitation
+            };
+            db.UserEventSignups.Add(signup);
+
             await db.SaveChangesAsync();
 
             var friends = await db.UserRelations.Where(n => n.Status == FriendLogicService.Relation_MutualFriends && (n.UserAId == callingUser.UserId || n.UserBId == callingUser.UserId)).ToArrayAsync();
@@ -77,16 +86,7 @@ namespace PlayTogetherApi.Services
                 ChangingUser = callingUser,
                 FriendsOfChangingUser = !newEvent.FriendsOnly ? null : friends,
                 Action = EventAction.Created,
-            }); ;
-
-            var signup = new UserEventSignup
-            {
-                EventId = newEvent.EventId,
-                UserId = callingUserId,
-                Status = UserEventStatus.AcceptedInvitation
-            };
-            db.UserEventSignups.Add(signup);
-            await db.SaveChangesAsync();
+            });
 
             observables.UserEventSignupStream.OnNext(signup);
 
@@ -123,7 +123,7 @@ namespace PlayTogetherApi.Services
 
         #region User-event signups
 
-        public async Task<UserEventSignup> JoinEvent(Guid callingUserId, Guid eventId, UserEventStatus status)
+        public async Task<UserEventSignup> JoinEvent(Guid callingUserId, Guid eventId, UserEventStatus status = UserEventStatus.AcceptedInvitation)
         {
             UserEventSignup signup = null;
 
@@ -151,18 +151,24 @@ namespace PlayTogetherApi.Services
             }
 
             signup = await db.UserEventSignups.FirstOrDefaultAsync(n => n.EventId == eventId && n.UserId == callingUserId);
-            if (signup != null)
+            if (signup == null)
             {
-                throw new Exception("Already signed up to this event.");
+                signup = new UserEventSignup
+                {
+                    EventId = eventId,
+                    UserId = callingUserId
+                };
+                db.UserEventSignups.Add(signup);
+            }
+            else
+            {
+                // todo: forbid setting it to accepted, if the status is about being rejected by the event-owner
+
+                if (signup.Status == UserEventStatus.AcceptedInvitation)
+                    throw new Exception("Already signed up to this event.");
             }
 
-            signup = new UserEventSignup
-            {
-                EventId = eventId,
-                UserId = callingUserId,
-                Status = status
-            };
-            db.UserEventSignups.Add(signup);
+            signup.Status = status;
             await db.SaveChangesAsync();
 
             observables.UserEventSignupStream.OnNext(signup);
@@ -210,6 +216,9 @@ namespace PlayTogetherApi.Services
             {
                 throw new Exception("Not signed up to this event.");
             }
+
+            // todo: something about forbidding removing it, if the status is about being rejected by the event-owner
+
 
             db.UserEventSignups.Remove(signup);
             await db.SaveChangesAsync();

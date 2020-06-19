@@ -27,7 +27,7 @@ namespace PlayTogetherApi.Test
         }
 
         [TestMethod]
-        public async Task TestEventSearch_UserAddingEvent()
+        public async Task TestEventSearch_UserAddingEvent_ThenLeaving_ThenRejoining()
         {
             IDisposable sub1 = null;
             try
@@ -47,8 +47,8 @@ namespace PlayTogetherApi.Test
                     {
                         UserId = testUser.UserId,
                         StartsAfterDate = DateTime.Today.AddDays(-1),
-                        IncludeJoinedFilter = true,
-                        IncludeByUsersFilter = new[] { testUser.UserId } // TODO: THIS SHOULDN'T BE NECESSARY, SINCE THE USER AUTOMATICALLY JOINS THE EVENT!
+                        IncludeJoinedFilter = true
+                        //IncludeByUsersFilter = new[] { testUser.UserId } // TODO: THIS SHOULDN'T BE NECESSARY, SINCE THE USER AUTOMATICALLY JOINS THE EVENT!
                     };
 
                     var searchObservable = new EventSearchObservable(observables, queryService, new List<Event>());
@@ -65,7 +65,7 @@ namespace PlayTogetherApi.Test
                         eventChangeUpdate = ecm;
                     });
 
-                    // create event, which shoudl trigger the search to add the event
+                    // create event, which should trigger the search to add the event
                     var newEvent = await interactions.CreateEventAsync(testUser.UserId, DateTime.UtcNow.AddHours(2), DateTime.UtcNow.AddHours(3), "testevent1", "", false, MockData.Games[0].GameId);
 
                     Assert.IsNotNull(eventChangeUpdate);
@@ -76,17 +76,32 @@ namespace PlayTogetherApi.Test
                     Assert.IsNotNull(searchUpdate);
                     Assert.IsNotNull(searchUpdate.Added);
                     Assert.AreEqual(1, searchUpdate.Added.Count);
-                    Assert.IsNull(searchUpdate.Removed);
+                    Assert.IsTrue(searchUpdate.Removed == null || !searchUpdate.Removed.Any());
 
                     searchUpdate = null;
                     eventChangeUpdate = null;
 
-                    // leave the event, which should cause it to 
+                    // leave the event, which should cause it to be removed from the search
                     await interactions.LeaveEvent(testUser.UserId, newEvent.EventId);
 
+                    Assert.IsNull(eventChangeUpdate);
 
-                    // todo: leave the event, and verify that we get an event-removed update
-                    // todo: move joinevent and leaveevent into the interactions-service
+                    Assert.IsNotNull(searchUpdate);
+                    Assert.IsNotNull(searchUpdate.Removed);
+                    Assert.AreEqual(1, searchUpdate.Removed.Count);
+                    Assert.IsTrue(searchUpdate.Added == null || !searchUpdate.Added.Any());
+
+                    searchUpdate = null;
+
+                    // rejoin the event, which should cause it to be added to the search
+                    await interactions.JoinEvent(testUser.UserId, newEvent.EventId);
+
+                    Assert.IsNull(eventChangeUpdate);
+
+                    Assert.IsNotNull(searchUpdate);
+                    Assert.IsNotNull(searchUpdate.Added);
+                    Assert.AreEqual(1, searchUpdate.Added.Count);
+                    Assert.IsTrue(searchUpdate.Removed == null || !searchUpdate.Removed.Any());
                 }
             }
             finally

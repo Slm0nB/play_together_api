@@ -152,7 +152,7 @@ namespace PlayTogetherApi.Services
 
         void FilterAndUpdate(IEnumerable<Event> events)
         {
-            var addedEvents = query.Process(CurrentEvents.AsQueryable()).ToList();
+            var addedEvents = query.Process(events.AsQueryable()).ToList();
             var removedEvents = events.Except(addedEvents).ToList();
             Update(added: addedEvents, removed: removedEvents);
         }
