@@ -60,39 +60,17 @@ namespace PlayTogetherApi.Services
             {
                 if (query.UserId.HasValue)
                 {
-                    if (eventSignup.UserId == query.UserId.Value) // update if it was the user that joined or left.  (we currently dont have a "joined by friends" filter!)
+                    if (eventSignup.UserId == query.UserId.Value || query.FriendIds?.Contains(eventSignup.UserId) == true) // update if it was the user that joined or left.
                     {
-                        FilterAndUpdate(new[] { eventSignup.Event });
-                    }
-
-                    /*
-                    if (eventSignup.Status == UserEventStatus.Cancelled)
-                    {
-
-                    }
-                    else
-                    {
-
-                        if (eventSignup.UserId == query.UserId.Value)
+                        if (eventSignup.Status == UserEventStatus.Cancelled)
                         {
-                            // todo: if the signup is the subscriber or a friend, determine if this moves the event in or out of the collection
-
-                            FilterAndUpdate(new[] { eventSignup.Event });
+                            RerunQuery();
                         }
-                        else if ((query.IncludeByFriendsFilter || query.OnlyByFriendsFilter) && query.FriendIds?.Contains(eventSignup.UserId) == true)
-                        {
-                            FilterAndUpdate(new[] { eventSignup.Event });
-                        }
-                        else if (query.IncludeByUsersFilter?.Contains(eventSignup.UserId) == true)
-                        {
-                            FilterAndUpdate(new[] { eventSignup.Event });
-                        }
-                        else if (query.OnlyByUsersFilter?.Contains(eventSignup.UserId) == true)
+                        else
                         {
                             FilterAndUpdate(new[] { eventSignup.Event });
                         }
                     }
-                    */
                 }
             });
 
@@ -144,15 +122,13 @@ namespace PlayTogetherApi.Services
                 var context = scope.ServiceProvider.GetService<PlayTogetherDbContext>();
 
                 var eventsQuery = context.Events.Where(n => n.CreatedByUserId == userId);
+
+                // todo: also events joined by the ussr!
+
                 eventsQuery = query.ProcessDates(eventsQuery);
 
                 var events = await eventsQuery.ToListAsync();
                 return events;
-
-                //query.ProcessDates(  );
-
-                // todo: instantiate db and run queries
-                //return new List<Event>();
             }
         }
 

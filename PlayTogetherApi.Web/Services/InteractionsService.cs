@@ -219,7 +219,6 @@ namespace PlayTogetherApi.Services
 
             // todo: something about forbidding removing it, if the status is about being rejected by the event-owner
 
-
             db.UserEventSignups.Remove(signup);
             await db.SaveChangesAsync();
 

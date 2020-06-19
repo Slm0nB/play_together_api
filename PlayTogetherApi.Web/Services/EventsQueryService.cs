@@ -7,6 +7,9 @@ using PlayTogetherApi.Data;
 
 namespace PlayTogetherApi.Web.Services
 {
+    /// <summary>
+    /// This service is used both to modify queries against the database, as well as for filtering events in memory.
+    /// </summary>
     public class EventsQueryService
     {
         public Guid? UserId;
@@ -24,12 +27,14 @@ namespace PlayTogetherApi.Web.Services
         public Guid[] OnlyByUsersFilter;
         public Guid[] OnlyGamesFilter;
         public bool OnlyJoinedFilter;
+        public bool OnlyJoinedByFriendsFilter;
 
         public bool IncludePrivateFilter;
         public bool IncludeByFriendsFilter;
         public Guid[] IncludeByUsersFilter;
         public Guid[] IncludeGamesFilter;
         public bool IncludeJoinedFilter;
+        public bool IncludeJoinedByFriendsFilter;
 
         public IQueryable<Event> Process(IQueryable<Event> query)
         {
@@ -69,12 +74,14 @@ namespace PlayTogetherApi.Web.Services
             OnlyPrivateFilter = context.HasArgument("onlyPrivate") ? context.GetArgument<bool>("onlyPrivate") : false;
             OnlyByFriendsFilter = context.HasArgument("onlyByFriends") ? context.GetArgument<bool>("onlyByFriends") : false;
             OnlyJoinedFilter = context.HasArgument("onlyJoined") ? context.GetArgument<bool>("onlyJoined") : false;
+            OnlyJoinedByFriendsFilter = context.HasArgument("onlyJoinedByFriends") ? context.GetArgument<bool>("onlyJoinedByFriends") : false;
             OnlyByUsersFilter = context.HasArgument("onlyByUsers") ? context.GetArgument<Guid[]>("onlyByUsers") : null;
             OnlyGamesFilter = context.HasArgument("onlyGames") ? context.GetArgument<Guid[]>("onlyGames") : null;
 
             IncludePrivateFilter = context.HasArgument("includePrivate") ? context.GetArgument<bool>("includePrivate") : false;
             IncludeByFriendsFilter = context.HasArgument("includeByFriends") ? context.GetArgument<bool>("includeByFriends") : false;
             IncludeJoinedFilter = context.HasArgument("includeJoined") ? context.GetArgument<bool>("includeJoined") : false;
+            IncludeJoinedByFriendsFilter = context.HasArgument("includeJoinedByFriends") ? context.GetArgument<bool>("includeJoinedByFriends") : false;
             IncludeByUsersFilter = context.HasArgument("includeByUsers") ? context.GetArgument<Guid[]>("includeByUsers") : null;
             IncludeGamesFilter = context.HasArgument("includeGames") ? context.GetArgument<Guid[]>("includeGames") : null;
         }
@@ -126,6 +133,11 @@ namespace PlayTogetherApi.Web.Services
                 query = query.Where(n => FriendIds.Contains(n.CreatedByUserId));
             }
 
+            if (OnlyJoinedByFriendsFilter)
+            {
+                query = query.Where(n => n.Signups.Any(nn => FriendIds.Contains(nn.UserId))); // todo: might need to read the status in the future
+            }
+
             if (OnlyByUsersFilter != null && OnlyByUsersFilter.Any())
             {
                 var first = OnlyByUsersFilter.First();
@@ -160,13 +172,14 @@ namespace PlayTogetherApi.Web.Services
             bool actualByUsersFilter = IncludeByUsersFilter.Any();
             bool actualGamesFilter = IncludeGamesFilter.Any();
 
-            bool anyFilter = IncludePrivateFilter || IncludeByFriendsFilter || actualByUsersFilter || actualJoinedFilter || actualGamesFilter;
+            bool anyFilter = IncludePrivateFilter || IncludeByFriendsFilter || IncludeJoinedByFriendsFilter || actualByUsersFilter || actualJoinedFilter || actualGamesFilter;
             if (!anyFilter)
                 return query;
 
             query = query.Where(n =>
                 (OnlyPrivateFilter && n.FriendsOnly)||
                 (IncludeByFriendsFilter && FriendIds.Contains(n.CreatedByUserId))  ||
+                (IncludeJoinedByFriendsFilter && n.Signups.Any(nn => FriendIds.Contains(nn.UserId))) ||
                 (actualJoinedFilter && n.Signups.Any(nn => nn.UserId == UserId)) ||
                 (actualByUsersFilter && IncludeByUsersFilter.Contains(n.CreatedByUserId)) ||
                 (actualGamesFilter && n.GameId.HasValue && IncludeGamesFilter.Contains(n.GameId.Value))
