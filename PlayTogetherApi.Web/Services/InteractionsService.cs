@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define EXTRA_EVENTS
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -311,13 +313,46 @@ namespace PlayTogetherApi.Services
                 await userStatisticsService.UpdateStatisticsAsync(db, friendUser.UserId, friendUser);
             }
 
+            bool areFriends = relation.Status == (UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended);
+            if(!areFriends)
+            {
+                // todo: if the users stopped being friends, then delete signups from each of them for friends-only events created by the other
 
 
-            // todo: if the users became friends, then send each of them VISIBLE-subscription for private-only events created by the other user
-            // todo: if the users stopped being friends, then send each of them NOT VISIBLE-subscriptions for private-only events created by the other user
+            }
 
+#if EXTRA_EVENTS
+            async Task NotifyVisibleEventsAsync(User primaryUser, User secondaryUser, EventAction raisedAction, UserRelation rel)
+            {
+                // send messages to the primaryUser about friends-only events from the secondaryUser
+                var friendsOnlyEvents = await db.Events.Where(n => n.CreatedByUserId == secondaryUser.UserId && n.FriendsOnly).ToListAsync();
+                if (friendsOnlyEvents.Any())
+                {
+                    foreach (var visibleEvent in friendsOnlyEvents)
+                    {
+                        observables.GameEventStream.OnNext(new EventChangedModel
+                        {
+                            Event = visibleEvent,
+                            ChangingUser = secondaryUser,
+                            FriendsOfChangingUser = new[] { rel },
+                            Action = raisedAction,
+                            RecipientUserId = primaryUser.UserId
+                        });
+                    }
+                }
+            }
+            if (areFriends)
+            {
+                await NotifyVisibleEventsAsync(callingUser, friendUser, EventAction.Created, relation);
+                await NotifyVisibleEventsAsync(friendUser, callingUser, EventAction.Created, relation);
 
-
+            }
+            else
+            {
+                await NotifyVisibleEventsAsync(callingUser, friendUser, EventAction.Deleted, relation);
+                await NotifyVisibleEventsAsync(friendUser, callingUser, EventAction.Deleted, relation);
+            }
+#endif
 
             var result = new UserRelationExtModel
             {

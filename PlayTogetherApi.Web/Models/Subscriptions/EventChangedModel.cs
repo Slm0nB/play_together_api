@@ -20,5 +20,7 @@ namespace PlayTogetherApi.Web.Models
         public Data.User ChangingUser;
         public Data.UserRelation[] FriendsOfChangingUser;
         public EventAction? Action;
+
+        public Guid? RecipientUserId;
     }
 }

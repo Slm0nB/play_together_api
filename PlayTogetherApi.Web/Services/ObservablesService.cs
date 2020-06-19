@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using PlayTogetherApi.Data;
@@ -26,6 +27,12 @@ namespace PlayTogetherApi.Services
                 : UserStatisticsStreams.TryGetValue(userId, out var existingSubject)
                     ? existingSubject
                     : null;
+
+        public IObservable<EventChangedModel> GetEventsSubscriptioon(Guid? userId)
+            => GameEventStream
+                .Where(eventExt => !eventExt.Event.FriendsOnly || eventExt.Event.CreatedByUserId == userId || (userId.HasValue && eventExt.FriendsOfChangingUser != null && eventExt.FriendsOfChangingUser.Any(nn => nn.UserAId == userId ||nn.UserBId == userId)))
+                .Where(eventExt => !eventExt.RecipientUserId.HasValue || eventExt.RecipientUserId == userId)
+                .AsObservable();
 
         public IObservable<UserRelationChangedExtModel> GetRelationChangedSubscription(Guid callingUserId, bool excludeChangesFromCaller)
         {
