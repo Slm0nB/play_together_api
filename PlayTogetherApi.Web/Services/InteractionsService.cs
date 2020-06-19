@@ -121,6 +121,109 @@ namespace PlayTogetherApi.Services
 
         #endregion
 
+        #region User-event signups
+
+        public async Task<UserEventSignup> JoinEvent(Guid callingUserId, Guid eventId, UserEventStatus status)
+        {
+            UserEventSignup signup = null;
+
+            var callingUser = await db.Users.FirstOrDefaultAsync(n => n.UserId == callingUserId);
+            if (callingUser == null)
+            {
+                throw new Exception("User not found.");
+            }
+
+            var gameEvent = await db.Events.FirstOrDefaultAsync(n => n.EventId == eventId);
+            if (gameEvent == null)
+            {
+                throw new Exception("Event not found.");
+            }
+
+            var eventOwner = await db.Users.FirstOrDefaultAsync(n => n.UserId == gameEvent.CreatedByUserId);
+            if (eventOwner == null)
+            {
+                throw new Exception("Invalid event; the creator no longer exists.");
+            }
+
+            if (gameEvent.FriendsOnly)
+            {
+                // todo: if it's a friendsonly event, then verify that the caller is the creator or a friend of the creator
+            }
+
+            signup = await db.UserEventSignups.FirstOrDefaultAsync(n => n.EventId == eventId && n.UserId == callingUserId);
+            if (signup != null)
+            {
+                throw new Exception("Already signed up to this event.");
+            }
+
+            signup = new UserEventSignup
+            {
+                EventId = eventId,
+                UserId = callingUserId,
+                Status = status
+            };
+            db.UserEventSignups.Add(signup);
+            await db.SaveChangesAsync();
+
+            observables.UserEventSignupStream.OnNext(signup);
+
+            await userStatisticsService.UpdateStatisticsAsync(db, callingUserId, callingUser);
+
+            if (EnablePushMessages && pushMessageService != null)
+            {
+                _ = pushMessageService.PushMessageAsync(
+                    "JoinEvent",
+                    "A player has joined!",
+                    $"{callingUser.DisplayName} signed up for \"{gameEvent.Title}\".", // todo: add a cleverly-formatted date/time?
+                    new
+                    {
+                        type = "JoinEvent",
+                        eventId = eventId,
+                        userId = callingUserId,
+                        eventName = gameEvent.Title,
+                        userName = callingUser.DisplayName
+                    },
+                    eventOwner.DeviceToken
+                );
+            }
+
+            return signup;
+        }
+
+        public async Task<UserEventSignup> LeaveEvent(Guid callingUserId, Guid eventId)
+        {
+            UserEventSignup signup = null;
+
+            var callingUser = await db.Users.FirstOrDefaultAsync(n => n.UserId == callingUserId);
+            if (callingUser == null)
+            {
+                throw new Exception("User not found.");
+            }
+
+            if (!await db.Users.AnyAsync(n => n.UserId == callingUserId))
+            {
+                throw new Exception("User not found.");
+            }
+
+            signup = await db.UserEventSignups.FirstOrDefaultAsync(n => n.EventId == eventId && n.UserId == callingUserId);
+            if (signup == null)
+            {
+                throw new Exception("Not signed up to this event.");
+            }
+
+            db.UserEventSignups.Remove(signup);
+            await db.SaveChangesAsync();
+
+            signup.Status = UserEventStatus.Cancelled;
+            observables.UserEventSignupStream.OnNext(signup);
+
+            await userStatisticsService.UpdateStatisticsAsync(db, callingUserId);
+
+            return signup;
+        }
+
+        #endregion
+
         #region User relations
 
         public async Task<UserRelationExtModel> ChangeUserRelationAsync(Guid callingUserId, Guid friendUserId, UserRelationAction action)

@@ -25,7 +25,7 @@ namespace PlayTogetherApi.Web.GraphQl
         {
             Name = "Mutation";
 
-            FieldAsync<BooleanGraphType>(
+            FieldAsync<BooleanGraphType>( // todo: this should return an object instead
                 "joinEvent",
                 description: "Add the currently logged in user to an event.",
                 arguments: new QueryArguments(
@@ -41,76 +41,24 @@ namespace PlayTogetherApi.Web.GraphQl
                         context.Errors.Add(new ExecutionError("Unauthorized"));
                         return false;
                     }
-                    var user = await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
-                    if (user == null)
-                    {
-                        context.Errors.Add(new ExecutionError("User not found."));
-                        return false;
-                    }
 
                     var eventId = context.GetArgument<Guid>("event");
-                    var gameEvent = await db.Events.FirstOrDefaultAsync(n => n.EventId == eventId);
-                    if (gameEvent == null)
+                    var status = context.GetArgument<UserEventStatus>("status");
+
+                    try
                     {
-                        context.Errors.Add(new ExecutionError("Event not found."));
+                        var newSignup = await interactionsService.JoinEvent(userId, eventId, status);
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        context.Errors.Add(new ExecutionError(ex.Message));
                         return false;
                     }
-
-                    var eventOwner = await db.Users.FirstOrDefaultAsync(n => n.UserId == gameEvent.CreatedByUserId);
-                    if (eventOwner == null)
-                    {
-                        context.Errors.Add(new ExecutionError("Invalid event; the creator no longer exists."));
-                        return false;
-                    }
-
-
-
-                    // todo: if it's a friendsonly event, then verify that the caller is the creator or a friend of the creator
-                    if(gameEvent.FriendsOnly)
-                    {
-
-                    }
-
-
-
-                    var signup = await db.UserEventSignups.FirstOrDefaultAsync(n => n.EventId == eventId && n.UserId == userId);
-                    if (signup != null)
-                    {
-                        context.Errors.Add(new ExecutionError("Already signed up to this event."));
-                        return false;
-                    }
-
-                    signup = new UserEventSignup {
-                        EventId = eventId,
-                        UserId = userId,
-                        Status = context.GetArgument<UserEventStatus>("status")
-                    };
-                    db.UserEventSignups.Add(signup);
-                    await db.SaveChangesAsync();
-
-                    observables.UserEventSignupStream.OnNext(signup);
-
-                    await userStatisticsService.UpdateStatisticsAsync(db, userId, user);
-
-                    _ = pushMessageService.PushMessageAsync(
-                        "JoinEvent",
-                        "A player has joined!",
-                        $"{user.DisplayName} signed up for \"{gameEvent.Title}\".", // todo: add a cleverly-formatted date/time?
-                        new {
-                            type = "JoinEvent",
-                            eventId = eventId,
-                            userId = userId,
-                            eventName = gameEvent.Title,
-                            userName = user.DisplayName
-                        },
-                        eventOwner.DeviceToken
-                    );
-
-                    return true;
                 }
             );
 
-            FieldAsync<BooleanGraphType>(
+            FieldAsync<BooleanGraphType>( // todo: this should return an object instead
                 "leaveEvent",
                 description: "Remove the currently logged in user from an event.",
                 arguments: new QueryArguments(
@@ -125,30 +73,19 @@ namespace PlayTogetherApi.Web.GraphQl
                         context.Errors.Add(new ExecutionError("Unauthorized"));
                         return false;
                     }
-                    if (!await db.Users.AnyAsync(n => n.UserId == userId))
-                    {
-                        context.Errors.Add(new ExecutionError("User not found."));
-                        return false;
-                    }
 
                     var eventId = context.GetArgument<Guid>("event");
 
-                    var signup = await db.UserEventSignups.FirstOrDefaultAsync(n => n.EventId == eventId && n.UserId == userId);
-                    if (signup == null)
+                    try
                     {
-                        context.Errors.Add(new ExecutionError("Not signed up to this event."));
+                        var newSignup = await interactionsService.LeaveEvent(userId, eventId);
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        context.Errors.Add(new ExecutionError(ex.Message));
                         return false;
                     }
-
-                    db.UserEventSignups.Remove(signup);
-                    await db.SaveChangesAsync();
-
-                    signup.Status = UserEventStatus.Cancelled;
-                    observables.UserEventSignupStream.OnNext(signup);
-
-                    await userStatisticsService.UpdateStatisticsAsync(db, userId);
-
-                    return true;
                 }
             );
 
