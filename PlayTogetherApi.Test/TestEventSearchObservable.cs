@@ -60,20 +60,29 @@ namespace PlayTogetherApi.Test
                         searchUpdate = esum;
                     });
 
-                    EventChangedModel ecm1 = null;
+                    EventChangedModel eventChangeUpdate = null;
                     sub1 = observables.GameEventStream.AsObservable().Subscribe(ecm =>
                     {
-                        ecm1 = ecm;
+                        eventChangeUpdate = ecm;
                     });
 
-
+                    // create event, which shoudl trigger the search to add the event
                     var newEvent = await interactions.CreateEventAsync(testUser.UserId, DateTime.UtcNow.AddHours(2), DateTime.UtcNow.AddHours(3), "testevent1", "", false, MockData.Games[0].GameId);
 
+                    Assert.IsNotNull(eventChangeUpdate);
+                    Assert.AreEqual(EventAction.Created, eventChangeUpdate.Action);
+                    Assert.AreSame(newEvent, eventChangeUpdate.Event);
+
+                    // verify that the event was added to the search
                     Assert.IsNotNull(searchUpdate);
-                    Assert.IsNotNull(ecm1);
+                    Assert.IsNotNull(searchUpdate.Added);
+                    Assert.AreEqual(1, searchUpdate.Added.Count);
+                    Assert.IsNull(searchUpdate.Removed);
+
 
 
                     // todo: leave the event, and verify that we get an event-removed update
+                    // todo: move joinevent and leaveevent into the interactions-service
                 }
             }
             finally
@@ -88,7 +97,7 @@ namespace PlayTogetherApi.Test
         [TestMethod]
         public async Task TestEventSearch_FriendAddingEvent()
         {
-            IDisposable sub1 = null;
+            IDisposable sub1 = null, sub2 = null, sub3 = null;
             try
             {
                 using (var db = di.GetService<PlayTogetherDbContext>())
@@ -117,26 +126,50 @@ namespace PlayTogetherApi.Test
                     var searchObservable = new EventSearchObservable(observables, queryService, new List<Event>());
 
                     EventSearchUpdateModel searchUpdate = null;
-                    searchObservable.AsObservable().Subscribe(esum =>
+                    sub1 = searchObservable.AsObservable().Subscribe(o_esum =>
                     {
-                        searchUpdate = esum;
+                        searchUpdate = o_esum;
                     });
 
-                    EventChangedModel ecm1 = null;
-                    sub1 = observables.GameEventStream.AsObservable().Subscribe(ecm =>
+                    EventChangedModel eventChangeUpdate = null;
+                    sub2 = observables.GameEventStream.AsObservable().Subscribe(o_ecm =>
                     {
-                        ecm1 = ecm;
+                        eventChangeUpdate = o_ecm;
                     });
 
-                    // create event, which should be added to our search
+                    UserRelationChangedModel userRelationChangeUpdate = null;
+                    sub3 = observables.UserRelationChangeStream.AsObservable().Subscribe(o_urcm => {
+                        userRelationChangeUpdate = o_urcm;
+                    });
+
+                    // create event, which should trigger the search to add the event
                     var newEvent = await interactions.CreateEventAsync(friendUser.UserId, DateTime.UtcNow.AddHours(2), DateTime.UtcNow.AddHours(3), "testevent1", "", false, MockData.Games[0].GameId);
 
+                    Assert.IsNull(userRelationChangeUpdate);
+                    Assert.IsNotNull(eventChangeUpdate);
+                    Assert.AreEqual(EventAction.Created, eventChangeUpdate.Action);
+                    Assert.AreSame(newEvent, eventChangeUpdate.Event);
+
+                    // verify that the event was added to the search
                     Assert.IsNotNull(searchUpdate);
-                    Assert.IsNotNull(ecm1);
+                    Assert.IsNotNull(searchUpdate.Added);
+                    Assert.AreEqual(1, searchUpdate.Added.Count);
+                    Assert.IsNull(searchUpdate.Removed);
 
+                    searchUpdate = null;
+                    eventChangeUpdate = null;
 
-                    // todo: remove the friendship, and verify that we get an event-removed update
+                    // remove the friendship, which should trigger the search to remove the event
+                    await interactions.ChangeUserRelationAsync(testUser.UserId, friendUser.UserId, UserRelationAction.Reject);
+                    await interactions.ChangeUserRelationAsync(friendUser.UserId, testUser.UserId, UserRelationAction.Reject);
 
+                    Assert.IsNotNull(userRelationChangeUpdate);
+
+                    // todo: verify that the event was removed from the search
+                    Assert.IsNotNull(userRelationChangeUpdate);
+                    Assert.AreEqual(UserRelationInternalStatus.A_Rejected | UserRelationInternalStatus.B_Rejected, userRelationChangeUpdate.Relation.Status);
+                    //Assert.IsNotNull(searchUpdate);
+                    //Assert.IsNotNull(eventChangeUpdate);
 
 
 
@@ -145,6 +178,8 @@ namespace PlayTogetherApi.Test
             finally
             {
                 sub1?.Dispose();
+                sub2?.Dispose();
+                sub3?.Dispose();
             }
         }
 
@@ -187,25 +222,27 @@ namespace PlayTogetherApi.Test
                         searchUpdate = esum;
                     });
 
-                    EventChangedModel ecm1 = null;
+                    EventChangedModel eventChangeUpdate = null;
                     sub1 = observables.GameEventStream.AsObservable().Subscribe(ecm =>
                     {
-                        ecm1 = ecm;
+                        eventChangeUpdate = ecm;
                     });
 
+                    // create event, which shouldn't be added to the search yet, since the users aren't friends
                     var newEvent = await interactions.CreateEventAsync(friendUser.UserId, DateTime.UtcNow.AddHours(2), DateTime.UtcNow.AddHours(3), "testevent1", "", false, MockData.Games[0].GameId);
 
                     Assert.IsNull(searchUpdate);
-                    Assert.IsNotNull(ecm1);
+                    Assert.IsNotNull(eventChangeUpdate);
+                    Assert.AreEqual(EventAction.Created, eventChangeUpdate.Action);
 
-                    ecm1 = null;
+                    eventChangeUpdate = null;
 
                     // befriend the user who created the event, which should make the event show up in our search
                     await interactions.ChangeUserRelationAsync(testUser.UserId, friendUser.UserId, UserRelationAction.Invite);
                     await interactions.ChangeUserRelationAsync(friendUser.UserId, testUser.UserId, UserRelationAction.Accept);
 
                     //Assert.IsNotNull(searchUpdate);       todo, will be set once the friendupdate is updated
-                    Assert.IsNull(ecm1);
+                    Assert.IsNull(eventChangeUpdate);
 
 
                 }
