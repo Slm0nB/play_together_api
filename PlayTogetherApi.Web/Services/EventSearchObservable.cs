@@ -4,8 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.Extensions.DependencyInjection;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.Models;
 using PlayTogetherApi.Web.Services;
@@ -14,14 +17,16 @@ namespace PlayTogetherApi.Services
 {
     public class EventSearchObservable : CountingObservableBase<EventSearchUpdateModel>
     {
+        readonly IServiceProvider serviceProvider;
         readonly ObservablesService observablesService;
         readonly EventsQueryService query;
         private List<Data.Event> CurrentEvents; // todo: turn into a concurrent datastructure
 
         private IDisposable subscription1, subscription2, subscription3;
 
-        public EventSearchObservable(ObservablesService observablesService, EventsQueryService query, List<Data.Event> initialEvents)
+        public EventSearchObservable(IServiceProvider serviceProvider, ObservablesService observablesService, EventsQueryService query, List<Data.Event> initialEvents)
         {
+            this.serviceProvider = serviceProvider;
             this.observablesService = observablesService;
             this.query = query;
             this.CurrentEvents = initialEvents;
@@ -112,7 +117,7 @@ namespace PlayTogetherApi.Services
                                 query.FriendIds = query.FriendIds ?? new List<Guid>();
                                 query.FriendIds.Add(friendId);
 
-                                GetEventsCreatedByorJoinedByUser(friendId)
+                                GetEventsCreatedByorJoinedByUserAsync(friendId)
                                     .ContinueWith(eventsTask =>
                                     {
                                         FilterAndUpdate(eventsTask.Result);
@@ -132,12 +137,23 @@ namespace PlayTogetherApi.Services
             return subject;
         }
 
-        async Task<List<Event>> GetEventsCreatedByorJoinedByUser(Guid userId)
+        async Task<List<Event>> GetEventsCreatedByorJoinedByUserAsync(Guid userId)
         {
-            // query.ProcessDates( ... );
+            using (var scope = serviceProvider.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetService<PlayTogetherDbContext>();
 
-            // todo: instantiate db and run queries
-            return new List<Event>();
+                var eventsQuery = context.Events.Where(n => n.CreatedByUserId == userId);
+                eventsQuery = query.ProcessDates(eventsQuery);
+
+                var events = await eventsQuery.ToListAsync();
+                return events;
+
+                //query.ProcessDates(  );
+
+                // todo: instantiate db and run queries
+                //return new List<Event>();
+            }
         }
 
         void RerunQuery()

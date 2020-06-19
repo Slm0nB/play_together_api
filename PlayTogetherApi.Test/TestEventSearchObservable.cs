@@ -49,7 +49,7 @@ namespace PlayTogetherApi.Test
                         StartsAfterDate = DateTime.Today.AddDays(-1),
                         IncludeJoinedFilter = true
                     };
-                    var searchObservable = new EventSearchObservable(observables, queryService, new List<Event>());
+                    var searchObservable = new EventSearchObservable(di.ScopedServiceProvider, observables, queryService, new List<Event>());
 
                     // subscribe to updates from the search (the actual test)
                     EventSearchUpdateModel searchUpdate = null;
@@ -139,10 +139,10 @@ namespace PlayTogetherApi.Test
                     {
                         UserId = testUser.UserId,
                         FriendIds = new List<Guid> { friendUser.UserId },
-                        StartsAfterDate = DateTime.Today.AddDays(-1),
+                        StartsAfterDate = DateTime.Today,
                         IncludeByFriendsFilter = true,
                     };
-                    var searchObservable = new EventSearchObservable(observables, queryService, new List<Event>());
+                    var searchObservable = new EventSearchObservable(di.ScopedServiceProvider, observables, queryService, new List<Event>());
 
                     // subscribe to updates from the search (the actual test)
                     EventSearchUpdateModel searchUpdate = null;
@@ -201,6 +201,9 @@ namespace PlayTogetherApi.Test
                     await interactions.ChangeUserRelationAsync(testUser.UserId, friendUser.UserId, UserRelationAction.Invite);
                     await interactions.ChangeUserRelationAsync(friendUser.UserId, testUser.UserId, UserRelationAction.Accept);
 
+                    // wait for the async processing of the search
+                    await Task.Delay(200);
+
                     Assert.IsNotNull(userRelationChangeUpdate);
                     Assert.AreEqual(UserRelationInternalStatus.A_Befriended| UserRelationInternalStatus.B_Befriended, userRelationChangeUpdate.Relation.Status);
                     Assert.AreEqual(testUser.UserId, userRelationChangeUpdate.Relation.UserAId);
@@ -252,7 +255,7 @@ namespace PlayTogetherApi.Test
                         IncludeByFriendsFilter = true
                     };
 
-                    var searchObservable = new EventSearchObservable(observables, queryService, new List<Event>());
+                    var searchObservable = new EventSearchObservable(di.ScopedServiceProvider, observables, queryService, new List<Event>());
 
                     EventSearchUpdateModel searchUpdate = null;
                     searchObservable.AsObservable().Subscribe(esum =>

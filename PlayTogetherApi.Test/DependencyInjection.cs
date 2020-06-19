@@ -13,16 +13,21 @@ namespace PlayTogetherApi.Test
         IServiceProvider serviceProvider;
         IServiceScope scope;
 
+        public IServiceProvider ScopedServiceProvider
+        {
+            get
+            {
+                scope = scope ?? serviceProvider.CreateScope();
+                return scope.ServiceProvider;
+            }
+        }
+
         public DependencyInjection()
         {
             serviceProvider = ConfigureServices();
         }
 
-        public T GetService<T>()
-        {
-            scope = scope ?? serviceProvider.CreateScope();
-            return scope.ServiceProvider.GetService<T>();
-        }
+        public T GetService<T>() => ScopedServiceProvider.GetService<T>();
 
         public static IServiceProvider ConfigureServices()
         {

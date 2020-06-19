@@ -19,7 +19,7 @@ namespace PlayTogetherApi.Web.GraphQl
     {
         ObservablesService observables;
 
-        public PlayTogetherSubscription(PlayTogetherDbContext db, AuthenticationService authenticationService, ObservablesService observables)
+        public PlayTogetherSubscription(IServiceProvider serviceProvider, PlayTogetherDbContext db, AuthenticationService authenticationService, ObservablesService observables)
         {
             this.observables = observables;
 
@@ -250,7 +250,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     queryService.ReadParametersFromContext(context);
                     var initialEvents = queryService.Process(db.Events).ToList();  // todo: look into turning it async!
 
-                    var observable = new EventSearchObservable(observables, queryService, initialEvents);
+                    var observable = new EventSearchObservable(serviceProvider, observables, queryService, initialEvents);
 
                     return observable;
                 })
