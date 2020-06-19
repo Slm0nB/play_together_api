@@ -78,37 +78,30 @@ namespace PlayTogetherApi.Services
             {
                 subscription3 = observablesService.UserRelationChangeStream.Subscribe(userRelationChanged =>
                 {
-                    if (query.IncludeByFriendsFilter || query.OnlyByFriendsFilter) // todo: joinedbyfriends filter when it gets added
+                    if (userRelationChanged.Relation.UserAId == query.UserId || userRelationChanged.Relation.UserBId == query.UserId)
                     {
-                        // todo: determine if this updates the friendlist of the subscribing user (if this is relevant to the query!)
-                        // todo: if the friendlist is updated, determine if this affects events in the collection or outside the collection (ie rerun the whole query
+                        var areFriends = userRelationChanged.Relation.Status == (UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended);
+                        var friendId = userRelationChanged.Relation.UserAId == query.UserId
+                            ? userRelationChanged.Relation.UserBId
+                            : userRelationChanged.Relation.UserAId;
 
-                        if (userRelationChanged.Relation.UserAId == query.UserId || userRelationChanged.Relation.UserBId == query.UserId)
+                        if(areFriends && query.FriendIds?.Contains(friendId) != true)
                         {
-                            var areFriends = userRelationChanged.Relation.Status == (UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended);
-                            var friendId = userRelationChanged.Relation.UserAId == query.UserId
-                                ? userRelationChanged.Relation.UserBId
-                                : userRelationChanged.Relation.UserAId;
+                            query.FriendIds = query.FriendIds ?? new List<Guid>();
+                            query.FriendIds.Add(friendId);
 
-                            if(areFriends && query.FriendIds?.Contains(friendId) != true)
-                            {
-                                query.FriendIds = query.FriendIds ?? new List<Guid>();
-                                query.FriendIds.Add(friendId);
-
-                                GetEventsCreatedByorJoinedByUserAsync(friendId)
-                                    .ContinueWith(eventsTask =>
-                                    {
-                                        FilterAndUpdate(eventsTask.Result);
-                                    });
-                            }
-                            else if(!areFriends && query.FriendIds?.Contains(friendId) == true)
-                            {
-                                query.FriendIds.Remove(friendId);
-                                RerunQuery();
-                            }
+                            GetEventsCreatedByorJoinedByUserAsync(friendId)
+                                .ContinueWith(eventsTask =>
+                                {
+                                    FilterAndUpdate(eventsTask.Result);
+                                });
+                        }
+                        else if(!areFriends && query.FriendIds?.Contains(friendId) == true)
+                        {
+                            query.FriendIds.Remove(friendId);
+                            RerunQuery();
                         }
                     }
-
                 });
             }
 
@@ -121,10 +114,11 @@ namespace PlayTogetherApi.Services
             {
                 var context = scope.ServiceProvider.GetService<PlayTogetherDbContext>();
 
-                var eventsQuery = context.Events.Where(n => n.CreatedByUserId == userId);
+                bool includeJoinedEvents = true; // todo: skip this in the cases where we can ignore them
 
-                // todo: also events joined by the ussr!
+                var eventsQuery = context.Events.Where(n => n.CreatedByUserId == userId || (includeJoinedEvents && n.Signups.Any(nn => nn.UserId == userId)));
 
+                eventsQuery = eventsQuery.Include(n => n.Signups);
                 eventsQuery = query.ProcessDates(eventsQuery);
 
                 var events = await eventsQuery.ToListAsync();

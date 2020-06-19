@@ -26,6 +26,12 @@ namespace PlayTogetherApi.Test
             di?.Dispose();
         }
 
+        /// <summary>
+        /// We should be able to subscribe to a search for events we have joined.
+        /// Creating an event (which is automatically joined) should add the event to the search.
+        /// Leaving a joined event should remove the event from the search.
+        /// Joining an event should add the event to the search.
+        /// </summary>
         [TestMethod]
         public async Task TestEventSearch_UserCreatingEvent_ThenLeaving_ThenRejoining()
         {
@@ -110,6 +116,12 @@ namespace PlayTogetherApi.Test
             }
         }
 
+        /// <summary>
+        /// We should be able to subscribe to a search for events created by friends.
+        /// Friends creating new events should update the search.
+        /// Unfriending a user who has created events, should remove those events from the search.
+        /// Befrending a user who has created events, should add those events to the search.
+        /// </summary>
         [TestMethod]
         public async Task TestEventSearch_FriendCreatingEvent_ThenUnfriending_ThenRefriending()
         {
@@ -221,10 +233,12 @@ namespace PlayTogetherApi.Test
             }
         }
 
-
-
-
-
+        /// <summary>
+        /// We should be able to subscribe to a search for events joined by friends.
+        /// A friend creating an event (and thereby joining it) should add the event to the search.
+        /// A friend joining an event should add the event to the search.
+        /// A friend leaving an event should remove the event from the search.
+        /// </summary>
         [TestMethod]
         public async Task TestEventSearch_FriendJoinsEvent_ThenLeavesEvent_ThenRejoins()
         {
@@ -258,12 +272,12 @@ namespace PlayTogetherApi.Test
 
                     // subscribe to updates from the search (the actual test)
                     EventSearchUpdateModel searchUpdate = null;
-                    searchObservable.AsObservable().Subscribe(esum =>
+                    sub1 = searchObservable.AsObservable().Subscribe(esum =>
                     {
                         searchUpdate = esum;
                     });
 
-                    // create event, which shouldn't be added to the search yet, since the users aren't friends
+                    // create event for friend, which shouldn't be added to the search yet, since the users aren't friends
                     var newEvent = await interactions.CreateEventAsync(friendUser.UserId, DateTime.UtcNow.AddHours(2), DateTime.UtcNow.AddHours(3), "testevent1", "", false, MockData.Games[0].GameId);
 
                     Assert.IsNotNull(searchUpdate);
@@ -274,7 +288,7 @@ namespace PlayTogetherApi.Test
 
                     searchUpdate = null;
 
-                    // todo: friend leaves event, which should trigger the search to remove the event
+                    // friend leaves their own event, which should trigger the search to remove the event
                     await interactions.LeaveEvent(friendUser.UserId, newEvent.EventId);
 
                     Assert.IsNotNull(searchUpdate);
@@ -285,7 +299,23 @@ namespace PlayTogetherApi.Test
 
                     searchUpdate = null;
 
-                    // todo: friend rejoins  event, which should trigger the search to re-add the event
+                    // friend rejoins their own event, which should trigger the search to re-add the event
+                    await interactions.JoinEvent(friendUser.UserId, newEvent.EventId);
+
+                    Assert.IsNotNull(searchUpdate);
+                    Assert.IsNotNull(searchUpdate.Added);
+                    Assert.AreEqual(1, searchUpdate.Added.Count);
+                    Assert.AreSame(newEvent, searchUpdate.Added[0]);
+                    Assert.IsTrue(searchUpdate.Removed == null || !searchUpdate.Removed.Any());
+
+                    searchUpdate = null;
+
+                    // create event, which shouldn't be added to the search yet, since the no friend has joined it
+                    newEvent = await interactions.CreateEventAsync(testUser.UserId, DateTime.UtcNow.AddHours(2), DateTime.UtcNow.AddHours(3), "testevent1", "", false, MockData.Games[0].GameId);
+
+                    Assert.IsNull(searchUpdate);
+
+                    // friend joins the new event, which should trigger the search to add the event
                     await interactions.JoinEvent(friendUser.UserId, newEvent.EventId);
 
                     Assert.IsNotNull(searchUpdate);
@@ -302,10 +332,162 @@ namespace PlayTogetherApi.Test
         }
 
 
-        // testcases:
-        // - testuser subscribes to friend events, friend creates an event, the event should then be added
-        // - testuser subscribes to friend events, unrelated user creates an event, testuser befriends the other user, the event should then be added
-        // - testuser subscribes to friend events, friend creates an event, the event should then be added, friend is unfriended, the event should be removed
+        /// <summary>
+        /// We should be able to subscribe to a search for events joined by friends.
+        /// Befriending a user who has joined an event, should add the event to the search.
+        /// Unfriending the user should cause the event to be removed from the search.
+        /// </summary>
+        [TestMethod]
+        public async Task TestEventSearch_OtherUserJoinsEvent_BefriendUser_ThenUnfriending()
+        {
+            IDisposable sub1 = null;
+            try
+            {
+                using (var db = di.GetService<PlayTogetherDbContext>())
+                {
+                    var observables = di.GetService<ObservablesService>();
+                    var interactions = di.GetService<InteractionsService>();
+                    interactions.EnablePushMessages = false;
+
+                    await MockData.PopulateDbAsync(db, force: true, addEvents: false);
+
+                    var testUser = MockData.Users[0];
+                    var friendUser = MockData.Users[1];
+
+                    // search for events joined by our friends
+                    var queryService = new EventsQueryService
+                    {
+                        UserId = testUser.UserId,
+                        FriendIds = new List<Guid> { },
+                        StartsAfterDate = DateTime.Today,
+                        IncludeJoinedByFriendsFilter = true
+                    };
+                    var searchObservable = new EventSearchObservable(di.ScopedServiceProvider, observables, queryService, new List<Event>());
+
+                    // subscribe to updates from the search (the actual test)
+                    EventSearchUpdateModel searchUpdate = null;
+                    sub1 = searchObservable.AsObservable().Subscribe(esum =>
+                    {
+                        searchUpdate = esum;
+                    });
+
+                    // create event, which shouldn't be added to the search yet, since no friends have joined.
+                    var newEvent = await interactions.CreateEventAsync(testUser.UserId, DateTime.UtcNow.AddHours(2), DateTime.UtcNow.AddHours(3), "testevent1", "", false, MockData.Games[0].GameId);
+
+                    Assert.IsNull(searchUpdate);
+
+                    // other user joins the event
+                    await interactions.JoinEvent(friendUser.UserId, newEvent.EventId);
+
+                    Assert.IsNull(searchUpdate);
+
+                    // setup friends, which should cause the event to be added to the search
+                    await interactions.ChangeUserRelationAsync(testUser.UserId, friendUser.UserId, UserRelationAction.Invite);
+                    await interactions.ChangeUserRelationAsync(friendUser.UserId, testUser.UserId, UserRelationAction.Accept);
+
+                    // wait for the async processing of the search
+                    await Task.Delay(200);
+
+                    // verify that the event was added to the search
+                    Assert.IsNotNull(searchUpdate);
+                    Assert.IsNotNull(searchUpdate.Added);
+                    Assert.AreEqual(1, searchUpdate.Added.Count);
+                    Assert.AreEqual(newEvent.EventId, searchUpdate.Added[0].EventId);
+                    Assert.IsTrue(searchUpdate.Removed == null || !searchUpdate.Removed.Any());
+
+                    searchUpdate = null;
+
+                    // remove friends, which should cause the event to be removed from the search
+                    await interactions.ChangeUserRelationAsync(testUser.UserId, friendUser.UserId, UserRelationAction.Reject);
+                    await interactions.ChangeUserRelationAsync(friendUser.UserId, testUser.UserId, UserRelationAction.Reject);
+
+                    Assert.IsNotNull(searchUpdate);
+                    Assert.IsNotNull(searchUpdate.Removed);
+                    Assert.AreEqual(1, searchUpdate.Removed.Count);
+                    Assert.AreEqual(newEvent.EventId, searchUpdate.Removed[0].EventId);
+                    Assert.IsTrue(searchUpdate.Added == null || !searchUpdate.Added.Any());
+                }
+            }
+            finally
+            {
+                sub1?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// We should be able to subscribe to a search for events, and see friend-only events created by our friends.
+        /// Befriending a user who has created friend-only events, should add those events to the search.
+        /// Unfriending a user who has created friend-only events, should remove those events from the search.
+        /// </summary>
+        [TestMethod]
+        public async Task TestEventSearch_BefriendingCreatorOfFriendOnlyEvent_ThenUnfriending()
+        {
+            IDisposable sub1 = null;
+            try
+            {
+                using (var db = di.GetService<PlayTogetherDbContext>())
+                {
+                    var observables = di.GetService<ObservablesService>();
+                    var interactions = di.GetService<InteractionsService>();
+                    interactions.EnablePushMessages = false;
+
+                    await MockData.PopulateDbAsync(db, force: true, addEvents: false);
+
+                    var testUser = MockData.Users[0];
+                    var friendUser = MockData.Users[1];
+
+                    // search for events joined by our friends
+                    var queryService = new EventsQueryService
+                    {
+                        UserId = testUser.UserId,
+                        FriendIds = new List<Guid> { },
+                        StartsAfterDate = DateTime.Today,
+                        IncludeJoinedByFriendsFilter = true
+                    };
+                    var searchObservable = new EventSearchObservable(di.ScopedServiceProvider, observables, queryService, new List<Event>());
+
+                    // subscribe to updates from the search (the actual test)
+                    EventSearchUpdateModel searchUpdate = null;
+                    sub1 = searchObservable.AsObservable().Subscribe(esum =>
+                    {
+                        searchUpdate = esum;
+                    });
+
+                    // create event, which shouldn't trigger the search to add the event since we're not friends
+                    var newEvent = await interactions.CreateEventAsync(friendUser.UserId, DateTime.UtcNow.AddHours(25), DateTime.UtcNow.AddHours(26), "testevent1", "", true, MockData.Games[0].GameId);
+
+                    Assert.IsNull(searchUpdate);
+
+                    // setup friends, which should cause the joined event to be added to the search
+                    await interactions.ChangeUserRelationAsync(testUser.UserId, friendUser.UserId, UserRelationAction.Invite);
+                    await interactions.ChangeUserRelationAsync(friendUser.UserId, testUser.UserId, UserRelationAction.Accept);
+
+                    // wait for the async processing of the search
+                    await Task.Delay(200);
+
+                    // verify that the event was added to the search
+                    Assert.IsNotNull(searchUpdate);
+                    Assert.IsNotNull(searchUpdate.Added);
+                    Assert.AreEqual(1, searchUpdate.Added.Count);
+                    Assert.AreEqual(newEvent.EventId, searchUpdate.Added[0].EventId);
+                    Assert.IsTrue(searchUpdate.Removed == null || !searchUpdate.Removed.Any());
+
+                    // remove friends, which should cause the event to be removed from the search
+                    await interactions.ChangeUserRelationAsync(testUser.UserId, friendUser.UserId, UserRelationAction.Reject);
+                    await interactions.ChangeUserRelationAsync(friendUser.UserId, testUser.UserId, UserRelationAction.Reject);
+
+                    Assert.IsNotNull(searchUpdate);
+                    Assert.IsNotNull(searchUpdate.Removed);
+                    Assert.AreEqual(1, searchUpdate.Removed.Count);
+                    Assert.AreEqual(newEvent.EventId, searchUpdate.Removed[0].EventId);
+                    Assert.IsTrue(searchUpdate.Added == null || !searchUpdate.Added.Any());
+                }
+            }
+            finally
+            {
+                sub1?.Dispose();
+            }
+        }
 
     }
 }

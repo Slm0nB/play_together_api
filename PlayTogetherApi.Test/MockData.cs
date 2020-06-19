@@ -18,7 +18,7 @@ namespace PlayTogetherApi.Test
             Reset();
         }
 
-        static public void Reset()
+        static public void Reset(bool addSignups = true)
         {
             Users = new[]
             {
@@ -123,23 +123,26 @@ namespace PlayTogetherApi.Test
                }
             };
 
-            AddSignup(Events[0], Events[0].CreatedByUser);
-            AddSignup(Events[0], Users[1]);
+            if (addSignups)
+            {
+                AddSignup(Events[0], Events[0].CreatedByUser);
+                AddSignup(Events[0], Users[1]);
 
-            AddSignup(Events[1], Events[1].CreatedByUser);
-            AddSignup(Events[1], Users[0]);
+                AddSignup(Events[1], Events[1].CreatedByUser);
+                AddSignup(Events[1], Users[0]);
 
-            AddSignup(Events[2], Events[2].CreatedByUser);
-            AddSignup(Events[2], Users[0]);
-            AddSignup(Events[2], Users[1]);
+                AddSignup(Events[2], Events[2].CreatedByUser);
+                AddSignup(Events[2], Users[0]);
+                AddSignup(Events[2], Users[1]);
 
-            AddSignup(Events[3], Events[3].CreatedByUser);
-            AddSignup(Events[3], Users[1]);
-            AddSignup(Events[3], Users[2]);
+                AddSignup(Events[3], Events[3].CreatedByUser);
+                AddSignup(Events[3], Users[1]);
+                AddSignup(Events[3], Users[2]);
 
-            AddSignup(Events[4], Events[4].CreatedByUser);
-            AddSignup(Events[4], Users[0]);
-            AddSignup(Events[4], Users[2]);
+                AddSignup(Events[4], Events[4].CreatedByUser);
+                AddSignup(Events[4], Users[0]);
+                AddSignup(Events[4], Users[2]);
+            }
         }
 
         static private void AddSignup(Event evt, User usr, UserEventStatus status = UserEventStatus.AcceptedInvitation)
@@ -165,11 +168,11 @@ namespace PlayTogetherApi.Test
             await db.SaveChangesAsync();
         }
 
-        static public async Task PopulateDbAsync(PlayTogetherDbContext db, bool force = false)
+        static public async Task PopulateDbAsync(PlayTogetherDbContext db, bool force = false, bool addEvents = true)
         {
             if(force)
             {
-                Reset();
+                Reset(addEvents);
                 await ClearDbAsync(db);
             }
 
@@ -177,7 +180,10 @@ namespace PlayTogetherApi.Test
             {
                 db.Games.AddRange(Games);
                 db.Users.AddRange(Users);
-                db.Events.AddRange(Events);
+                if (addEvents)
+                {
+                    db.Events.AddRange(Events);
+                }
                 await db.SaveChangesAsync();
             }
         }
