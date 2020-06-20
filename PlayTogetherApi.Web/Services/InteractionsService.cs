@@ -405,19 +405,72 @@ namespace PlayTogetherApi.Services
             user.PasswordHash = "DELETED";
             db.Users.Update(user);
 
-            var futureSignups = db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventDate > DateTime.Now);
+            // remove signups to events in the future
+            var futureSignups = await db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventDate > DateTime.UtcNow).ToListAsync();
             db.UserEventSignups.RemoveRange(futureSignups);
 
-            var relations = db.UserRelations.Where(n => n.UserAId == userId || n.UserBId == userId);
+            foreach (var signup in futureSignups)
+            {
+                signup.Status = UserEventStatus.Cancelled;
+                observables.UserEventSignupStream.OnNext(signup);
+            }
+
+            // remove all friends
+            var relations = await db.UserRelations.Where(n => n.UserAId == userId || n.UserBId == userId).ToListAsync();
             db.UserRelations.RemoveRange(relations);
 
-            var eventsWithNoSignups = db.Events.Where(n => n.CreatedByUserId == userId && !n.Signups.Any(nn => nn.UserId != userId));
+            foreach(var relation in relations)
+            {
+                relation.Status = UserRelationInternalStatus.None;
+                observables.UserRelationChangeStream.OnNext(new UserRelationChangedModel
+                {
+                    ActiveUser = user,
+                    ActiveUserAction = UserRelationAction.Remove,
+                    Relation = relation,
+                    TargetUser = relation.UserAId == userId ? relation.UserB : relation.UserA
+                });
+            }
+
+            // delete all events that have no signups
+            var eventsWithNoSignups = await db.Events.Where(n => n.CreatedByUserId == userId && !n.Signups.Any(nn => nn.UserId != userId)).ToListAsync();
             db.Events.RemoveRange(eventsWithNoSignups);
 
+            foreach(var ev in eventsWithNoSignups)
+            {
+                observables.GameEventStream.OnNext(new EventChangedModel
+                {
+                    Action = EventAction.Deleted,
+                    ChangingUser = user,
+                    Event = ev,
+                    FriendsOfChangingUser = new UserRelation[0]
+                });
+            }
+
+            // delete all friendsonly events that have signups (if they had no signups they would be deleted above)
+            var friendsOnlyEventsWithSignups = await db.Events.Where(n => n.CreatedByUserId == userId && n.FriendsOnly && n.Signups.Any(nn => nn.UserId != userId)).Include(n => n.Signups).ToListAsync();
+            db.Events.RemoveRange(friendsOnlyEventsWithSignups);
+
+            foreach (var ev in eventsWithNoSignups)
+            {
+                foreach(var signup in ev.Signups.Where(n => n.UserId != userId))
+                {
+                    await LeaveEventAsync(signup.UserId, signup.EventId);
+                }
+
+                observables.GameEventStream.OnNext(new EventChangedModel
+                {
+                    Action = EventAction.Deleted,
+                    ChangingUser = user,
+                    Event = ev,
+                    FriendsOfChangingUser = new UserRelation[0]
+                });
+            }
+
+            // observe that the user was deleted
             observables.UserChangeStream.OnNext(new UserChangedSubscriptionModel
             {
                 ChangingUser = user,
-                FriendsOfChangingUser = relations.ToArray(),
+                FriendsOfChangingUser = new UserRelation[0],
                 IsDeleted = true
             });
 
