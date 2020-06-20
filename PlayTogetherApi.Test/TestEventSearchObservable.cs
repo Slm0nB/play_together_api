@@ -88,7 +88,7 @@ namespace PlayTogetherApi.Test
                     eventChangeUpdate = null;
 
                     // leave the event, which should cause it to be removed from the search
-                    await interactions.LeaveEvent(testUser.UserId, newEvent.EventId);
+                    await interactions.LeaveEventAsync(testUser.UserId, newEvent.EventId);
 
                     Assert.IsNull(eventChangeUpdate);
 
@@ -100,7 +100,7 @@ namespace PlayTogetherApi.Test
                     searchUpdate = null;
 
                     // rejoin the event, which should cause it to be added to the search
-                    await interactions.JoinEvent(testUser.UserId, newEvent.EventId);
+                    await interactions.JoinEventAsync(testUser.UserId, newEvent.EventId);
 
                     Assert.IsNull(eventChangeUpdate);
 
@@ -289,7 +289,7 @@ namespace PlayTogetherApi.Test
                     searchUpdate = null;
 
                     // friend leaves their own event, which should trigger the search to remove the event
-                    await interactions.LeaveEvent(friendUser.UserId, newEvent.EventId);
+                    await interactions.LeaveEventAsync(friendUser.UserId, newEvent.EventId);
 
                     Assert.IsNotNull(searchUpdate);
                     Assert.IsNotNull(searchUpdate.Removed);
@@ -300,7 +300,7 @@ namespace PlayTogetherApi.Test
                     searchUpdate = null;
 
                     // friend rejoins their own event, which should trigger the search to re-add the event
-                    await interactions.JoinEvent(friendUser.UserId, newEvent.EventId);
+                    await interactions.JoinEventAsync(friendUser.UserId, newEvent.EventId);
 
                     Assert.IsNotNull(searchUpdate);
                     Assert.IsNotNull(searchUpdate.Added);
@@ -316,7 +316,7 @@ namespace PlayTogetherApi.Test
                     Assert.IsNull(searchUpdate);
 
                     // friend joins the new event, which should trigger the search to add the event
-                    await interactions.JoinEvent(friendUser.UserId, newEvent.EventId);
+                    await interactions.JoinEventAsync(friendUser.UserId, newEvent.EventId);
 
                     Assert.IsNotNull(searchUpdate);
                     Assert.IsNotNull(searchUpdate.Added);
@@ -377,7 +377,7 @@ namespace PlayTogetherApi.Test
                     Assert.IsNull(searchUpdate);
 
                     // other user joins the event
-                    await interactions.JoinEvent(friendUser.UserId, newEvent.EventId);
+                    await interactions.JoinEventAsync(friendUser.UserId, newEvent.EventId);
 
                     Assert.IsNull(searchUpdate);
 

@@ -47,7 +47,7 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     try
                     {
-                        var newSignup = await interactionsService.JoinEvent(userId, eventId, status);
+                        var newSignup = await interactionsService.JoinEventAsync(userId, eventId, status);
                         return true;
                     }
                     catch (Exception ex)
@@ -78,7 +78,7 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     try
                     {
-                        var newSignup = await interactionsService.LeaveEvent(userId, eventId);
+                        var newSignup = await interactionsService.LeaveEventAsync(userId, eventId);
                         return true;
                     }
                     catch (Exception ex)

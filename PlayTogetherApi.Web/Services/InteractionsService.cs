@@ -125,7 +125,7 @@ namespace PlayTogetherApi.Services
 
         #region User-event signups
 
-        public async Task<UserEventSignup> JoinEvent(Guid callingUserId, Guid eventId, UserEventStatus status = UserEventStatus.AcceptedInvitation)
+        public async Task<UserEventSignup> JoinEventAsync(Guid callingUserId, Guid eventId, UserEventStatus status = UserEventStatus.AcceptedInvitation)
         {
             UserEventSignup signup = null;
 
@@ -198,7 +198,7 @@ namespace PlayTogetherApi.Services
             return signup;
         }
 
-        public async Task<UserEventSignup> LeaveEvent(Guid callingUserId, Guid eventId)
+        public async Task<UserEventSignup> LeaveEventAsync(Guid callingUserId, Guid eventId)
         {
             UserEventSignup signup = null;
 
@@ -219,6 +219,16 @@ namespace PlayTogetherApi.Services
                 throw new Exception("Not signed up to this event.");
             }
 
+            return await LeaveEventAsync(callingUser, signup);
+        }
+
+        public async Task<UserEventSignup> LeaveEventAsync(User callingUser, UserEventSignup signup)
+        {
+            if (callingUser.UserId != signup.UserId)
+            {
+                throw new Exception("User / UserEventSignup mismatch.");
+            }
+
             // todo: something about forbidding removing it, if the status is about being rejected by the event-owner
 
             db.UserEventSignups.Remove(signup);
@@ -227,7 +237,7 @@ namespace PlayTogetherApi.Services
             signup.Status = UserEventStatus.Cancelled;
             observables.UserEventSignupStream.OnNext(signup);
 
-            await userStatisticsService.UpdateStatisticsAsync(db, callingUserId);
+            await userStatisticsService.UpdateStatisticsAsync(db, callingUser.UserId);
 
             return signup;
         }
@@ -316,9 +326,20 @@ namespace PlayTogetherApi.Services
             bool areFriends = relation.Status == (UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended);
             if(!areFriends)
             {
-                // todo: if the users stopped being friends, then delete signups from each of them for friends-only events created by the other
-
-
+                // if the users stopped being friends, then delete signups from each of them for friends-only events created by the other
+                async Task removeSignupAsync(User primaryUser, User secondaryUser)
+                {
+                    var signups = await db.UserEventSignups.Where(n => n.UserId == primaryUser.UserId && n.Event.FriendsOnly && n.Event.CreatedByUserId == secondaryUser.UserId).ToListAsync();
+                    if (signups.Any())
+                    {
+                        foreach(var signup in signups)
+                        {
+                            await LeaveEventAsync(primaryUser, signup);
+                        }
+                    }
+                }
+                await removeSignupAsync(callingUser, friendUser);
+                await removeSignupAsync(friendUser, callingUser);
             }
 
 #if EXTRA_EVENTS
