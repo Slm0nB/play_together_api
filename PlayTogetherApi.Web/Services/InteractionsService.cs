@@ -414,6 +414,13 @@ namespace PlayTogetherApi.Services
             var eventsWithNoSignups = db.Events.Where(n => n.CreatedByUserId == userId && !n.Signups.Any(nn => nn.UserId != userId));
             db.Events.RemoveRange(eventsWithNoSignups);
 
+            observables.UserChangeStream.OnNext(new UserChangedSubscriptionModel
+            {
+                ChangingUser = user,
+                FriendsOfChangingUser = relations.ToArray(),
+                IsDeleted = true
+            });
+
             await db.SaveChangesAsync();
         }
 

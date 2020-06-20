@@ -20,6 +20,10 @@ namespace PlayTogetherApi.Web.GraphQl.Types
             Field<UserPreviewGraphType>("user",
                 resolve: context => context.Source.ChangingUser
             );
+
+            Field<BooleanGraphType>("deleted",
+                resolve: context => context.Source.IsDeleted
+            );
         }
     }
 }
