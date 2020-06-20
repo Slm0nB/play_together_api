@@ -122,5 +122,89 @@ namespace PlayTogetherApi.Test
                 sub2?.Dispose();
             }
         }
+
+        /// <summary>
+        /// Unfriending a user who has friendonly events that wer are signed up for, should cause us to leave those events.
+        /// </summary>
+        [TestMethod]
+        public async Task TestLeavingFriendOnlyEventsWhenUnfriendingOwner()
+        {
+            IDisposable sub1 = null;
+            try
+            {
+                using (var db = di.GetService<PlayTogetherDbContext>())
+                {
+                    var observables = di.GetService<ObservablesService>();
+                    var interactions = di.GetService<InteractionsService>();
+                    interactions.EnablePushMessages = false;
+
+                    await MockData.PopulateDbAsync(db, force: true, addEvents: false);
+
+                    var user1 = MockData.Users[0];
+                    var user2 = MockData.Users[1];
+
+                    UserEventSignup eventChange = null;
+                    sub1 = observables.UserEventSignupStream.AsObservable().Subscribe(ues =>
+                    {
+                        eventChange = ues;
+                    });
+
+                    // setup the user-relation
+                    await interactions.ChangeUserRelationAsync(user1.UserId, user2.UserId, UserRelationAction.Invite);
+                    await interactions.ChangeUserRelationAsync(user2.UserId, user1.UserId, UserRelationAction.Accept);
+
+                    // user2 creates a friends-only event
+                    var newEvent = await interactions.CreateEventAsync(user2.UserId, DateTime.UtcNow.AddHours(2), DateTime.UtcNow.AddHours(3), "testevent1", "", true, MockData.Games[0].GameId);
+
+                    // sign user1 up to the event created by user2
+                    await interactions.JoinEventAsync(user1.UserId, newEvent.EventId);
+
+                    // we should get a notification about the signup
+                    Assert.IsNotNull(eventChange);
+                    Assert.AreEqual(UserEventStatus.AcceptedInvitation, eventChange.Status);
+                    Assert.AreSame(newEvent, eventChange.Event);
+                    Assert.AreSame(user1, eventChange.User);
+                    eventChange = null;
+
+                    // user1 unfriends
+                    await interactions.ChangeUserRelationAsync(user1.UserId, user2.UserId, UserRelationAction.Reject);
+
+                    // we should get a notification about the signup being removed
+                    Assert.IsNotNull(eventChange);
+                    Assert.AreEqual(UserEventStatus.Cancelled, eventChange.Status);
+                    Assert.AreSame(newEvent, eventChange.Event);
+                    Assert.AreSame(user1, eventChange.User);
+                    eventChange = null;
+
+                    // setup the user-relation
+                    await interactions.ChangeUserRelationAsync(user1.UserId, user2.UserId, UserRelationAction.Invite);
+                    await interactions.ChangeUserRelationAsync(user2.UserId, user1.UserId, UserRelationAction.Accept);
+
+                    // sign user1 up to the event created by user2
+                    await interactions.JoinEventAsync(user1.UserId, newEvent.EventId);
+
+                    // we should get a notification about the signup
+                    Assert.IsNotNull(eventChange);
+                    Assert.AreEqual(UserEventStatus.AcceptedInvitation, eventChange.Status);
+                    Assert.AreSame(newEvent, eventChange.Event);
+                    Assert.AreSame(user1, eventChange.User);
+                    eventChange = null;
+
+                    // user2 unfriends
+                    await interactions.ChangeUserRelationAsync(user2.UserId, user1.UserId, UserRelationAction.Reject);
+
+                    // we should get a notification about the signup being removed
+                    Assert.IsNotNull(eventChange);
+                    Assert.AreEqual(UserEventStatus.Cancelled, eventChange.Status);
+                    Assert.AreSame(newEvent, eventChange.Event);
+                    Assert.AreSame(user1, eventChange.User);
+                    eventChange = null;
+                }
+            }
+            finally
+            {
+                sub1?.Dispose();
+            }
+        }
     }
 }
