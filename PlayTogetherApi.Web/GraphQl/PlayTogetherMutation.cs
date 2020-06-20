@@ -718,7 +718,7 @@ namespace PlayTogetherApi.Web.GraphQl
                 }
             );
 
-            FieldAsync<BooleanGraphType>(
+            FieldAsync<BooleanGraphType>( // todo: return object
                 "deleteUser",
                 description: "Delete the logged-in user. This requires the caller to be authorized. (STILL A WORK IN PROGRESS)",
                 resolve: async context =>
@@ -731,33 +731,16 @@ namespace PlayTogetherApi.Web.GraphQl
                         return null;
                     }
 
-                    var user = await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
-                    if (user == null)
+                    try
                     {
-                        context.Errors.Add(new ExecutionError("User not found."));
+                        await interactionsService.DeleteUser(userId);
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        context.Errors.Add(new ExecutionError(ex.Message));
                         return null;
                     }
-
-                    user.DisplayName = "DELETED_USER";
-                    user.DisplayId = await db.Users.CountAsync(n => n.SoftDelete) + 2;
-                    user.AvatarFilename = "avatar_deleted.jpg";
-                    user.SoftDelete = true;
-                    user.Email = "DELETED";
-                    user.PasswordHash = "DELETED";
-                    db.Users.Update(user);
-
-                    var futureSignups = db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventDate > DateTime.Now);
-                    db.UserEventSignups.RemoveRange(futureSignups);
-
-                    var relations = db.UserRelations.Where(n => n.UserAId == userId || n.UserBId == userId);
-                    db.UserRelations.RemoveRange(relations);
-
-                    var eventsWithNoSignups = db.Events.Where(n => n.CreatedByUserId == userId && !n.Signups.Any(nn => nn.UserId != userId));
-                    db.Events.RemoveRange(eventsWithNoSignups);
-
-                    await db.SaveChangesAsync();
-
-                    return true;
                 }
             );
 

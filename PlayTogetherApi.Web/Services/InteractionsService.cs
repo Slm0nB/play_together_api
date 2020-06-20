@@ -386,5 +386,37 @@ namespace PlayTogetherApi.Services
         }
 
         #endregion
+
+        #region User creation / deletion / editing
+
+        public async Task DeleteUser(Guid userId)
+        {
+            var user = await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
+            if (user == null)
+            {
+                throw new Exception("User not found.");
+            }
+
+            user.DisplayName = "DELETED_USER";
+            user.DisplayId = await db.Users.CountAsync(n => n.SoftDelete) + 2;
+            user.AvatarFilename = "avatar_deleted.jpg";
+            user.SoftDelete = true;
+            user.Email = "DELETED";
+            user.PasswordHash = "DELETED";
+            db.Users.Update(user);
+
+            var futureSignups = db.UserEventSignups.Where(n => n.UserId == userId && n.Event.EventDate > DateTime.Now);
+            db.UserEventSignups.RemoveRange(futureSignups);
+
+            var relations = db.UserRelations.Where(n => n.UserAId == userId || n.UserBId == userId);
+            db.UserRelations.RemoveRange(relations);
+
+            var eventsWithNoSignups = db.Events.Where(n => n.CreatedByUserId == userId && !n.Signups.Any(nn => nn.UserId != userId));
+            db.Events.RemoveRange(eventsWithNoSignups);
+
+            await db.SaveChangesAsync();
+        }
+
+        #endregion
     }
 }
