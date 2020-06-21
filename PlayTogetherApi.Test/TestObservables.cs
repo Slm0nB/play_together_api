@@ -283,7 +283,7 @@ namespace PlayTogetherApi.Test
                     // verify the observation of the deleted user
                     Assert.AreEqual(1, userChanges.Count);
                     Assert.AreSame(userToBeDeleted, userChanges[0].ChangingUser);
-                    Assert.IsTrue(userChanges[0].IsDeleted);
+                    Assert.AreEqual(UserAction.Deleted, userChanges[0].Action);
 
                     // verify the observation of the deleted signups
                     Assert.AreEqual(6, signupChanges.Count);
