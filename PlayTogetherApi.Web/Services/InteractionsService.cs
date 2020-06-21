@@ -1,16 +1,17 @@
 ﻿#define EXTRA_EVENTS
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using PlayTogetherApi.Data;
-using PlayTogetherApi.Services;
 using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Services
 {
+    /// <summary>
+    /// This implements the operations in the API, divorced from matters like deserializing input etc.
+    /// </summary>
     public class InteractionsService
     {
         public bool EnableStatistics = true;

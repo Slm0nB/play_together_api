@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PlayTogetherApi.Data\PlayTogetherApi.Data.csproj" />
+    <ProjectReference Include="..\PlaytogetherApi.Domain\PlaytogetherApi.Domain.csproj" />
     <ProjectReference Include="..\PlayTogetherApi.Web\PlayTogetherApi.Web.csproj" />
   </ItemGroup>
 

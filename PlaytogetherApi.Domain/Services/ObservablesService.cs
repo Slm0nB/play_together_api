@@ -3,9 +3,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.Models;
-using PlayTogetherApi.Web.Services;
 
 namespace PlayTogetherApi.Services
 {

@@ -1,5 +1,4 @@
-﻿using Amazon.S3.Encryption.Internal;
-using System;
+﻿using System;
 using System.Reactive.Disposables;
 using System.Reactive.Subjects;
 using System.Threading;

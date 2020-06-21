@@ -5,6 +5,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Models\Subscriptions\**" />
+    <Content Remove="Models\Subscriptions\**" />
+    <EmbeddedResource Remove="Models\Subscriptions\**" />
+    <None Remove="Models\Subscriptions\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="wwwroot\" />
   </ItemGroup>
 
@@ -21,6 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PlayTogetherApi.Data\PlayTogetherApi.Data.csproj" />
+    <ProjectReference Include="..\PlaytogetherApi.Domain\PlaytogetherApi.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>
