@@ -470,8 +470,8 @@ namespace PlayTogetherApi.Services
             observables.UserChangeStream.OnNext(new UserChangedSubscriptionModel
             {
                 ChangingUser = user,
-                FriendsOfChangingUser = new UserRelation[0],
-                IsDeleted = true
+                FriendsOfChangingUser = relations.ToArray(),
+                Action = UserAction.Updated
             });
 
             await db.SaveChangesAsync();

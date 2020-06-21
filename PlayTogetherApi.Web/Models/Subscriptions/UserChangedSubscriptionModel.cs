@@ -16,6 +16,6 @@ namespace PlayTogetherApi.Web.Models
 
         public Data.UserRelation[] FriendsOfChangingUser;
 
-        public bool IsDeleted = false;
+        public UserAction Action;
     }
 }

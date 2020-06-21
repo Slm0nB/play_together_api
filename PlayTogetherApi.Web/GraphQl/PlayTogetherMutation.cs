@@ -572,6 +572,17 @@ namespace PlayTogetherApi.Web.GraphQl
                     db.Users.Add(newUser);
                     await db.SaveChangesAsync();
 
+                    // commented out because we currently only send these to friends of the user, and new users by definition have no friends
+                    /*
+                    var observableModel = new UserChangedSubscriptionModel
+                    {
+                        ChangingUser = newUser,
+                        FriendsOfChangingUser = new UserRelation[0],
+                        Action = UserAction.Created
+                    };
+                    observables.UserChangeStream.OnNext(observableModel);
+                    */
+
                     return newUser;
                 }
             );
@@ -709,7 +720,8 @@ namespace PlayTogetherApi.Web.GraphQl
                         var observableModel = new UserChangedSubscriptionModel
                         {
                             ChangingUser = editedUser,
-                            FriendsOfChangingUser = friends
+                            FriendsOfChangingUser = friends,
+                            Action = UserAction.Updated
                         };
                         observables.UserChangeStream.OnNext(observableModel);
                     }

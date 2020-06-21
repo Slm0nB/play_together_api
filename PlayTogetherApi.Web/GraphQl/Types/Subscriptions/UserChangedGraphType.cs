@@ -21,8 +21,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 resolve: context => context.Source.ChangingUser
             );
 
-            Field<BooleanGraphType>("deleted",
-                resolve: context => context.Source.IsDeleted
+            Field<UserActionGraphType>("action",
+                resolve: context => context.Source.Action
             );
         }
     }
