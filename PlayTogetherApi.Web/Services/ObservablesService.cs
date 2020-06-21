@@ -11,14 +11,11 @@ namespace PlayTogetherApi.Services
 {
     public class ObservablesService
     {
+        // todo: stop subscribing directly to any of these, and instead only use methods in this class that create and return a subscription
         public ISubject<EventChangedModel> GameEventStream = new ReplaySubject<EventChangedModel>(0);
-
         public ISubject<Data.UserEventSignup> UserEventSignupStream = new ReplaySubject<Data.UserEventSignup>(0);
-
         public ISubject<UserRelationChangedModel> UserRelationChangeStream = new ReplaySubject<UserRelationChangedModel>(0);
-
         public ISubject<UserChangedSubscriptionModel> UserChangeStream = new ReplaySubject<UserChangedSubscriptionModel>(0);
-
         public ConcurrentDictionary<Guid, ISubject<UserStatisticsModel>> UserStatisticsStreams = new ConcurrentDictionary<Guid, ISubject<UserStatisticsModel>>();
         
         public ISubject<UserStatisticsModel> GetUserStatisticsStream(Guid userId, bool createIfMissing = true)

@@ -450,7 +450,7 @@ namespace PlayTogetherApi.Services
             var friendsOnlyEventsWithSignups = await db.Events.Where(n => n.CreatedByUserId == userId && n.FriendsOnly && n.Signups.Any(nn => nn.UserId != userId)).Include(n => n.Signups).ToListAsync();
             db.Events.RemoveRange(friendsOnlyEventsWithSignups);
 
-            foreach (var ev in eventsWithNoSignups)
+            foreach (var ev in friendsOnlyEventsWithSignups)
             {
                 foreach(var signup in ev.Signups.Where(n => n.UserId != userId))
                 {

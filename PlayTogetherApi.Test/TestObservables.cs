@@ -12,11 +12,11 @@ using PlayTogetherApi.Web.Services;
 namespace PlayTogetherApi.Test
 {
     [TestClass]
-    public class TestUserRelationChanges
+    public class TestObservables
     {
         DependencyInjection di;
 
-        public TestUserRelationChanges()
+        public TestObservables()
         {
             di = new DependencyInjection();
         }
@@ -43,6 +43,7 @@ namespace PlayTogetherApi.Test
                     var testUser = MockData.Users[0];
                     var friendUser = MockData.Users[1];
 
+                    // signup for the GameEventStream observable (the real test)
                     EventChangedModel eventChange1 = null;
                     sub1 = observables.GetEventsSubscriptioon(testUser.UserId).Subscribe(ecm =>
                     {
@@ -143,6 +144,7 @@ namespace PlayTogetherApi.Test
                     var user1 = MockData.Users[0];
                     var user2 = MockData.Users[1];
 
+                    // sign up for the UserEventSignup observable (the real test)
                     UserEventSignup eventChange = null;
                     sub1 = observables.UserEventSignupStream.AsObservable().Subscribe(ues =>
                     {
@@ -204,6 +206,112 @@ namespace PlayTogetherApi.Test
             finally
             {
                 sub1?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// When we delete a user, we should get observable notification for the deletion of all its events and relations and signups.
+        /// </summary>
+        [TestMethod]
+        public async Task TestDeletingUser()
+        {
+            IDisposable sub1 = null, sub2 = null, sub3 = null, sub4 = null;
+            try
+            {
+                using (var db = di.GetService<PlayTogetherDbContext>())
+                {
+                    var observables = di.GetService<ObservablesService>();
+                    var interactions = di.GetService<InteractionsService>();
+                    interactions.EnablePushMessages = false;
+
+                    await MockData.PopulateDbAsync(db, force: true, addEvents: false);
+
+                    var userToBeDeleted = MockData.Users[0];
+                    var user2 = MockData.Users[1];
+
+                    // setup the user-relation that'll be deleted
+                    await interactions.ChangeUserRelationAsync(userToBeDeleted.UserId, user2.UserId, UserRelationAction.Invite);
+                    await interactions.ChangeUserRelationAsync(user2.UserId, userToBeDeleted.UserId, UserRelationAction.Accept);
+
+                    // setup the events that'll be deleted
+                    var newEvent1 = await interactions.CreateEventAsync(userToBeDeleted.UserId, DateTime.UtcNow.AddHours(2), DateTime.UtcNow.AddHours(3), "testevent1", "will be deleted", false, MockData.Games[0].GameId);
+                    var newEvent2 = await interactions.CreateEventAsync(userToBeDeleted.UserId, DateTime.UtcNow.AddHours(2), DateTime.UtcNow.AddHours(3), "testevent2", "will be deleted", true, MockData.Games[0].GameId);
+
+                    // setup event that won't be deleted because its public and another user has joined
+                    var newEvent3 = await interactions.CreateEventAsync(userToBeDeleted.UserId, DateTime.UtcNow.AddHours(2), DateTime.UtcNow.AddHours(3), "testevent3", "kept", false, MockData.Games[0].GameId);
+                    await interactions.JoinEventAsync(user2.UserId, newEvent3.EventId);
+
+                    // setup friendsonly event that will be deleted even though it has a participant
+                    var newEvent4 = await interactions.CreateEventAsync(userToBeDeleted.UserId, DateTime.UtcNow.AddHours(2), DateTime.UtcNow.AddHours(3), "testevent4", "will be deleted", true, MockData.Games[0].GameId);
+                    await interactions.JoinEventAsync(user2.UserId, newEvent4.EventId);
+
+                    // create event from other user that this user signs up for
+                    var newEvent5 = await interactions.CreateEventAsync(user2.UserId, DateTime.UtcNow.AddHours(2), DateTime.UtcNow.AddHours(3), "testevent5", "kept", true, MockData.Games[0].GameId);
+                    await interactions.JoinEventAsync(userToBeDeleted.UserId, newEvent5.EventId);
+
+                    // sign up for the UserChange observable
+                    var userChanges = new List<UserChangedSubscriptionModel>();
+                    sub1 = observables.UserChangeStream.AsObservable().Subscribe(next =>
+                    {
+                        userChanges.Add(next);
+                    });
+
+                    // sign up for the UserEventSignup observable
+                    var signupChanges = new List<UserEventSignup>();
+                    sub2 = observables.UserEventSignupStream.AsObservable().Subscribe(next =>
+                    {
+                        signupChanges.Add(next);
+                    });
+
+                    // sign up for the UseRelationChange observable
+                    var relationChanges = new List<UserRelationChangedModel>();
+                    sub3 = observables.UserRelationChangeStream.AsObservable().Subscribe(next =>
+                    {
+                        relationChanges.Add(next);
+                    });
+
+                    // sign up for the GameEvent observable
+                    var eventChanges = new List<EventChangedModel>();
+                    sub4 = observables.GameEventStream.AsObservable().Subscribe(next =>
+                    {
+                        eventChanges.Add(next);
+                    });
+
+                    // delete the user, so we get all the observable-events
+                    await interactions.DeleteUser(userToBeDeleted.UserId);
+
+                    // verify the observation of the deleted user
+                    Assert.AreEqual(1, userChanges.Count);
+                    Assert.AreSame(userToBeDeleted, userChanges[0].ChangingUser);
+                    Assert.IsTrue(userChanges[0].IsDeleted);
+
+                    // verify the observation of the deleted signups
+                    Assert.AreEqual(6, signupChanges.Count);
+                    Assert.IsTrue(signupChanges.Any(n => n.EventId == newEvent1.EventId));
+                    Assert.IsTrue(signupChanges.Any(n => n.EventId == newEvent2.EventId));
+                    Assert.IsTrue(signupChanges.Any(n => n.EventId == newEvent3.EventId));
+                    Assert.IsTrue(signupChanges.Any(n => n.EventId == newEvent4.EventId));
+                    Assert.IsTrue(signupChanges.Any(n => n.EventId == newEvent5.EventId));
+                    Assert.AreEqual(5, signupChanges.Count(n => n.UserId == userToBeDeleted.UserId));
+                    Assert.AreEqual(1, signupChanges.Count(n => n.UserId == user2.UserId));
+
+                    // verify the observation of the deleted relation
+                    Assert.AreEqual(1, relationChanges.Count);
+                    Assert.AreSame(userToBeDeleted, relationChanges[0].ActiveUser);
+
+                    // verify the deleted events
+                    Assert.AreEqual(3, eventChanges.Count);
+                    Assert.IsTrue(eventChanges.Any(n => n.Event == newEvent1));
+                    Assert.IsTrue(eventChanges.Any(n => n.Event == newEvent2));
+                    Assert.IsTrue(eventChanges.Any(n => n.Event == newEvent4));
+                    Assert.IsTrue(eventChanges.All(n => n.Action == EventAction.Deleted));
+                }
+            }
+            finally
+            {
+                sub1?.Dispose();
+                sub2?.Dispose();
+                sub3?.Dispose();
             }
         }
     }
