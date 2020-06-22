@@ -57,7 +57,6 @@ namespace PlayTogetherApi.Test
                 var observables = di.GetService<ObservablesService>();
                 var friendLogic = di.GetService<FriendLogicService>();
                 var interactionsService = di.GetService<InteractionsService>();
-                interactionsService.EnablePushMessages = false;
 
                 Assert.IsNotNull(interactionsService);
 

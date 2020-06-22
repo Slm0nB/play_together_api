@@ -1,6 +1,7 @@
 ﻿#define EXTRA_EVENTS
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -22,9 +23,11 @@ namespace PlayTogetherApi.Services
         PushMessageService pushMessageService;
         FriendLogicService friendLogicService;
         UserStatisticsService userStatisticsService;
+        PasswordService passwordService;
 
         public InteractionsService(
             PlayTogetherDbContext db,
+            PasswordService passwordService,
             ObservablesService observables,
             PushMessageService pushMessageService,
             FriendLogicService friendLogicService,
@@ -35,6 +38,7 @@ namespace PlayTogetherApi.Services
             this.pushMessageService = pushMessageService;
             this.friendLogicService = friendLogicService;
             this.userStatisticsService = userStatisticsService;
+            this.passwordService = passwordService;
         }
 
         #region Events
@@ -122,9 +126,258 @@ namespace PlayTogetherApi.Services
             return newEvent;
         }
 
+        public async Task<Event> CallToArmsAsync(Guid callingUserId, DateTime startDate, string title, Guid gameId)
+        {
+            var callingUser = await db.Users.FirstOrDefaultAsync(n => n.UserId == callingUserId);
+            if (callingUser == null)
+            {
+                throw new Exception("User not found.");
+            }
+
+            if (startDate > DateTime.Now.AddMinutes(90))
+            {
+                throw new Exception("Startdate must be within 90 minutes.");
+            }
+
+            if (gameId != default(Guid))
+            {
+                if (!await db.Games.AnyAsync(n => n.GameId == gameId))
+                {
+                    throw new Exception("Game doesn't exist.");
+                }
+            }
+
+            var friendsOfChangingUser = await db.UserRelations.Where(n => n.Status == FriendLogicService.Relation_MutualFriends && (n.UserAId == callingUser.UserId || n.UserBId == callingUser.UserId)).ToArrayAsync();
+            if (friendsOfChangingUser.Length == 0)
+            {
+                throw new Exception("Must have friends to issue a call to arms :(");
+            }
+
+            var newEvent = new Event
+            {
+                Title = title,
+                CreatedByUserId = callingUserId,
+                EventDate = startDate,
+                EventEndDate = startDate + TimeSpan.FromMinutes(45),
+                Description = "",
+                FriendsOnly = true,
+                CallToArms = true,
+                GameId = gameId
+            };
+            db.Events.Add(newEvent);
+            await db.SaveChangesAsync();
+
+            observables.GameEventStream.OnNext(new EventChangedModel
+            {
+                Event = newEvent,
+                ChangingUser = callingUser,
+                FriendsOfChangingUser = friendsOfChangingUser,
+                Action = EventAction.Created,
+            });
+
+            var friendIds = friendsOfChangingUser.Select(n => n.UserAId == callingUserId ? n.UserBId : n.UserAId).ToList();
+            var friendDeviceTokens = await db.Users.Where(n => friendIds.Contains(n.UserId)).Select(n => n.DeviceToken).ToArrayAsync();
+
+            await userStatisticsService.UpdateStatisticsAsync(db, callingUserId, callingUser);
+            foreach (var friendId in friendIds)
+            {
+                await userStatisticsService.UpdateStatisticsAsync(db, friendId);
+            }
+
+            _ = pushMessageService.PushMessageAsync(
+                "CallToArms",
+                $"{callingUser.DisplayName} calls you to arms!",
+                newEvent.Title,
+                new
+                {
+                    type = "CallToArms",
+                    userId = callingUserId.ToString("N"),
+                    userName = callingUser.DisplayName,
+                    eventId = newEvent.EventId.ToString("N"),
+                    eventTitle = newEvent.Title
+                },
+                friendDeviceTokens
+            );
+
+            return newEvent;
+        }
+
+        public async Task<Event> UpdateEventAsync(Guid userId, Guid eventId, DateTime? startDate = null, DateTime? endDate = null, string title = null, string description = null, bool? friendsOnly = null, Guid? gameId = null)
+        {
+            // todo: if this is a call to arms, it should reject changing friendonly as well as the date
+
+            EventAction? action = null;
+
+            var user = await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
+            if (user == null)
+            {
+                throw new Exception("User not found.");
+            }
+
+            var editedEvent = await db.Events.Include(n => n.Signups).FirstOrDefaultAsync(n => n.EventId == eventId);
+            if (editedEvent == null || editedEvent.CreatedByUserId != userId)
+            {
+                throw new Exception("Must be the creator of the event to modify it.");
+            }
+
+            if (startDate.HasValue && startDate != default)
+            {
+                if (editedEvent.CallToArms && startDate > DateTime.Now.AddMinutes(60)) // todo: UtcNow ?
+                {
+                    throw new Exception("Call to arms must be within 60 minutes.");
+                }
+
+                editedEvent.EventDate = startDate.Value;
+                action = EventAction.EditedPeriod;
+            }
+
+            if (endDate.HasValue && endDate != default)
+            {
+                if (editedEvent.CallToArms && endDate > DateTime.Now.AddHours(4)) // todo: UtcNow ?
+                {
+                    throw new Exception("Call to arms can't end more then 4 hours in the future.");
+                }
+
+                editedEvent.EventEndDate = endDate.Value;
+                action = EventAction.EditedPeriod;
+            }
+
+            if (editedEvent.EventDate > editedEvent.EventEndDate)
+            {
+                throw new Exception("Start- and end-dates not in correct order.");
+            }
+
+            if (!string.IsNullOrEmpty(title))
+            {
+                editedEvent.Title = title;
+                action = action.HasValue ? (action.Value | EventAction.EditedText) : EventAction.EditedText;
+            }
+
+            if (!string.IsNullOrEmpty(description))
+            {
+                editedEvent.Description = description;
+                action = action.HasValue ? (action.Value | EventAction.EditedText) : EventAction.EditedText;
+            }
+
+            if (friendsOnly.HasValue)
+            {
+                if (editedEvent.CallToArms)
+                {
+                    throw new Exception("Can't change the friendsonly-state of a call to arms.");
+                }
+
+                if (friendsOnly != editedEvent.FriendsOnly)
+                {
+                    editedEvent.FriendsOnly = friendsOnly.Value;
+                    action = action.HasValue ? (action.Value | EventAction.EditedVisibility) : EventAction.EditedVisibility;
+                }
+            }
+
+            if (gameId.HasValue && gameId != default)
+            {
+                if (!await db.Games.AnyAsync(n => n.GameId == gameId))
+                {
+                    throw new Exception("Game doesn't exist.");
+                }
+
+                editedEvent.GameId = gameId.Value;
+                action = action.HasValue ? (action.Value | EventAction.EditedGame) : EventAction.EditedGame;
+            }
+
+            db.Events.Update(editedEvent);
+            await db.SaveChangesAsync();
+
+            observables.GameEventStream.OnNext(new EventChangedModel
+            {
+                Event = editedEvent,
+                ChangingUser = user,
+                FriendsOfChangingUser = !editedEvent.FriendsOnly ? null : await db.UserRelations.Where(n => n.Status == FriendLogicService.Relation_MutualFriends && (n.UserAId == user.UserId || n.UserBId == user.UserId)).ToArrayAsync(),
+                Action = action
+            });
+
+            if (action.HasValue && action.Value.HasFlag(EventAction.EditedPeriod))
+            {
+                await userStatisticsService.UpdateStatisticsAsync(db, userId, user);
+            }
+
+            return editedEvent;
+        }
+
+        public async Task<Event> DeleteEventAsync(Guid callingUserId, Guid eventId)
+        {
+            var user = await db.Users.FirstOrDefaultAsync(n => n.UserId == callingUserId);
+            if (user == null)
+            {
+                throw new Exception("User not found.");
+            }
+
+            var dbEvent = await db.Events.FirstOrDefaultAsync(n => n.EventId == eventId);
+            if (dbEvent == null)
+            {
+                throw new Exception("Event doesn't exist.");
+            }
+            if (dbEvent.CreatedByUserId != callingUserId)
+            {
+                throw new Exception("Event not created by user.");
+            }
+
+            db.Events.Remove(dbEvent);
+            await db.SaveChangesAsync();
+
+            observables.GameEventStream.OnNext(new EventChangedModel
+            {
+                Event = dbEvent,
+                ChangingUser = user,
+                Action = EventAction.Deleted
+            });
+
+            await userStatisticsService.UpdateStatisticsAsync(db, callingUserId, user);
+
+            return dbEvent;
+        }
+
         #endregion
 
         #region User-event signups
+
+        /// <summary>
+        /// Modify a signup to an event.
+        /// This validates that the change is done either by the participant, or the owner of the event.
+        /// </summary>
+        /// <param name="userId">The user to modify the signup for.</param>
+        /// <param name="authenticatedUserId">The user making the request (the same user, or the creator of the event).</param>
+        public async Task<UserEventSignup> UpdateSignupAsync(Guid userId, Guid eventId, UserEventStatus status, Guid authenticatedUserId)
+        {
+            var eventDto = await db.Events.FirstOrDefaultAsync(n => n.EventId == eventId);
+            if (eventDto == null)
+            {
+                throw new Exception("Event doesn't exist.");
+            }
+
+            var signup = await db.UserEventSignups.FirstOrDefaultAsync(n => n.EventId == eventId && n.UserId == userId);
+            if (signup == null)
+            {
+                throw new Exception("No signup found.");
+            }
+
+            if (userId != authenticatedUserId && eventDto.CreatedByUserId != authenticatedUserId)
+            {
+                throw new Exception("Must be the creator of the event to modify other users signups.");
+            }
+
+            signup.Status = status;
+
+            db.UserEventSignups.Update(signup);
+            await db.SaveChangesAsync();
+
+            observables.UserEventSignupStream.OnNext(signup);
+
+            await userStatisticsService.UpdateStatisticsAsync(db, userId);
+
+            // todo: if the new status was AcceptedInvitation, maybe push a message to the owner of the event (if this was done by the participant), or to the participant (if this was done by the owner of the event)
+
+            return signup;
+        }
 
         public async Task<UserEventSignup> JoinEventAsync(Guid callingUserId, Guid eventId, UserEventStatus status = UserEventStatus.AcceptedInvitation)
         {
@@ -388,9 +641,183 @@ namespace PlayTogetherApi.Services
 
         #endregion
 
-        #region User creation / deletion / editing
+        #region Users
 
-        public async Task DeleteUser(Guid userId)
+        public async Task<User> CreateUserAsync(string displayName, string email, string password, TimeSpan utcOffset, string deviceToken)
+        {
+            if (!ValidateDisplayName(displayName))
+            {
+                throw new Exception("Displayname too short.");
+            }
+
+            if (!ValidateEmail(email))
+            {
+                throw new Exception("Email invalid.");
+            }
+
+            if (!ValidatePassword(password))
+            {
+                throw new Exception("Password too weak.");
+            }
+
+            var userExists = await db.Users.AnyAsync(n => n.Email == email);
+            if (userExists)
+            {
+                throw new Exception("User with this email already exists.");
+            }
+
+            var usedDisplayIds = await db.Users.Where(n => n.DisplayName == displayName).Select(n => n.DisplayId).Distinct().ToListAsync();
+            if (usedDisplayIds.Count >= 9999)
+            {
+                throw new Exception("Too many users with this displayname.");
+            }
+            var displayId = GetUniqueDisplayId(usedDisplayIds);
+
+            if (utcOffset < -TimeSpan.FromHours(24) || utcOffset > TimeSpan.FromHours(24))
+            {
+                throw new Exception("UtcOffset larger than 24 hours.");
+            }
+
+            var passwordHash = passwordService.CreatePasswordHash(password);
+
+            var newUser = new User
+            {
+                DisplayName = displayName,
+                DisplayId = displayId,
+                Email = email,
+                PasswordHash = passwordHash,
+                UtcOffset = utcOffset,
+                DeviceToken = deviceToken
+            };
+
+            db.Users.Add(newUser);
+            await db.SaveChangesAsync();
+
+            // commented out because we currently only send these to friends of the user, and new users by definition have no friends
+            /*
+            var observableModel = new UserChangedSubscriptionModel
+            {
+                ChangingUser = newUser,
+                FriendsOfChangingUser = new UserRelation[0],
+                Action = UserAction.Created
+            };
+            observables.UserChangeStream.OnNext(observableModel);
+            */
+
+            return newUser;
+        }
+
+        public async Task<User> ModifyUserAsync(Guid userId, string displayName = null, string email = null, string password = null, string avatar = null, TimeSpan? utcOffset = null, string deviceToken = null)
+        {
+            var editedUser = await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
+            if (editedUser == null)
+            {
+                throw new Exception("User not found.");
+            }
+
+            bool wasChangedRelevantForSubscription = false;
+
+            if (!string.IsNullOrWhiteSpace(displayName))
+            {
+                displayName = displayName.Trim();
+                if (!ValidateDisplayName(displayName))
+                {
+                    throw new Exception("Displayname too short.");
+                }
+                if (editedUser.DisplayName != displayName)
+                {
+                    editedUser.DisplayName = displayName;
+
+                    var usedDisplayIds = await db.Users.Where(n => n.DisplayName == displayName).Select(n => n.DisplayId).Distinct().ToListAsync();
+                    if (usedDisplayIds.Count >= 9999)
+                    {
+                        throw new Exception("Too many users with this displayname.");
+                    }
+                    if (usedDisplayIds.Contains(editedUser.DisplayId))
+                    {
+                        editedUser.DisplayId = GetUniqueDisplayId(usedDisplayIds);
+                    }
+
+                    wasChangedRelevantForSubscription = true;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                email = email.Trim();
+                if (!ValidateEmail(email))
+                {
+                    throw new Exception("Email invalid.");
+                }
+                editedUser.Email = email;
+            }
+
+            if (!string.IsNullOrEmpty(password))
+            {
+                if (!ValidatePassword(password))
+                {
+                    throw new Exception("Password too weak.");
+                }
+                editedUser.PasswordHash = passwordService.CreatePasswordHash(password);
+            }
+
+            if (!string.IsNullOrEmpty(avatar))
+            {
+                if (!db.Avatars.Any(n => n.ImagePath == avatar))
+                {
+                    throw new Exception("Avatar not available.");
+                }
+                else
+                {
+                    // todo: here we might later add checks around premium-avatars and access rights
+                    if (editedUser.AvatarFilename != avatar)
+                    {
+                        editedUser.AvatarFilename = avatar;
+                        wasChangedRelevantForSubscription = true;
+                    }
+                }
+            }
+
+            if (utcOffset.HasValue)
+            {
+                if (utcOffset < -TimeSpan.FromHours(24) || utcOffset > TimeSpan.FromHours(24))
+                {
+                    throw new Exception("UtcOffset larger than 24 hours.");
+                }
+                if (utcOffset != editedUser.UtcOffset)
+                {
+                    editedUser.UtcOffset = utcOffset;
+
+                    // todo: update to statistics subscription
+                }
+            }
+
+            if (!string.IsNullOrEmpty(deviceToken))
+            {
+                editedUser.DeviceToken = deviceToken;
+            }
+
+            db.Users.Update(editedUser);
+            await db.SaveChangesAsync();
+
+            if (wasChangedRelevantForSubscription)
+            {
+                var friends = await db.UserRelations
+                    .Where(relation => (relation.UserBId == userId || relation.UserAId == userId)) // todo: consider filtering out relations that are not friends or at least are blocked
+                    .ToArrayAsync();
+                var observableModel = new UserChangedSubscriptionModel
+                {
+                    ChangingUser = editedUser,
+                    FriendsOfChangingUser = friends,
+                    Action = UserAction.Updated
+                };
+                observables.UserChangeStream.OnNext(observableModel);
+            }
+
+            return editedUser;
+        } 
+
+        public async Task DeleteUserAsync(Guid userId)
         {
             var user = await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
             if (user == null)
@@ -472,10 +899,38 @@ namespace PlayTogetherApi.Services
             {
                 ChangingUser = user,
                 FriendsOfChangingUser = relations.ToArray(),
-                Action = UserAction.Updated
+                Action = UserAction.Deleted
             });
 
             await db.SaveChangesAsync();
+        }
+
+        #endregion
+
+        #region Helpers
+
+        // todo: better rules
+
+        static private bool ValidateEmail(string email) => email.Length >= 5 && email.Contains("@");
+        static private bool ValidateDisplayName(string displayName) => displayName.Trim().Length >= 3;
+        static private bool ValidatePassword(string password) => password.Trim().Length >= 3;
+
+        static private Random rnd = new Random();
+
+        static private int GetUniqueDisplayId(List<int> usedDisplayIds)
+        {
+            if (usedDisplayIds.Count >= 9999)
+                throw new ArgumentException("Too many users with same display name!");
+
+            var range = usedDisplayIds.Count >= 999 ? 9999 : 999;
+
+            while (true)
+            {
+                // this could obviously be optimized for when the list is long, but it's irrelevant now
+                var id = rnd.Next(101, range);
+                if (!usedDisplayIds.Contains(id))
+                    return id;
+            }
         }
 
         #endregion

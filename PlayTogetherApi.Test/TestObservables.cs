@@ -36,7 +36,6 @@ namespace PlayTogetherApi.Test
                 {
                     var observables = di.GetService<ObservablesService>();
                     var interactions = di.GetService<InteractionsService>();
-                    interactions.EnablePushMessages = false;
 
                     await MockData.PopulateDbAsync(db, force: true, addEvents: false);
 
@@ -278,7 +277,7 @@ namespace PlayTogetherApi.Test
                     });
 
                     // delete the user, so we get all the observable-events
-                    await interactions.DeleteUser(userToBeDeleted.UserId);
+                    await interactions.DeleteUserAsync(userToBeDeleted.UserId);
 
                     // verify the observation of the deleted user
                     Assert.AreEqual(1, userChanges.Count);

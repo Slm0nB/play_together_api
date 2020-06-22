@@ -42,7 +42,6 @@ namespace PlayTogetherApi.Test
                 {
                     var observables = di.GetService<ObservablesService>();
                     var interactions = di.GetService<InteractionsService>();
-                    interactions.EnablePushMessages = false;
 
                     await MockData.PopulateDbAsync(db, true);
 

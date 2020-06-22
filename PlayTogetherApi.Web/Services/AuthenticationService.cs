@@ -18,11 +18,13 @@ namespace PlayTogetherApi.Services
     {
         readonly IConfiguration _config;
         readonly Data.PlayTogetherDbContext _dbContext;
+        readonly PasswordService _passwordService;
 
-        public AuthenticationService(IConfiguration config, PlayTogetherDbContext dbContext)
+        public AuthenticationService(IConfiguration config, PlayTogetherDbContext dbContext, PasswordService passwordService)
         {
             _config = config;
             _dbContext = dbContext;
+            _passwordService = passwordService;
         }
 
         public async Task<TokenResponseModel> RequestTokenAsync(TokenRequestModel dto)
@@ -41,7 +43,7 @@ namespace PlayTogetherApi.Services
                 case "password":
                 case "username_password":
                     {
-                        var passwordHash = CreatePasswordHash(dto.Password);
+                        var passwordHash = _passwordService.CreatePasswordHash(dto.Password);
                         var user = await _dbContext.Users.FirstOrDefaultAsync(n => n.Email == dto.Username && n.PasswordHash == passwordHash);
                         if (user != null)
                         {
@@ -105,20 +107,6 @@ namespace PlayTogetherApi.Services
 
             return refreshToken;
         }
-
-        #region Helpers
-
-        public string CreatePasswordHash(string password)
-        {
-            using (var sha256 = SHA256.Create())
-            {
-                var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password + "secretsaltbutnopepper"));
-                var hash = BitConverter.ToString(hashedBytes).Replace("-", "").ToLower();
-                return hash;
-            }
-        }
-
-        #endregion
 
         #region JWT
 
