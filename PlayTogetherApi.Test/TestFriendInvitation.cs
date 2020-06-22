@@ -72,11 +72,11 @@ namespace PlayTogetherApi.Test
                 // Set up observers of relation-changes for each user
                 UserRelationChangedExtModel userChange1 = null;
                 UserRelationChangedExtModel userChange2 = null;
-                sub1 = observables.GetRelationChangedSubscription(user1.UserId, false).Subscribe(model =>
+                sub1 = observables.GetExtUserRelationChangeStream(user1.UserId, false).Subscribe(model =>
                 {
                     userChange1 = model;
                 });
-                sub2 = observables.GetRelationChangedSubscription(user2.UserId, false).Subscribe(model =>
+                sub2 = observables.GetExtUserRelationChangeStream(user2.UserId, false).Subscribe(model =>
                 {
                     userChange2 = model;
                 });

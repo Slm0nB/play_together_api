@@ -33,7 +33,7 @@ namespace PlayTogetherApi.Services
         {
             var subject = new Subject<EventSearchUpdateModel>();
 
-            subscription1 = observablesService.GameEventStream.Subscribe(eventChanged =>
+            subscription1 = observablesService.GetGameEventStream().Subscribe(eventChanged =>
             {
                 if(eventChanged.Action == EventAction.Deleted)
                 {
@@ -53,51 +53,45 @@ namespace PlayTogetherApi.Services
                 }
             });
 
-            subscription2 = observablesService.UserEventSignupStream.Subscribe(eventSignup =>
+            subscription2 = observablesService.GetUserEventSignupStream().Subscribe(eventSignup =>
             {
-                if (query.UserId.HasValue)
+                if (eventSignup.UserId == query.UserId.Value || query.FriendIds?.Contains(eventSignup.UserId) == true)
                 {
-                    if (eventSignup.UserId == query.UserId.Value || query.FriendIds?.Contains(eventSignup.UserId) == true) // update if it was the user that joined or left.
+                    if (eventSignup.Status == UserEventStatus.Cancelled)
                     {
-                        if (eventSignup.Status == UserEventStatus.Cancelled)
-                        {
-                            RerunQuery();
-                        }
-                        else
-                        {
-                            FilterAndUpdate(new[] { eventSignup.Event });
-                        }
+                        RerunQuery();
+                    }
+                    else
+                    {
+                        FilterAndUpdate(new[] { eventSignup.Event });
                     }
                 }
             });
 
             if (query.UserId.HasValue)
             {
-                subscription3 = observablesService.UserRelationChangeStream.Subscribe(userRelationChanged =>
+                subscription3 = observablesService.GetExtUserRelationChangeStream(query.UserId.Value).Subscribe(userRelationChanged =>
                 {
-                    if (userRelationChanged.Relation.UserAId == query.UserId || userRelationChanged.Relation.UserBId == query.UserId)
+                    var areFriends = userRelationChanged.Relation.Status == (UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended);
+                    var friendId = userRelationChanged.Relation.UserAId == query.UserId
+                        ? userRelationChanged.Relation.UserBId
+                        : userRelationChanged.Relation.UserAId;
+
+                    if(areFriends && query.FriendIds?.Contains(friendId) != true)
                     {
-                        var areFriends = userRelationChanged.Relation.Status == (UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended);
-                        var friendId = userRelationChanged.Relation.UserAId == query.UserId
-                            ? userRelationChanged.Relation.UserBId
-                            : userRelationChanged.Relation.UserAId;
+                        query.FriendIds = query.FriendIds ?? new List<Guid>();
+                        query.FriendIds.Add(friendId);
 
-                        if(areFriends && query.FriendIds?.Contains(friendId) != true)
-                        {
-                            query.FriendIds = query.FriendIds ?? new List<Guid>();
-                            query.FriendIds.Add(friendId);
-
-                            GetEventsCreatedByorJoinedByUserAsync(friendId)
-                                .ContinueWith(eventsTask =>
-                                {
-                                    FilterAndUpdate(eventsTask.Result);
-                                });
-                        }
-                        else if(!areFriends && query.FriendIds?.Contains(friendId) == true)
-                        {
-                            query.FriendIds.Remove(friendId);
-                            RerunQuery();
-                        }
+                        GetEventsCreatedByorJoinedByUserAsync(friendId)
+                            .ContinueWith(eventsTask =>
+                            {
+                                FilterAndUpdate(eventsTask.Result);
+                            });
+                    }
+                    else if(!areFriends && query.FriendIds?.Contains(friendId) == true)
+                    {
+                        query.FriendIds.Remove(friendId);
+                        RerunQuery();
                     }
                 });
             }
