@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PlayTogetherApi.Web.Services;
+using PlayTogetherApi.Services;
 
 namespace PlayTogetherApi.Test
 {

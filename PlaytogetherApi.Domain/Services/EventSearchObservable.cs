@@ -8,8 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using PlayTogetherApi.Data;
-using PlayTogetherApi.Web.Models;
-using PlayTogetherApi.Web.Services;
+using PlayTogetherApi.Models;
 
 namespace PlayTogetherApi.Services
 {

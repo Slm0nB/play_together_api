@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Services;
-using PlayTogetherApi.Web.Models;
+using PlayTogetherApi.Models;
 
 namespace PlayTogetherApi.Test
 {

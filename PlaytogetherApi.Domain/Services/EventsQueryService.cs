@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using PlayTogetherApi.Data;
 
-namespace PlayTogetherApi.Web.Services
+namespace PlayTogetherApi.Services
 {
     /// <summary>
     /// This service is used both to modify queries against the database, as well as for filtering events in memory.

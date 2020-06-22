@@ -3,6 +3,7 @@ using GraphQL;
 using GraphQL.Types;
 using PlayTogetherApi.Services;
 using PlayTogetherApi.Data;
+using PlayTogetherApi.Models;
 using PlayTogetherApi.Web.Models;
 using PlayTogetherApi.Web.GraphQl.Types;
 

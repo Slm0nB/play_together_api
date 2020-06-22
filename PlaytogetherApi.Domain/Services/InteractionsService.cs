@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using PlayTogetherApi.Data;
-using PlayTogetherApi.Web.Models;
+using PlayTogetherApi.Models;
 
 namespace PlayTogetherApi.Services
 {

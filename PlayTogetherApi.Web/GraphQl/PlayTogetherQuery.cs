@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using GraphQL;
 using GraphQL.Types;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.GraphQl.Types;
 using PlayTogetherApi.Web.Models;
-using PlayTogetherApi.Web.Services;
-using GraphQL;
+using PlayTogetherApi.Services;
 
 namespace PlayTogetherApi.Web.GraphQl
 {

@@ -6,8 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Services;
-using PlayTogetherApi.Web.Models;
-using PlayTogetherApi.Web.Services;
+using PlayTogetherApi.Models;
 
 namespace PlayTogetherApi.Test
 {

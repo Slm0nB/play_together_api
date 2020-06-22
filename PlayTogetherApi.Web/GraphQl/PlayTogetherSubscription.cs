@@ -9,9 +9,9 @@ using GraphQL.Subscription;
 using GraphQL.Resolvers;
 using PlayTogetherApi.Services;
 using PlayTogetherApi.Data;
+using PlayTogetherApi.Models;
 using PlayTogetherApi.Web.Models;
 using PlayTogetherApi.Web.GraphQl.Types;
-using PlayTogetherApi.Web.Services;
 
 namespace PlayTogetherApi.Web.GraphQl
 {

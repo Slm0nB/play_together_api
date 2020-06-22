@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Security.Claims;
 using GraphQL.Types;
-using PlayTogetherApi.Web.Services;
+using PlayTogetherApi.Services;
 
 namespace PlayTogetherApi.Web
 {

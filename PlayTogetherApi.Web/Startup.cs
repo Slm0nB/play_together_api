@@ -19,7 +19,6 @@ using ElastiLog.Middleware;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.GraphQl;
 using PlayTogetherApi.Services;
-using PlayTogetherApi.Web.Services;
 
 namespace PlayTogetherApi.Web
 {

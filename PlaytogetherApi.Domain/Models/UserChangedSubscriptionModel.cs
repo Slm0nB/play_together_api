@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Data = PlayTogetherApi.Data;
 
-namespace PlayTogetherApi.Web.Models
+namespace PlayTogetherApi.Models
 {
     /// <summary>
     /// The additional data primarily neeeded for the "Users" subscription.
