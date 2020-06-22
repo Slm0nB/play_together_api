@@ -8,6 +8,7 @@ using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.GraphQl.Types;
 using PlayTogetherApi.Web.Models;
 using PlayTogetherApi.Web.Services;
+using GraphQL;
 
 namespace PlayTogetherApi.Web.GraphQl
 {
@@ -54,9 +55,8 @@ namespace PlayTogetherApi.Web.GraphQl
 
                    List<UserRelation> friends = null;
                    List<Guid> friendIds = null;
-                   var principal = context.UserContext as ClaimsPrincipal;
-                   var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
-                   if (Guid.TryParse(userIdClaim, out var userId))
+
+                   if(context.TryGetClaimedUserId(out var userId))
                    {
                        // Authenticated users get an additional criteria to include friendsonly-events
                        friends = await db.UserRelations.Where(
@@ -268,13 +268,16 @@ namespace PlayTogetherApi.Web.GraphQl
                description: "The details of the authorized user.",
                resolve: async context =>
                {
-                   var principal = context.UserContext as ClaimsPrincipal;
-                   var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
-                   if (Guid.TryParse(userIdClaim, out var userId))
+                   try
                    {
-                       return await db.Users.FirstOrDefaultAsync(n => n.UserId == userId);
+                       var claimedUserId = context.GetClaimedUserId();
+                       return await db.Users.FirstOrDefaultAsync(n => n.UserId == claimedUserId);
                    }
-                   return null;
+                   catch (Exception ex)
+                   {
+                       context.Errors.Add(new ExecutionError(ex.Message));
+                       return null;
+                   }
                }
            );
         }

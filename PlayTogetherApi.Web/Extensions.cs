@@ -1,11 +1,31 @@
 ﻿using System;
+using System.Linq;
+using System.Security.Claims;
 using GraphQL.Types;
 using PlayTogetherApi.Web.Services;
 
 namespace PlayTogetherApi.Web
 {
-    public static class DomainExtensions
+    public static class Extensions
     {
+        public static Guid GetClaimedUserId<T>(this ResolveFieldContext<T> context)
+        {
+            var principal = context.UserContext as ClaimsPrincipal;
+            var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+            if (!Guid.TryParse(userIdClaim, out var userId))
+            {
+                throw new Exception("Unauthorized");
+            }
+            return userId;
+        }
+
+        public static bool TryGetClaimedUserId<T>(this ResolveFieldContext<T> context, out Guid userId)
+        {
+            var principal = context.UserContext as ClaimsPrincipal;
+            var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+            return Guid.TryParse(userIdClaim, out userId);
+        }
+
         public static void ReadParametersFromContext(this EventsQueryService queryService, ResolveFieldContext<object> context)
         {
             queryService.SearchTerm = context.GetArgument<string>("search");

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Linq;
-using System.Security.Claims;
 using GraphQL;
 using GraphQL.Types;
 using PlayTogetherApi.Services;
@@ -27,20 +25,13 @@ namespace PlayTogetherApi.Web.GraphQl
                 ),
                 resolve: async context =>
                 {
-                    var principal = context.UserContext as ClaimsPrincipal;
-                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
-                    if (!Guid.TryParse(userIdClaim, out var userId))
-                    {
-                        context.Errors.Add(new ExecutionError("Unauthorized"));
-                        return false;
-                    }
-
-                    var eventId = context.GetArgument<Guid>("event");
-                    var status = context.GetArgument<UserEventStatus>("status");
-
                     try
                     {
-                        var newSignup = await interactionsService.JoinEventAsync(userId, eventId, status);
+                        var claimedUserId = context.GetClaimedUserId();
+                        var eventId = context.GetArgument<Guid>("event");
+                        var status = context.GetArgument<UserEventStatus>("status");
+
+                        var newSignup = await interactionsService.JoinEventAsync(claimedUserId, eventId, status);
                         return true;
                     }
                     catch (Exception ex)
@@ -59,19 +50,12 @@ namespace PlayTogetherApi.Web.GraphQl
                 ),
                 resolve: async context =>
                 {
-                    var principal = context.UserContext as ClaimsPrincipal;
-                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
-                    if (!Guid.TryParse(userIdClaim, out var userId))
-                    {
-                        context.Errors.Add(new ExecutionError("Unauthorized"));
-                        return false;
-                    }
-
-                    var eventId = context.GetArgument<Guid>("event");
-
                     try
                     {
-                        var newSignup = await interactionsService.LeaveEventAsync(userId, eventId);
+                        var claimedUserId = context.GetClaimedUserId();
+                        var eventId = context.GetArgument<Guid>("event");
+
+                        var newSignup = await interactionsService.LeaveEventAsync(claimedUserId, eventId);
                         return true;
                     }
                     catch (Exception ex)
@@ -92,22 +76,14 @@ namespace PlayTogetherApi.Web.GraphQl
                 ),
                 resolve: async context =>
                 {
-                    var principal = context.UserContext as ClaimsPrincipal;
-                    var claimText = principal?.Claims?.FirstOrDefault(n => n.Type == "userid")?.Value;
-                    Guid authenticatedUserId = Guid.Empty;
-                    if (string.IsNullOrEmpty(claimText) || !Guid.TryParse(claimText, out authenticatedUserId))
-                    {
-                        context.Errors.Add(new ExecutionError("Unauthorized"));
-                        return false;
-                    }
-
-                    var eventId = context.GetArgument<Guid>("event");
-                    var status = context.GetArgument<UserEventStatus>("status"); ;
-                    var userId = context.GetArgument<Guid>("user", authenticatedUserId);
-
                     try
                     {
-                        var newSignup = await interactionsService.UpdateSignupAsync(userId, eventId, status, authenticatedUserId);
+                        var claimedUserId = context.GetClaimedUserId();
+                        var eventId = context.GetArgument<Guid>("event");
+                        var status = context.GetArgument<UserEventStatus>("status"); ;
+                        var userId = context.GetArgument<Guid>("user", claimedUserId);
+
+                        var newSignup = await interactionsService.UpdateSignupAsync(userId, eventId, status, claimedUserId);
                         return true;
                     }
                     catch (Exception ex)
@@ -128,21 +104,14 @@ namespace PlayTogetherApi.Web.GraphQl
                 ),
                 resolve: async context =>
                 {
-                    var principal = context.UserContext as ClaimsPrincipal;
-                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
-                    if (!Guid.TryParse(userIdClaim, out var callingUserId))
-                    {
-                        context.Errors.Add(new ExecutionError("Unauthorized"));
-                        return null;
-                    }
-
-                    var startDate = context.GetArgument<DateTime>("startdate");
-                    var gameId = context.GetArgument<Guid>("game");
-                    var title = context.GetArgument<string>("title");
-
                     try
                     {
-                        var newEvent = await interactionsService.CallToArmsAsync(callingUserId, startDate, title, gameId);
+                        var claimedUserId = context.GetClaimedUserId();
+                        var startDate = context.GetArgument<DateTime>("startdate");
+                        var gameId = context.GetArgument<Guid>("game");
+                        var title = context.GetArgument<string>("title");
+
+                        var newEvent = await interactionsService.CallToArmsAsync(claimedUserId, startDate, title, gameId);
                         return true;
                     }
                     catch (Exception ex)
@@ -166,25 +135,17 @@ namespace PlayTogetherApi.Web.GraphQl
                 ),
                 resolve: async context =>
                 {
-                    var principal = context.UserContext as ClaimsPrincipal;
-                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
-                    if (!Guid.TryParse(userIdClaim, out var callingUserId))
-                    {
-                        context.Errors.Add(new ExecutionError("Unauthorized"));
-                        return null;
-                    }
-
                     try
                     {
-                        var newEvent = await interactionsService.CreateEventAsync(
-                            callingUserId,
-                            startDate: context.GetArgument<DateTime>("startdate"),
-                            endDate: context.GetArgument<DateTime>("enddate"),
-                            title: context.GetArgument<string>("title"),
-                            description: context.GetArgument<string>("description"),
-                            friendsOnly: context.HasArgument("friendsOnly") ? context.GetArgument<bool>("friendsOnly") : false,
-                            gameId: context.GetArgument<Guid>("game")
-                        );
+                        var claimedUserId = context.GetClaimedUserId();
+                        var startDate = context.GetArgument<DateTime>("startdate");
+                        var endDate = context.GetArgument<DateTime>("enddate");
+                        var title = context.GetArgument<string>("title");
+                        var description = context.GetArgument<string>("description");
+                        var friendsOnly = context.HasArgument("friendsOnly") ? context.GetArgument<bool>("friendsOnly") : false;
+                        var gameId = context.GetArgument<Guid>("game");
+
+                        var newEvent = await interactionsService.CreateEventAsync(claimedUserId, startDate, endDate, title, description, friendsOnly, gameId);
                         return newEvent;
                     }
                     catch(Exception ex)
@@ -209,26 +170,18 @@ namespace PlayTogetherApi.Web.GraphQl
                 ),
                 resolve: async context =>
                 {
-                    var principal = context.UserContext as ClaimsPrincipal;
-                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
-                    if (!Guid.TryParse(userIdClaim, out var userId))
-                    {
-                        context.Errors.Add(new ExecutionError("Unauthorized"));
-                        return null;
-                    }
-
                     try
                     {
-                        var newEvent = await interactionsService.UpdateEventAsync(
-                            userId: userId,
-                            eventId: context.GetArgument<Guid>("id"),
-                            startDate: context.HasArgument("startdate") ? (DateTime?)context.GetArgument<DateTime>("startdate") : null,
-                            endDate: context.HasArgument("enddate") ? (DateTime?)context.GetArgument<DateTime>("enddate") : null,
-                            title: context.GetArgument<string>("title"),
-                            description: context.GetArgument<string>("description"),
-                            friendsOnly: context.HasArgument("friendsOnly") ? (bool?)context.GetArgument<bool>("friendsOnly") : null,
-                            gameId: context.HasArgument("game") ? (Guid?)context.GetArgument<Guid>("game") : null
-                        );
+                        var claimedUserId = context.GetClaimedUserId();
+                        var eventId = context.GetArgument<Guid>("id");
+                        var startDate = context.HasArgument("startdate") ? (DateTime?)context.GetArgument<DateTime>("startdate") : null;
+                        var endDate = context.HasArgument("enddate") ? (DateTime?)context.GetArgument<DateTime>("enddate") : null;
+                        var title = context.GetArgument<string>("title");
+                        var description = context.GetArgument<string>("description");
+                        var friendsOnly = context.HasArgument("friendsOnly") ? (bool?)context.GetArgument<bool>("friendsOnly") : null;
+                        var gameId = context.HasArgument("game") ? (Guid?)context.GetArgument<Guid>("game") : null;
+
+                        var newEvent = await interactionsService.UpdateEventAsync(claimedUserId, eventId, startDate, endDate, title, description, friendsOnly, gameId);
                         return newEvent;
                     }
                     catch (Exception ex)
@@ -247,19 +200,12 @@ namespace PlayTogetherApi.Web.GraphQl
                 ),
                 resolve: async context =>
                 {
-                    var principal = context.UserContext as ClaimsPrincipal;
-                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
-                    if (!Guid.TryParse(userIdClaim, out var userId))
-                    {
-                        context.Errors.Add(new ExecutionError("Unauthorized"));
-                        return null;
-                    }
-
-                    var eventId = context.GetArgument<Guid>("id");
-
                     try
                     {
-                        var deletedEvent  = await interactionsService.DeleteEventAsync(userId, eventId);
+                        var claimedUserId = context.GetClaimedUserId();
+                        var eventId = context.GetArgument<Guid>("id");
+
+                        var deletedEvent  = await interactionsService.DeleteEventAsync(claimedUserId, eventId);
                         return true;
                     }
                     catch (Exception ex)
@@ -284,13 +230,13 @@ namespace PlayTogetherApi.Web.GraphQl
                 {
                     try
                     {
-                        var newUser = await interactionsService.CreateUserAsync(
-                            displayName: context.GetArgument<string>("displayName"),
-                            email: context.GetArgument<string>("email"),
-                            password: context.GetArgument<string>("password"),
-                            utcOffset: context.HasArgument("utcOffset") ? TimeSpan.FromSeconds(context.GetArgument<int>("utcOffset")) : TimeSpan.Zero,
-                            deviceToken: context.HasArgument("deviceToken") ? context.GetArgument<string>("deviceToken") : null
-                        );
+                        var displayName = context.GetArgument<string>("displayName");
+                        var email = context.GetArgument<string>("email");
+                        var password = context.GetArgument<string>("password");
+                        var utcOffset = context.HasArgument("utcOffset") ? TimeSpan.FromSeconds(context.GetArgument<int>("utcOffset")) : TimeSpan.Zero;
+                        var deviceToken = context.HasArgument("deviceToken") ? context.GetArgument<string>("deviceToken") : null;
+
+                        var newUser = await interactionsService.CreateUserAsync(displayName, email, password, utcOffset, deviceToken);
                         return newUser;
                     }
                     catch (Exception ex)
@@ -314,25 +260,17 @@ namespace PlayTogetherApi.Web.GraphQl
                 ),
                 resolve: async context =>
                 {
-                    var principal = context.UserContext as ClaimsPrincipal;
-                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
-                    if (!Guid.TryParse(userIdClaim, out var userId))
-                    {
-                        context.Errors.Add(new ExecutionError("Unauthorized"));
-                        return null;
-                    }
-
                     try
                     {
-                        var user = await interactionsService.ModifyUserAsync(
-                            userId,
-                            displayName: context.GetArgument<string>("displayName"),
-                            email: context.GetArgument<string>("email"),
-                            password: context.GetArgument<string>("password"),
-                            avatar: context.GetArgument<string>("avatar"),
-                            utcOffset: context.HasArgument("utcOffset") ? (TimeSpan?)TimeSpan.FromSeconds(context.GetArgument<int>("utcOffset")) : null,
-                            deviceToken: context.GetArgument<string>("deviceToken")
-                        );
+                        var claimedUserId = context.GetClaimedUserId();
+                        var displayName = context.GetArgument<string>("displayName");
+                        var email = context.GetArgument<string>("email");
+                        var password = context.GetArgument<string>("password");
+                        var avatar = context.GetArgument<string>("avatar");
+                        var utcOffset = context.HasArgument("utcOffset") ? (TimeSpan?)TimeSpan.FromSeconds(context.GetArgument<int>("utcOffset")) : null;
+                        var deviceToken = context.GetArgument<string>("deviceToken");
+
+                        var user = await interactionsService.ModifyUserAsync(claimedUserId, displayName, email, password, avatar, utcOffset, deviceToken);
                         return user;
                     }
                     catch (Exception ex)
@@ -348,16 +286,10 @@ namespace PlayTogetherApi.Web.GraphQl
                 description: "Delete the logged-in user. This requires the caller to be authorized. (STILL A WORK IN PROGRESS)",
                 resolve: async context =>
                 {
-                    var principal = context.UserContext as ClaimsPrincipal;
-                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
-                    if (!Guid.TryParse(userIdClaim, out var userId))
-                    {
-                        context.Errors.Add(new ExecutionError("Unauthorized"));
-                        return null;
-                    }
-
                     try
                     {
+                        var userId = Extensions.GetClaimedUserId(context);
+
                         await interactionsService.DeleteUserAsync(userId);
                         return true;
                     }
@@ -378,20 +310,13 @@ namespace PlayTogetherApi.Web.GraphQl
                 ),
                 resolve: async context =>
                 {
-                    var principal = context.UserContext as ClaimsPrincipal;
-                    var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
-                    if (!Guid.TryParse(userIdClaim, out var callingUserId))
-                    {
-                        context.Errors.Add(new ExecutionError("Unauthorized"));
-                        return null;
-                    }
-
-                    var friendUserId = context.GetArgument<Guid>("user");
-                    var action = context.GetArgument<UserRelationAction>("status");
-
                     try
                     {
-                        var result = await interactionsService.ChangeUserRelationAsync(callingUserId, friendUserId, action);
+                        var claimedUserId = context.GetClaimedUserId();
+                        var friendUserId = context.GetArgument<Guid>("user");
+                        var action = context.GetArgument<UserRelationAction>("status");
+
+                        var result = await interactionsService.ChangeUserRelationAsync(claimedUserId, friendUserId, action);
                         return result;
                     }
                     catch (Exception ex)
