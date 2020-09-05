@@ -1,16 +1,16 @@
 ﻿using System;
-using GraphQL;
+using Microsoft.Extensions.DependencyInjection;
 using GraphQL.Types;
 
 namespace PlayTogetherApi.Web.GraphQl
 {
     public class PlayTogetherSchema : Schema
     {
-        public PlayTogetherSchema(IDependencyResolver resolver) : base(resolver)
+        public PlayTogetherSchema(IServiceProvider serviceProvider) : base(serviceProvider)
         {
-            Query = resolver.Resolve<PlayTogetherQuery>();
-            Mutation = resolver.Resolve<PlayTogetherMutation>();
-            Subscription = resolver.Resolve<PlayTogetherSubscription>();
+            Query = serviceProvider.GetRequiredService<PlayTogetherQuery>();
+            Mutation = serviceProvider.GetRequiredService<PlayTogetherMutation>();
+            Subscription = serviceProvider.GetRequiredService<PlayTogetherSubscription>();
         }
     }
 }

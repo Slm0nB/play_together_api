@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using GraphQL;
 using GraphQL.Types;
 using PlayTogetherApi.Web.Models;
 

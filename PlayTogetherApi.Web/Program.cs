@@ -12,12 +12,10 @@ namespace PlayTogetherApi.Web
 {
     public class Program
     {
-        public static void Main(string[] args)
-        {
-            CreateWebHostBuilder(args).Build().Run();
-        }
+        public static Task Main(string[] args) =>
+            BuildWebHost(args).RunAsync();
 
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
+        public static IWebHost BuildWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                 .UseKestrel(n =>
                 {
@@ -25,6 +23,7 @@ namespace PlayTogetherApi.Web
                 })
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()
-                .UseStartup<Startup>();
+                .UseStartup<Startup>()
+                .Build();
     }
 }

@@ -1,17 +1,19 @@
 ﻿using System;
 using System.Linq;
 using System.Security.Claims;
+using GraphQL;
 using GraphQL.Types;
 using PlayTogetherApi.Services;
+using PlayTogetherApi.Web.GraphQl;
 
 namespace PlayTogetherApi.Web
 {
     public static class Extensions
     {
-        public static Guid GetClaimedUserId<T>(this ResolveFieldContext<T> context)
+        public static Guid GetClaimedUserId<T>(this IResolveFieldContext<T> context)
         {
-            var principal = context.UserContext as ClaimsPrincipal;
-            var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+            var userContext = context.UserContext as PlayTogetherUserContext;
+            var userIdClaim = userContext.User.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
             if (!Guid.TryParse(userIdClaim, out var userId))
             {
                 throw new Exception("Unauthorized");
@@ -19,14 +21,14 @@ namespace PlayTogetherApi.Web
             return userId;
         }
 
-        public static bool TryGetClaimedUserId<T>(this ResolveFieldContext<T> context, out Guid userId)
+        public static bool TryGetClaimedUserId<T>(this IResolveFieldContext<T> context, out Guid userId)
         {
-            var principal = context.UserContext as ClaimsPrincipal;
-            var userIdClaim = principal.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
+            var userContext = context.UserContext as PlayTogetherUserContext;
+            var userIdClaim = userContext.User.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
             return Guid.TryParse(userIdClaim, out userId);
         }
 
-        public static void ReadParametersFromContext(this EventsQueryService queryService, ResolveFieldContext<object> context)
+        public static void ReadParametersFromContext(this EventsQueryService queryService, IResolveFieldContext context)
         {
             queryService.SearchTerm = context.GetArgument<string>("search");
 
