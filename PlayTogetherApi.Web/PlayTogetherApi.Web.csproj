@@ -5,22 +5,28 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Models\Subscriptions\**" />
+    <Content Remove="Models\Subscriptions\**" />
+    <EmbeddedResource Remove="Models\Subscriptions\**" />
+    <None Remove="Models\Subscriptions\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="wwwroot\" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.3.104.39" />
-    <PackageReference Include="GraphQL.Server.Transports.WebSockets" Version="3.4.0" />
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.2.0" PrivateAssets="All" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="GraphQL" Version="2.4.0" />
-    <PackageReference Include="GraphQL.Server.Transports.AspNetCore" Version="3.4.0" />
-    <PackageReference Include="GraphQL.Server.Ui.Playground" Version="3.4.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="GraphQL.Server.Transports.AspNetCore.NewtonsoftJson" Version="3.5.0-alpha0073" />
+    <PackageReference Include="GraphQL.Server.Transports.WebSockets" Version="3.5.0-alpha0073" />
+    <PackageReference Include="GraphQL.Server.Ui.Playground" Version="3.5.0-alpha0073" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PlayTogetherApi.Data\PlayTogetherApi.Data.csproj" />
+    <ProjectReference Include="..\PlaytogetherApi.Domain\PlayTogetherApi.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>

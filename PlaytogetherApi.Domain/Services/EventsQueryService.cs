@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using GraphQL.Types;
 using PlayTogetherApi.Data;
 
-namespace PlayTogetherApi.Web.Services
+namespace PlayTogetherApi.Services
 {
     /// <summary>
     /// This service is used both to modify queries against the database, as well as for filtering events in memory.
@@ -60,30 +58,6 @@ namespace PlayTogetherApi.Web.Services
             query = ProcessInclusiveFilter(query);
 
             return query;
-        }
-
-        public void ReadParametersFromContext(ResolveFieldContext<object> context)
-        {
-            SearchTerm = context.GetArgument<string>("search");
-
-            StartsBeforeDate = context.HasArgument("startsBeforeDate") ? context.GetArgument<DateTime>("startsBeforeDate") : (DateTime?)null;
-            StartsAfterDate = context.HasArgument("startsAfterDate") ? context.GetArgument<DateTime>("startsAfterDate") : (DateTime?)null;
-            EndsBeforeDate = context.HasArgument("endsBeforeDate") ? context.GetArgument<DateTime>("endsBeforeDate") : (DateTime?)null;
-            EndsAfterDate = context.HasArgument("endsAfterDate") ? context.GetArgument<DateTime>("endsAfterDate") : (DateTime?)null;
-
-            OnlyPrivateFilter = context.HasArgument("onlyPrivate") ? context.GetArgument<bool>("onlyPrivate") : false;
-            OnlyByFriendsFilter = context.HasArgument("onlyByFriends") ? context.GetArgument<bool>("onlyByFriends") : false;
-            OnlyJoinedFilter = context.HasArgument("onlyJoined") ? context.GetArgument<bool>("onlyJoined") : false;
-            OnlyJoinedByFriendsFilter = context.HasArgument("onlyJoinedByFriends") ? context.GetArgument<bool>("onlyJoinedByFriends") : false;
-            OnlyByUsersFilter = context.HasArgument("onlyByUsers") ? context.GetArgument<Guid[]>("onlyByUsers") : null;
-            OnlyGamesFilter = context.HasArgument("onlyGames") ? context.GetArgument<Guid[]>("onlyGames") : null;
-
-            IncludePrivateFilter = context.HasArgument("includePrivate") ? context.GetArgument<bool>("includePrivate") : false;
-            IncludeByFriendsFilter = context.HasArgument("includeByFriends") ? context.GetArgument<bool>("includeByFriends") : false;
-            IncludeJoinedFilter = context.HasArgument("includeJoined") ? context.GetArgument<bool>("includeJoined") : false;
-            IncludeJoinedByFriendsFilter = context.HasArgument("includeJoinedByFriends") ? context.GetArgument<bool>("includeJoinedByFriends") : false;
-            IncludeByUsersFilter = context.HasArgument("includeByUsers") ? context.GetArgument<Guid[]>("includeByUsers") : null;
-            IncludeGamesFilter = context.HasArgument("includeGames") ? context.GetArgument<Guid[]>("includeGames") : null;
         }
 
         public IQueryable<Event> ProcessDates(IQueryable<Event> query)

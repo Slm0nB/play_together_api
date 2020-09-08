@@ -33,6 +33,7 @@ namespace PlayTogetherApi.Test
         {
             var services = new ServiceCollection();
 
+            services.AddSingleton<PasswordService>();
             services.AddSingleton<ObservablesService>();
             services.AddSingleton<FriendLogicService>();
             services.AddSingleton<UserStatisticsService>();

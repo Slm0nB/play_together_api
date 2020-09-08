@@ -9,9 +9,9 @@ using GraphQL.Subscription;
 using GraphQL.Resolvers;
 using PlayTogetherApi.Services;
 using PlayTogetherApi.Data;
+using PlayTogetherApi.Models;
 using PlayTogetherApi.Web.Models;
 using PlayTogetherApi.Web.GraphQl.Types;
-using PlayTogetherApi.Web.Services;
 
 namespace PlayTogetherApi.Web.GraphQl
 {
@@ -68,7 +68,7 @@ namespace PlayTogetherApi.Web.GraphQl
                         }
                     }
 
-                    return observables.GetEventsSubscriptioon(userId);
+                    return observables.GetEventsStream(userId);
                 })
             });
 
@@ -86,7 +86,7 @@ namespace PlayTogetherApi.Web.GraphQl
                 Resolver = new FuncFieldResolver<UserEventSignup>(context => context.Source as UserEventSignup),
                 Subscriber = new EventStreamResolver<UserEventSignup>(context =>
                 {
-                    var observable = observables.UserEventSignupStream;
+                    var observable = observables.GetUserEventSignupStream();
 
                     if(context.HasArgument("event"))
                     {
@@ -106,7 +106,7 @@ namespace PlayTogetherApi.Web.GraphQl
                         observable = (ISubject<UserEventSignup>)observable.Where(n => n.Event.CreatedByUserId == ownerId);
                     }
 
-                    return observable.AsObservable();
+                    return observable;
                 })
             });
 
@@ -132,7 +132,8 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     var excludeChangesFromCaller = context.GetArgument<bool>("excludeChangesFromCaller");
 
-                    return observables.GetRelationChangedSubscription(callingUserId, excludeChangesFromCaller);
+                    var observable = observables.GetExtUserRelationChangeStream(callingUserId, excludeChangesFromCaller);
+                    return observable;
                 })
             });
 
@@ -156,16 +157,13 @@ namespace PlayTogetherApi.Web.GraphQl
                         return null;
                     }
 
-                    IObservable<UserChangedSubscriptionModel> observable = observables.UserChangeStream
-                        .Where(model => model.FriendsOfChangingUser.Any(rel => rel.UserAId == callingUserId || rel.UserBId == callingUserId));
+                    var excludeChangesFromCaller = context.GetArgument<bool>("excludeChangesFromCaller");
 
-                    if (context.GetArgument<bool>("excludeChangesFromCaller"))
-                    {
-                        observable = observable.Where(rel => rel.ChangingUser.UserId != callingUserId);
-                    }
-
-                    return observable
-                        .AsObservable();
+                    var observable = observables.GetUserChangeStream(callingUserId,
+                        excludeIfNotUserOrFriend: true,
+                        excludeIfCausedByUser: excludeChangesFromCaller
+                    );
+                    return observable;
                 })
             });
 
@@ -189,7 +187,6 @@ namespace PlayTogetherApi.Web.GraphQl
                     }
 
                     IObservable<UserStatisticsModel> observable = observables.GetUserStatisticsStream(callingUserId);
-
                     return observable;
                 })
             });

@@ -19,7 +19,6 @@ using ElastiLog.Middleware;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.GraphQl;
 using PlayTogetherApi.Services;
-using PlayTogetherApi.Web.Services;
 
 namespace PlayTogetherApi.Web
 {
@@ -38,6 +37,7 @@ namespace PlayTogetherApi.Web
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.Configure<ElastiLogConfiguration>(Configuration.GetSection("Logging:ElastiLog"));
             services.AddSingleton(Configuration);
+            services.AddSingleton<PasswordService>();
             services.AddSingleton<ObservablesService>();
             services.AddSingleton<FriendLogicService>();
             services.AddSingleton<UserStatisticsService>();
@@ -53,15 +53,18 @@ namespace PlayTogetherApi.Web
                 opt.UseNpgsql(connectionString);
             });
 
-            services.AddScoped<IDependencyResolver>(s => new FuncDependencyResolver(s.GetRequiredService));
             services.AddScoped<PlayTogetherSchema>();
             services
                 .AddGraphQL(options => {
+                    options.EnableMetrics = false;
                     options.ExposeExceptions = false;
                 })
+                .AddNewtonsoftJson(deserializerSettings => { }, serializerSettings => { }) // For everything else
+            //   .AddErrorInfoProvider(opt => opt.ExposeExceptionStackTrace = Environment.IsDevelopment())
                 .AddWebSockets()
-                .AddGraphTypes(ServiceLifetime.Scoped)
-                .AddUserContextBuilder(httpContext => httpContext.User);
+            //  .AddDataLoader()
+                .AddGraphTypes(typeof(PlayTogetherSchema), ServiceLifetime.Scoped)
+                .AddUserContextBuilder(httpContext => new PlayTogetherUserContext { User = httpContext.User });
 
             services
                 .AddCors(options =>

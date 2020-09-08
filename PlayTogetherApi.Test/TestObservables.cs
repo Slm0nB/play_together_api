@@ -6,8 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Services;
-using PlayTogetherApi.Web.Models;
-using PlayTogetherApi.Web.Services;
+using PlayTogetherApi.Models;
 
 namespace PlayTogetherApi.Test
 {
@@ -36,7 +35,6 @@ namespace PlayTogetherApi.Test
                 {
                     var observables = di.GetService<ObservablesService>();
                     var interactions = di.GetService<InteractionsService>();
-                    interactions.EnablePushMessages = false;
 
                     await MockData.PopulateDbAsync(db, force: true, addEvents: false);
 
@@ -45,13 +43,13 @@ namespace PlayTogetherApi.Test
 
                     // signup for the GameEventStream observable (the real test)
                     EventChangedModel eventChange1 = null;
-                    sub1 = observables.GetEventsSubscriptioon(testUser.UserId).Subscribe(ecm =>
+                    sub1 = observables.GetEventsStream(testUser.UserId).Subscribe(ecm =>
                     {
                         eventChange1 = ecm;
                     });
 
                     EventChangedModel eventChange2 = null;
-                    sub2 = observables.GetEventsSubscriptioon(friendUser.UserId).Subscribe(ecm =>
+                    sub2 = observables.GetEventsStream(friendUser.UserId).Subscribe(ecm =>
                     {
                         eventChange2 = ecm;
                     });
@@ -146,7 +144,7 @@ namespace PlayTogetherApi.Test
 
                     // sign up for the UserEventSignup observable (the real test)
                     UserEventSignup eventChange = null;
-                    sub1 = observables.UserEventSignupStream.AsObservable().Subscribe(ues =>
+                    sub1 = observables.GetUserEventSignupStream().Subscribe(ues =>
                     {
                         eventChange = ues;
                     });
@@ -251,34 +249,34 @@ namespace PlayTogetherApi.Test
 
                     // sign up for the UserChange observable
                     var userChanges = new List<UserChangedSubscriptionModel>();
-                    sub1 = observables.UserChangeStream.AsObservable().Subscribe(next =>
+                    sub1 = observables.GetUserChangeStream().Subscribe(next =>
                     {
                         userChanges.Add(next);
                     });
 
                     // sign up for the UserEventSignup observable
                     var signupChanges = new List<UserEventSignup>();
-                    sub2 = observables.UserEventSignupStream.AsObservable().Subscribe(next =>
+                    sub2 = observables.GetUserEventSignupStream().Subscribe(next =>
                     {
                         signupChanges.Add(next);
                     });
 
                     // sign up for the UseRelationChange observable
                     var relationChanges = new List<UserRelationChangedModel>();
-                    sub3 = observables.UserRelationChangeStream.AsObservable().Subscribe(next =>
+                    sub3 = observables.GetUserRelationChangeStream().Subscribe(next =>
                     {
                         relationChanges.Add(next);
                     });
 
                     // sign up for the GameEvent observable
                     var eventChanges = new List<EventChangedModel>();
-                    sub4 = observables.GameEventStream.AsObservable().Subscribe(next =>
+                    sub4 = observables.GetGameEventStream().Subscribe(next =>
                     {
                         eventChanges.Add(next);
                     });
 
                     // delete the user, so we get all the observable-events
-                    await interactions.DeleteUser(userToBeDeleted.UserId);
+                    await interactions.DeleteUserAsync(userToBeDeleted.UserId);
 
                     // verify the observation of the deleted user
                     Assert.AreEqual(1, userChanges.Count);

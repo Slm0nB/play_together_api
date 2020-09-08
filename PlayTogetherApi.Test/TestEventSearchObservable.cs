@@ -6,8 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Services;
-using PlayTogetherApi.Web.Models;
-using PlayTogetherApi.Web.Services;
+using PlayTogetherApi.Models;
 
 namespace PlayTogetherApi.Test
 {
@@ -15,6 +14,7 @@ namespace PlayTogetherApi.Test
     public sealed class TestEventSearchObservable : IDisposable
     {
         DependencyInjection di;
+        int delay = 25;
 
         public TestEventSearchObservable()
         {
@@ -42,7 +42,6 @@ namespace PlayTogetherApi.Test
                 {
                     var observables = di.GetService<ObservablesService>();
                     var interactions = di.GetService<InteractionsService>();
-                    interactions.EnablePushMessages = false;
 
                     await MockData.PopulateDbAsync(db, true);
 
@@ -66,7 +65,7 @@ namespace PlayTogetherApi.Test
 
                     // subscribe to eventchanges, as a sanity check
                     EventChangedModel eventChangeUpdate = null;
-                    sub1 = observables.GameEventStream.AsObservable().Subscribe(ecm =>
+                    sub1 = observables.GetGameEventStream().Subscribe(ecm =>
                     {
                         eventChangeUpdate = ecm;
                     });
@@ -162,13 +161,13 @@ namespace PlayTogetherApi.Test
 
                     // subscribe to eventchanges and userrelationchanges, as a sanity check
                     EventChangedModel eventChangeUpdate = null;
-                    sub2 = observables.GameEventStream.AsObservable().Subscribe(o_ecm =>
+                    sub2 = observables.GetGameEventStream().Subscribe(o_ecm =>
                     {
                         eventChangeUpdate = o_ecm;
                     });
 
                     UserRelationChangedModel userRelationChangeUpdate = null;
-                    sub3 = observables.UserRelationChangeStream.AsObservable().Subscribe(o_urcm => {
+                    sub3 = observables.GetUserRelationChangeStream().Subscribe(o_urcm => {
                         userRelationChangeUpdate = o_urcm;
                     });
 
@@ -211,7 +210,7 @@ namespace PlayTogetherApi.Test
                     await interactions.ChangeUserRelationAsync(friendUser.UserId, testUser.UserId, UserRelationAction.Accept);
 
                     // wait for the async processing of the search
-                    await Task.Delay(200);
+                    await Task.Delay(delay);
 
                     Assert.IsNotNull(userRelationChangeUpdate);
                     Assert.AreEqual(UserRelationInternalStatus.A_Befriended| UserRelationInternalStatus.B_Befriended, userRelationChangeUpdate.Relation.Status);
@@ -386,7 +385,7 @@ namespace PlayTogetherApi.Test
                     await interactions.ChangeUserRelationAsync(friendUser.UserId, testUser.UserId, UserRelationAction.Accept);
 
                     // wait for the async processing of the search
-                    await Task.Delay(200);
+                    await Task.Delay(delay);
 
                     // verify that the event was added to the search
                     Assert.IsNotNull(searchUpdate);
@@ -463,7 +462,7 @@ namespace PlayTogetherApi.Test
                     await interactions.ChangeUserRelationAsync(friendUser.UserId, testUser.UserId, UserRelationAction.Accept);
 
                     // wait for the async processing of the search
-                    await Task.Delay(200);
+                    await Task.Delay(delay);
 
                     // verify that the event was added to the search
                     Assert.IsNotNull(searchUpdate);

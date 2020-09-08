@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Services;
-using PlayTogetherApi.Web.Models;
+using PlayTogetherApi.Models;
 
 namespace PlayTogetherApi.Test
 {
@@ -57,7 +57,6 @@ namespace PlayTogetherApi.Test
                 var observables = di.GetService<ObservablesService>();
                 var friendLogic = di.GetService<FriendLogicService>();
                 var interactionsService = di.GetService<InteractionsService>();
-                interactionsService.EnablePushMessages = false;
 
                 Assert.IsNotNull(interactionsService);
 
@@ -73,11 +72,11 @@ namespace PlayTogetherApi.Test
                 // Set up observers of relation-changes for each user
                 UserRelationChangedExtModel userChange1 = null;
                 UserRelationChangedExtModel userChange2 = null;
-                sub1 = observables.GetRelationChangedSubscription(user1.UserId, false).Subscribe(model =>
+                sub1 = observables.GetExtUserRelationChangeStream(user1.UserId, false).Subscribe(model =>
                 {
                     userChange1 = model;
                 });
-                sub2 = observables.GetRelationChangedSubscription(user2.UserId, false).Subscribe(model =>
+                sub2 = observables.GetExtUserRelationChangeStream(user2.UserId, false).Subscribe(model =>
                 {
                     userChange2 = model;
                 });
