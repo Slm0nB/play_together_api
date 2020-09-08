@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using GraphQL;
 using GraphQL.Types;
-using Microsoft.EntityFrameworkCore;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.Models;
 
@@ -10,7 +11,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 {
     public class EventGraphType : EventBaseGraphType
     {
-        public EventGraphType(PlayTogetherDbContext db) : base(db)
+        public EventGraphType() : base()
         {
             Name = "Event";
 
@@ -23,6 +24,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 ),
                 resolve: context =>
                 {
+                    var db = context.RequestServices.GetService<PlayTogetherDbContext>();
+
                     var eventId = context.Source.EventId;
                     IQueryable<UserEventSignup> signups = db.UserEventSignups
                         .Where(n => n.EventId == eventId)

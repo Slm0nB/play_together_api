@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Linq;
-using System.Security.Claims;
 using GraphQL;
-using GraphQL.Types;
 using PlayTogetherApi.Services;
 using PlayTogetherApi.Web.GraphQl;
 

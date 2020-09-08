@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using GraphQL;
 using GraphQL.Types;
 using PlayTogetherApi.Data;
@@ -13,7 +14,7 @@ namespace PlayTogetherApi.Web.GraphQl
 {
     public class PlayTogetherQuery : ObjectGraphType
     {
-        public PlayTogetherQuery(PlayTogetherDbContext db)
+        public PlayTogetherQuery()
         {
             Name = "Query";
 
@@ -48,67 +49,76 @@ namespace PlayTogetherApi.Web.GraphQl
                 ),
                resolve: async context =>
                {
-                   IQueryable<Event> query = db.Events;
-
-                   var queryService = new EventsQueryService();
-
-                   List<UserRelation> friends = null;
-                   List<Guid> friendIds = null;
-
-                   if(context.TryGetClaimedUserId(out var userId))
+                   try
                    {
-                       // Authenticated users get an additional criteria to include friendsonly-events
-                       friends = await db.UserRelations.Where(
-                           rel => rel.Status == (UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended) &&
-                            (rel.UserAId == userId || rel.UserBId == userId))
-                           .ToListAsync();
-                       friendIds = friends.Select(rel => rel.UserAId == userId ? rel.UserBId : rel.UserAId).ToList();
+                       var db = context.RequestServices.GetService<PlayTogetherDbContext>();
 
-                       queryService.UserId = userId;
-                       queryService.FriendIds = friendIds;
+                       IQueryable<Event> query = db.Events;
 
-                       //query = query.Where(n => !n.FriendsOnly || n.CreatedByUserId == userId || friendIds.Contains(n.CreatedByUserId));
-                   }
-                   else
-                   {
-                       // Unauthenticated users never see friendsonly-events
-                       //query = query.Where(n => !n.FriendsOnly);
-                   }
+                       var queryService = new EventsQueryService();
 
-                   var id = context.GetArgument<string>("id");
-                   if (Guid.TryParse(id, out var uid))
-                   {
-                       query = query.Where(n => n.EventId == uid);
-                   }
-                   else
-                   {
-                       queryService.ReadParametersFromContext(context);
+                       List<UserRelation> friends = null;
+                       List<Guid> friendIds = null;
 
-                       query = queryService.Process(query);
-                       query = query.OrderBy(n => n.EventDate);
-
-                       var skip = context.GetArgument<int>("skip");
-                       if (skip > 0)
+                       if (context.TryGetClaimedUserId(out var userId))
                        {
-                           query = query.Skip(skip);
-                       }
+                           // Authenticated users get an additional criteria to include friendsonly-events
+                           friends = await db.UserRelations.Where(
+                               rel => rel.Status == (UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended) &&
+                                (rel.UserAId == userId || rel.UserBId == userId))
+                               .ToListAsync();
+                           friendIds = friends.Select(rel => rel.UserAId == userId ? rel.UserBId : rel.UserAId).ToList();
 
-                       var take = Math.Min(100, context.GetArgument<int>("take", 100));
-                       if (take > 0)
-                       {
-                           query = query.Take(take);
+                           queryService.UserId = userId;
+                           queryService.FriendIds = friendIds;
+
+                           //query = query.Where(n => !n.FriendsOnly || n.CreatedByUserId == userId || friendIds.Contains(n.CreatedByUserId));
                        }
                        else
                        {
-                           return null;
+                           // Unauthenticated users never see friendsonly-events
+                           //query = query.Where(n => !n.FriendsOnly);
                        }
-                   }
 
-                   return new EventCollectionModel
+                       var id = context.GetArgument<string>("id");
+                       if (Guid.TryParse(id, out var uid))
+                       {
+                           query = query.Where(n => n.EventId == uid);
+                       }
+                       else
+                       {
+                           queryService.ReadParametersFromContext(context);
+
+                           query = queryService.Process(query);
+                           query = query.OrderBy(n => n.EventDate);
+
+                           var skip = context.GetArgument<int>("skip");
+                           if (skip > 0)
+                           {
+                               query = query.Skip(skip);
+                           }
+
+                           var take = Math.Min(100, context.GetArgument<int>("take", 100));
+                           if (take > 0)
+                           {
+                               query = query.Take(take);
+                           }
+                           else
+                           {
+                               return null;
+                           }
+                       }
+
+                       return new EventCollectionModel
+                       {
+                           EventsQuery = query,
+                           TotalEventsQuery = db.Events
+                       };
+                   }
+                   catch(Exception ex)
                    {
-                       EventsQuery = query,
-                       TotalEventsQuery = db.Events
-                   };
+                       throw;
+                   }
                }
            );
 
@@ -123,6 +133,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 ),
                resolve: context =>
                {
+                   var db = context.RequestServices.GetService<PlayTogetherDbContext>();
+
                    IQueryable<User> query = db.Users;
 
                    var id = context.GetArgument<string>("id");
@@ -179,6 +191,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 ),
                resolve: context =>
                {
+                   var db = context.RequestServices.GetService<PlayTogetherDbContext>();
+
                    IQueryable<Game> query = db.Games;
 
                    var id = context.GetArgument<string>("id");
@@ -218,6 +232,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 ),
                resolve: context =>
                {
+                   var db = context.RequestServices.GetService<PlayTogetherDbContext>();
+
                    IQueryable<BuiltinAvatar> query = db.Avatars;
 
                    var skip = context.GetArgument<int>("skip");
@@ -244,6 +260,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 ),
                resolve: context =>
                {
+                   var db = context.RequestServices.GetService<PlayTogetherDbContext>();
+
                    IQueryable<PlaceholderImage> query = db.PlaceholderImages;
 
                    var skip = context.GetArgument<int>("skip");
@@ -267,6 +285,8 @@ namespace PlayTogetherApi.Web.GraphQl
                description: "The details of the authorized user.",
                resolve: async context =>
                {
+                   var db = context.RequestServices.GetService<PlayTogetherDbContext>();
+
                    try
                    {
                        var claimedUserId = context.GetClaimedUserId();

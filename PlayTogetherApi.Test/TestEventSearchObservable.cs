@@ -54,7 +54,7 @@ namespace PlayTogetherApi.Test
                         StartsAfterDate = DateTime.Today.AddDays(-1),
                         IncludeJoinedFilter = true
                     };
-                    var searchObservable = new EventSearchObservable(di.ScopedServiceProvider, observables, queryService, new List<Event>());
+                    var searchObservable = new EventSearchObservable(di.ScopedServiceProvider,  queryService, new List<Event>());
 
                     // subscribe to updates from the search (the actual test)
                     EventSearchUpdateModel searchUpdate = null;
@@ -150,7 +150,7 @@ namespace PlayTogetherApi.Test
                         StartsAfterDate = DateTime.Today,
                         IncludeByFriendsFilter = true,
                     };
-                    var searchObservable = new EventSearchObservable(di.ScopedServiceProvider, observables, queryService, new List<Event>());
+                    var searchObservable = new EventSearchObservable(di.ScopedServiceProvider, queryService, new List<Event>());
 
                     // subscribe to updates from the search (the actual test)
                     EventSearchUpdateModel searchUpdate = null;
@@ -246,7 +246,6 @@ namespace PlayTogetherApi.Test
             {
                 using (var db = di.GetService<PlayTogetherDbContext>())
                 {
-                    var observables = di.GetService<ObservablesService>();
                     var interactions = di.GetService<InteractionsService>();
                     interactions.EnablePushMessages = false;
 
@@ -267,7 +266,7 @@ namespace PlayTogetherApi.Test
                         StartsAfterDate = DateTime.Today,
                         IncludeJoinedByFriendsFilter = true
                     };
-                    var searchObservable = new EventSearchObservable(di.ScopedServiceProvider, observables, queryService, new List<Event>());
+                    var searchObservable = new EventSearchObservable(di.ScopedServiceProvider, queryService, new List<Event>());
 
                     // subscribe to updates from the search (the actual test)
                     EventSearchUpdateModel searchUpdate = null;
@@ -344,7 +343,6 @@ namespace PlayTogetherApi.Test
             {
                 using (var db = di.GetService<PlayTogetherDbContext>())
                 {
-                    var observables = di.GetService<ObservablesService>();
                     var interactions = di.GetService<InteractionsService>();
                     interactions.EnablePushMessages = false;
 
@@ -361,7 +359,7 @@ namespace PlayTogetherApi.Test
                         StartsAfterDate = DateTime.Today,
                         IncludeJoinedByFriendsFilter = true
                     };
-                    var searchObservable = new EventSearchObservable(di.ScopedServiceProvider, observables, queryService, new List<Event>());
+                    var searchObservable = new EventSearchObservable(di.ScopedServiceProvider, queryService, new List<Event>());
 
                     // subscribe to updates from the search (the actual test)
                     EventSearchUpdateModel searchUpdate = null;
@@ -426,7 +424,6 @@ namespace PlayTogetherApi.Test
             {
                 using (var db = di.GetService<PlayTogetherDbContext>())
                 {
-                    var observables = di.GetService<ObservablesService>();
                     var interactions = di.GetService<InteractionsService>();
                     interactions.EnablePushMessages = false;
 
@@ -443,7 +440,7 @@ namespace PlayTogetherApi.Test
                         StartsAfterDate = DateTime.Today,
                         IncludeJoinedByFriendsFilter = true
                     };
-                    var searchObservable = new EventSearchObservable(di.ScopedServiceProvider, observables, queryService, new List<Event>());
+                    var searchObservable = new EventSearchObservable(di.ScopedServiceProvider, queryService, new List<Event>());
 
                     // subscribe to updates from the search (the actual test)
                     EventSearchUpdateModel searchUpdate = null;

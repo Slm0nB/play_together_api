@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using GraphQL.Types;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using PlayTogetherApi.Data;
 using PlayTogetherApi.Services;
-using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
@@ -18,7 +11,11 @@ namespace PlayTogetherApi.Web.GraphQl.Types
         {
             Name = "SystemStatistics";
 
-            Field<IntGraphType>("userStatisticsSubscriptionCount", resolve: context => observablesService.UserStatisticsStreams.Count() );
+            Field<IntGraphType>("userStatisticsSubscriptionCount",
+                resolve: context =>
+                {
+                    return observablesService.UserStatisticsStreams.Count();
+                });
 
         }
     }

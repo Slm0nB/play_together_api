@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Extensions.Configuration;
 using GraphQL.Types;
 using PlayTogetherApi.Data;
-using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {

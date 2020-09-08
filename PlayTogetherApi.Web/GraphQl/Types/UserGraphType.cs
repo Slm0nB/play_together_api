@@ -4,6 +4,7 @@ using GraphQL;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.Models;
 
@@ -11,7 +12,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 {
     public class UserGraphType : UserPreviewGraphType
     {
-        public UserGraphType(PlayTogetherDbContext db, IConfiguration config) : base(db, config)
+        public UserGraphType(IConfiguration config) : base(config)
         {
             Name = "User";
 
@@ -25,6 +26,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                    new QueryArgument<IntGraphType> { Name = "take", Description = "How many items to return." }
                 ),
                 resolve: context => {
+                    var db = context.RequestServices.GetService<PlayTogetherDbContext>();
+
                     var query = db.Events.Where(n => n.CreatedByUserId == context.Source.UserId);
 
                     bool dateWasGiven = false;
@@ -87,6 +90,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 ),
                 resolve: context =>
                 {
+                    var db = context.RequestServices.GetService<PlayTogetherDbContext>();
+
                     var userId = context.Source.UserId;
                     IQueryable<UserEventSignup> signups = db.UserEventSignups
                         .Where(n => n.UserId == userId)
@@ -149,6 +154,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 ),
                 resolve: context =>
                 {
+                    var db = context.RequestServices.GetService<PlayTogetherDbContext>();
+
                     var userId = context.Source.UserId;
                     IQueryable<UserRelation> relations = db.UserRelations
                         .Where(relation => /*relation.Status == (UserRelationInternalStatus.A_Befriended | UserRelationInternalStatus.B_Befriended) &&*/ (relation.UserBId == context.Source.UserId || relation.UserAId == context.Source.UserId))

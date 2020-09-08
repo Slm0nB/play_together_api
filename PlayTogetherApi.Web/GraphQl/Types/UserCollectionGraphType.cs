@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
+﻿using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using GraphQL.Types;
 using PlayTogetherApi.Data;
 
@@ -11,7 +8,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 {
     public class UserCollectionGraphType : ObjectGraphType<IQueryable<User>>
     {
-        public UserCollectionGraphType(PlayTogetherDbContext db, IConfiguration config)
+        public UserCollectionGraphType()
         {
             Name = "UserCollection";
 
@@ -19,6 +16,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 description: "The total number of active users",
                 resolve: async context =>
                 {
+                    var db = context.RequestServices.GetService<PlayTogetherDbContext>();
+
                     var total = await db.Users.Where(n => !n.SoftDelete).CountAsync();
                     return total;
                 }
@@ -28,6 +27,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 description: "The number of users selected by the query",
                 resolve: async context =>
                 {
+                    var db = context.RequestServices.GetService<PlayTogetherDbContext>();
+
                     var count = await context.Source.CountAsync();
                     return count;
                 }

@@ -21,10 +21,10 @@ namespace PlayTogetherApi.Services
 
         private IDisposable subscription1, subscription2, subscription3;
 
-        public EventSearchObservable(IServiceProvider serviceProvider, ObservablesService observablesService, EventsQueryService query, List<Data.Event> initialEvents)
+        public EventSearchObservable(IServiceProvider serviceProvider, EventsQueryService query, List<Data.Event> initialEvents)
         {
             this.serviceProvider = serviceProvider;
-            this.observablesService = observablesService;
+            this.observablesService = serviceProvider.GetService<ObservablesService>();
             this.query = query;
             this.CurrentEvents = initialEvents;
         }

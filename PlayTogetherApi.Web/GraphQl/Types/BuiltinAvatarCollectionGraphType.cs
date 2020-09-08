@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
+﻿using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using GraphQL.Types;
 using PlayTogetherApi.Data;
@@ -11,7 +8,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 {
     public class BuiltinAvatarCollectionGraphType : ObjectGraphType<IQueryable<BuiltinAvatar>>
     {
-        public BuiltinAvatarCollectionGraphType(PlayTogetherDbContext db, IConfiguration config)
+        public BuiltinAvatarCollectionGraphType()
         {
             Name = "AvatarCollection";
 
@@ -19,6 +16,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 description: "The total number of avatars available",
                 resolve: async context =>
                 {
+                    var db = context.RequestServices.GetService<PlayTogetherDbContext>();
                     var total = await db.Avatars.CountAsync();
                     return total;
                 }

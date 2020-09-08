@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using Microsoft.Extensions.DependencyInjection;
 using GraphQL;
 using GraphQL.Types;
-using GraphQL.Subscription;
 using GraphQL.Resolvers;
 using PlayTogetherApi.Services;
 using PlayTogetherApi.Data;
@@ -17,12 +17,8 @@ namespace PlayTogetherApi.Web.GraphQl
 {
     public class PlayTogetherSubscription : ObjectGraphType
     {
-        ObservablesService observables;
-
-        public PlayTogetherSubscription(IServiceProvider serviceProvider, PlayTogetherDbContext db, AuthenticationService authenticationService, ObservablesService observables)
+        public PlayTogetherSubscription(ObservablesService observablesService)
         {
-            this.observables = observables;
-
             Name = "Subscription";
 
             AddField(new EventStreamFieldType
@@ -60,6 +56,8 @@ namespace PlayTogetherApi.Web.GraphQl
                     Guid? userId = null;
                     if (context.HasArgument("token"))
                     {
+                        var authenticationService = context.RequestServices.GetService<AuthenticationService>();
+
                         var jwt = authenticationService.ValidateJwt(context.GetArgument<string>("token"));
                         var userIdClaim = jwt?.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
                         if (Guid.TryParse(userIdClaim, out var _userId))
@@ -68,7 +66,7 @@ namespace PlayTogetherApi.Web.GraphQl
                         }
                     }
 
-                    return observables.GetEventsStream(userId);
+                    return observablesService.GetEventsStream(userId);
                 })
             });
 
@@ -86,7 +84,7 @@ namespace PlayTogetherApi.Web.GraphQl
                 Resolver = new FuncFieldResolver<UserEventSignup>(context => context.Source as UserEventSignup),
                 Subscriber = new EventStreamResolver<UserEventSignup>(context =>
                 {
-                    var observable = observables.GetUserEventSignupStream();
+                    var observable = observablesService.GetUserEventSignupStream();
 
                     if(context.HasArgument("event"))
                     {
@@ -122,6 +120,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 Resolver = new FuncFieldResolver<UserRelationChangedExtModel>(context => context.Source as UserRelationChangedExtModel),
                 Subscriber = new EventStreamResolver<UserRelationChangedExtModel>(context =>
                 {
+                    var authenticationService = context.RequestServices.GetService<AuthenticationService>();
+
                     var jwt = authenticationService.ValidateJwt(context.GetArgument<string>("token"));
                     var userIdClaim = jwt?.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
                     if (!Guid.TryParse(userIdClaim, out var callingUserId))
@@ -132,7 +132,7 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     var excludeChangesFromCaller = context.GetArgument<bool>("excludeChangesFromCaller");
 
-                    var observable = observables.GetExtUserRelationChangeStream(callingUserId, excludeChangesFromCaller);
+                    var observable = observablesService.GetExtUserRelationChangeStream(callingUserId, excludeChangesFromCaller);
                     return observable;
                 })
             });
@@ -149,6 +149,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 Resolver = new FuncFieldResolver<UserChangedSubscriptionModel>(context => context.Source as UserChangedSubscriptionModel),
                 Subscriber = new EventStreamResolver<UserChangedSubscriptionModel>(context =>
                 {
+                    var authenticationService = context.RequestServices.GetService<AuthenticationService>();
+
                     var jwt = authenticationService.ValidateJwt(context.GetArgument<string>("token"));
                     var userIdClaim = jwt?.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
                     if (!Guid.TryParse(userIdClaim, out var callingUserId))
@@ -159,7 +161,7 @@ namespace PlayTogetherApi.Web.GraphQl
 
                     var excludeChangesFromCaller = context.GetArgument<bool>("excludeChangesFromCaller");
 
-                    var observable = observables.GetUserChangeStream(callingUserId,
+                    var observable = observablesService.GetUserChangeStream(callingUserId,
                         excludeIfNotUserOrFriend: true,
                         excludeIfCausedByUser: excludeChangesFromCaller
                     );
@@ -178,6 +180,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 Resolver = new FuncFieldResolver<UserStatisticsModel>(context => context.Source as UserStatisticsModel),
                 Subscriber = new EventStreamResolver<UserStatisticsModel>(context =>
                 {
+                    var authenticationService = context.RequestServices.GetService<AuthenticationService>();
+
                     var jwt = authenticationService.ValidateJwt(context.GetArgument<string>("token"));
                     var userIdClaim = jwt?.Claims.FirstOrDefault(n => n.Type == "userid")?.Value;
                     if (!Guid.TryParse(userIdClaim, out var callingUserId))
@@ -186,7 +190,7 @@ namespace PlayTogetherApi.Web.GraphQl
                         return null;
                     }
 
-                    IObservable<UserStatisticsModel> observable = observables.GetUserStatisticsStream(callingUserId);
+                    IObservable<UserStatisticsModel> observable = observablesService.GetUserStatisticsStream(callingUserId);
                     return observable;
                 })
             });
@@ -222,6 +226,9 @@ namespace PlayTogetherApi.Web.GraphQl
                 Resolver = new FuncFieldResolver<EventSearchUpdateModel>(context => context.Source as EventSearchUpdateModel),
                 Subscriber = new EventStreamResolver<EventSearchUpdateModel>(context =>
                 {
+                    var authenticationService = context.RequestServices.GetService<AuthenticationService>();
+                    var db = context.RequestServices.GetService<PlayTogetherDbContext>();
+
                     var queryService = new EventsQueryService();
                     List<Guid> friendIds = null;
 
@@ -247,7 +254,7 @@ namespace PlayTogetherApi.Web.GraphQl
                     queryService.ReadParametersFromContext(context);
                     var initialEvents = queryService.Process(db.Events).ToList();  // todo: look into turning it async!
 
-                    var observable = new EventSearchObservable(serviceProvider, observables, queryService, initialEvents);
+                    var observable = new EventSearchObservable(context.RequestServices, queryService, initialEvents);
 
                     return observable;
                 })

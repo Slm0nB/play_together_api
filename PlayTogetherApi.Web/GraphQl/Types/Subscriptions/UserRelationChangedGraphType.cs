@@ -7,7 +7,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 {
     public class UserRelationChangedGraphType : ObjectGraphType<UserRelationChangedExtModel>
     {
-        public UserRelationChangedGraphType(/*PlayTogetherDbContext db, */FriendLogicService friendLogicService)
+        public UserRelationChangedGraphType(FriendLogicService friendLogicService)
         {
             Name = "UserRelationChanged";
 

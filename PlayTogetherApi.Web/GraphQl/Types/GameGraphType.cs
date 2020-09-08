@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using GraphQL;
 using GraphQL.Types;
 using PlayTogetherApi.Data;
@@ -10,7 +11,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 {
     public class GameGraphType : ObjectGraphType<Game>
     {
-        public GameGraphType(PlayTogetherDbContext db, IConfiguration config)
+        public GameGraphType(IConfiguration config)
         {
             Name = "Game";
 
@@ -27,6 +28,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 ),
                 resolve: context =>
                 {
+                    var db = context.RequestServices.GetService<PlayTogetherDbContext>();
+
                     var query = db.Events.Where(n => n.GameId == context.Source.GameId);
 
                     var afterDate = context.GetArgument<DateTime>("afterDate");

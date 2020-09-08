@@ -1,6 +1,4 @@
-﻿using System;
-using GraphQL.Types;
-using PlayTogetherApi.Data;
+﻿using GraphQL.Types;
 using PlayTogetherApi.Services;
 using PlayTogetherApi.Models;
 
@@ -8,7 +6,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 {
     public class UserRelationGraphType : ObjectGraphType<UserRelationExtModel>
     {
-        public UserRelationGraphType(PlayTogetherDbContext db, FriendLogicService friendLogicService)
+        public UserRelationGraphType(FriendLogicService friendLogicService)
         {
             Name = "UserRelation";
 

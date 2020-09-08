@@ -1,18 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using GraphQL.Types;
-using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.Models;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
     public class UserEventSignupCollectionGraphType : ObjectGraphType<UserEventSignupCollectionModel>
     {
-        public UserEventSignupCollectionGraphType(PlayTogetherDbContext db, IConfiguration config)
+        public UserEventSignupCollectionGraphType()
         {
             Name = "UserEventSignupCollection";
 

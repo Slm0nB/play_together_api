@@ -13,7 +13,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 {
     public class UserRelationCollectionGraphType : ObjectGraphType<UserRelationCollectionModel>
     {
-        public UserRelationCollectionGraphType(PlayTogetherDbContext db, IConfiguration config)
+        public UserRelationCollectionGraphType()
         {
             Name = "UserRelationCollection";
 

@@ -13,7 +13,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 {
     public class EventSignupChangedGraphType : UserEventSignupGraphType
     {
-        public EventSignupChangedGraphType(PlayTogetherDbContext db) : base(db)
+        public EventSignupChangedGraphType() : base()
         {
             Name = "EventSignupChanged";
 

@@ -9,7 +9,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 {
     public class UserPreviewGraphType : ObjectGraphType<User>
     {
-        public UserPreviewGraphType(PlayTogetherDbContext db, IConfiguration config)
+        public UserPreviewGraphType(IConfiguration config)
         {
             Name = "UserPreview";
 

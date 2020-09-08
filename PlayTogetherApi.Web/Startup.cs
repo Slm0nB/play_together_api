@@ -53,17 +53,17 @@ namespace PlayTogetherApi.Web
                 opt.UseNpgsql(connectionString);
             });
 
-            services.AddScoped<PlayTogetherSchema>();
+            services.AddSingleton<PlayTogetherSchema>();
             services
                 .AddGraphQL(options => {
                     options.EnableMetrics = false;
                     options.ExposeExceptions = false;
                 })
                 .AddNewtonsoftJson(deserializerSettings => { }, serializerSettings => { }) // For everything else
-            //   .AddErrorInfoProvider(opt => opt.ExposeExceptionStackTrace = Environment.IsDevelopment())
-                .AddWebSockets()
+            //  .AddErrorInfoProvider(opt => opt.ExposeExceptionStackTrace = Environment.IsDevelopment())
             //  .AddDataLoader()
-                .AddGraphTypes(typeof(PlayTogetherSchema), ServiceLifetime.Scoped)
+                .AddWebSockets()
+                .AddGraphTypes(typeof(PlayTogetherSchema), ServiceLifetime.Singleton)
                 .AddUserContextBuilder(httpContext => new PlayTogetherUserContext { User = httpContext.User });
 
             services

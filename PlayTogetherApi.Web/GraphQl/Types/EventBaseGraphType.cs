@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using GraphQL.Types;
-using Microsoft.EntityFrameworkCore;
 using PlayTogetherApi.Data;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
@@ -13,7 +10,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
     /// </summary>
     public class EventBaseGraphType : ObjectGraphType<Event>
     {
-        public EventBaseGraphType(PlayTogetherDbContext db)
+        public EventBaseGraphType()
         {
             Name = "EventBase";
 
@@ -28,11 +25,25 @@ namespace PlayTogetherApi.Web.GraphQl.Types
             Field(x => x.CallToArms).Description("If the event is a call to arms.");
 
             FieldAsync<UserGraphType>("author",
-                resolve: async context => context.Source.CreatedByUser ?? await db.Users.FirstOrDefaultAsync(n => n.UserId == context.Source.CreatedByUserId)
+                resolve: async context =>
+                {
+                    if (context.Source.CreatedByUser != null)
+                        return context.Source.CreatedByUser;
+
+                    var db = context.RequestServices.GetService<PlayTogetherDbContext>();
+                    return await db.Users.FirstOrDefaultAsync(n => n.UserId == context.Source.CreatedByUserId);
+                }
             );
 
             FieldAsync<GameGraphType>("game",
-                resolve: async context => context.Source.Game ?? await db.Games.FirstOrDefaultAsync(n => n.GameId == context.Source.GameId)
+                resolve: async context =>
+                {
+                    if (context.Source.Game != null)
+                        return context.Source.Game;
+
+                    var db = context.RequestServices.GetService<PlayTogetherDbContext>();
+                    return await db.Games.FirstOrDefaultAsync(n => n.GameId == context.Source.GameId);
+                }
             );
         }
     }

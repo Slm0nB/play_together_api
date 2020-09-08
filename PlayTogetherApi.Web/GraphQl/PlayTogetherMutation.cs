@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.Extensions.DependencyInjection;
 using GraphQL;
 using GraphQL.Types;
 using PlayTogetherApi.Services;
@@ -11,9 +12,7 @@ namespace PlayTogetherApi.Web.GraphQl
 {
     public class PlayTogetherMutation : ObjectGraphType
     {
-        public PlayTogetherMutation(
-            AuthenticationService authenticationService,
-            InteractionsService interactionsService)
+        public PlayTogetherMutation()
         {
             Name = "Mutation";
 
@@ -28,6 +27,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 {
                     try
                     {
+                        var interactionsService = context.RequestServices.GetService<InteractionsService>();
+
                         var claimedUserId = context.GetClaimedUserId();
                         var eventId = context.GetArgument<Guid>("event");
                         var status = context.GetArgument<UserEventStatus>("status");
@@ -53,6 +54,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 {
                     try
                     {
+                        var interactionsService = context.RequestServices.GetService<InteractionsService>();
+
                         var claimedUserId = context.GetClaimedUserId();
                         var eventId = context.GetArgument<Guid>("event");
 
@@ -79,6 +82,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 {
                     try
                     {
+                        var interactionsService = context.RequestServices.GetService<InteractionsService>();
+
                         var claimedUserId = context.GetClaimedUserId();
                         var eventId = context.GetArgument<Guid>("event");
                         var status = context.GetArgument<UserEventStatus>("status"); ;
@@ -107,6 +112,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 {
                     try
                     {
+                        var interactionsService = context.RequestServices.GetService<InteractionsService>();
+
                         var claimedUserId = context.GetClaimedUserId();
                         var startDate = context.GetArgument<DateTime>("startdate");
                         var gameId = context.GetArgument<Guid>("game");
@@ -138,6 +145,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 {
                     try
                     {
+                        var interactionsService = context.RequestServices.GetService<InteractionsService>();
+
                         var claimedUserId = context.GetClaimedUserId();
                         var startDate = context.GetArgument<DateTime>("startdate");
                         var endDate = context.GetArgument<DateTime>("enddate");
@@ -173,6 +182,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 {
                     try
                     {
+                        var interactionsService = context.RequestServices.GetService<InteractionsService>();
+
                         var claimedUserId = context.GetClaimedUserId();
                         var eventId = context.GetArgument<Guid>("id");
                         var startDate = context.HasArgument("startdate") ? (DateTime?)context.GetArgument<DateTime>("startdate") : null;
@@ -203,6 +214,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 {
                     try
                     {
+                        var interactionsService = context.RequestServices.GetService<InteractionsService>();
+
                         var claimedUserId = context.GetClaimedUserId();
                         var eventId = context.GetArgument<Guid>("id");
 
@@ -231,6 +244,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 {
                     try
                     {
+                        var interactionsService = context.RequestServices.GetService<InteractionsService>();
+
                         var displayName = context.GetArgument<string>("displayName");
                         var email = context.GetArgument<string>("email");
                         var password = context.GetArgument<string>("password");
@@ -263,6 +278,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 {
                     try
                     {
+                        var interactionsService = context.RequestServices.GetService<InteractionsService>();
+
                         var claimedUserId = context.GetClaimedUserId();
                         var displayName = context.GetArgument<string>("displayName");
                         var email = context.GetArgument<string>("email");
@@ -289,6 +306,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 {
                     try
                     {
+                        var interactionsService = context.RequestServices.GetService<InteractionsService>();
+
                         var userId = Extensions.GetClaimedUserId(context);
 
                         await interactionsService.DeleteUserAsync(userId);
@@ -313,6 +332,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 {
                     try
                     {
+                        var interactionsService = context.RequestServices.GetService<InteractionsService>();
+
                         var claimedUserId = context.GetClaimedUserId();
                         var friendUserId = context.GetArgument<Guid>("user");
                         var action = context.GetArgument<UserRelationAction>("status");
@@ -340,6 +361,8 @@ namespace PlayTogetherApi.Web.GraphQl
                 ),
                 resolve: async context =>
                 {
+                    var authenticationService = context.RequestServices.GetService<AuthenticationService>();
+
                     var requestDto = context.HasArgument("refreshToken")
                         ? new TokenRequestModel
                             {
