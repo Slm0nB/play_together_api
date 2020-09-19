@@ -21,6 +21,7 @@ using ElastiLog.Middleware;
 using PlayTogetherApi.Data;
 using PlayTogetherApi.Web.GraphQl;
 using PlayTogetherApi.Services;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 namespace PlayTogetherApi.Web
 {
@@ -59,7 +60,8 @@ namespace PlayTogetherApi.Web
 
             services.AddSingleton<PlayTogetherSchema>();
             services
-                .AddGraphQL(options => {
+                .AddGraphQL(options =>
+                {
                     options.EnableMetrics = false;
                     options.UnhandledExceptionDelegate = context => { };
                 })
@@ -97,10 +99,12 @@ namespace PlayTogetherApi.Web
                     };
                 });
 
-            services
-                .AddMvc()
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
-                .AddJsonOptions(options => options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore);
+            // aspnetcore3 forbids synchronous IO by default, so keep this until GraphQL updates their package
+            services.Configure<KestrelServerOptions>(options => { options.AllowSynchronousIO = true; });
+            services.Configure<IISServerOptions>(options => { options.AllowSynchronousIO = true; });
+
+            //.SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
+            //.AddJsonOptions(options => options.JsonSerializerOptions..ReferenceLoopHandling = ReferenceLoopHandling.Ignore);
 
             services.AddElastiLog();
 
@@ -133,7 +137,7 @@ namespace PlayTogetherApi.Web
             app.UseGraphQLPlayground(options: new GraphQLPlaygroundOptions() { Path = "/" });
             app.UseGraphQLVoyager(options: new GraphQLVoyagerOptions() { Path = "/voyager" });
 
-            app.UseMvc();
+            app.UseRouting();
         }
     }
 }
