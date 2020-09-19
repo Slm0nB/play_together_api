@@ -25,12 +25,14 @@ namespace PlayTogetherApi.Web
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        public Startup(IConfiguration configuration, IHostingEnvironment env)
         {
             Configuration = configuration;
+            Environment = env;
         }
 
         public IConfiguration Configuration { get; }
+        public IHostingEnvironment Environment { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -58,10 +60,9 @@ namespace PlayTogetherApi.Web
             services
                 .AddGraphQL(options => {
                     options.EnableMetrics = false;
-                    options.ExposeExceptions = true;
                 })
                 .AddNewtonsoftJson(deserializerSettings => { }, serializerSettings => { }) // For everything else
-            //  .AddErrorInfoProvider(opt => opt.ExposeExceptionStackTrace = Environment.IsDevelopment())
+                .AddErrorInfoProvider(opt => opt.ExposeExceptionStackTrace = Environment.IsDevelopment())
             //  .AddDataLoader()
                 .AddWebSockets()
                 .AddGraphTypes(typeof(PlayTogetherSchema), ServiceLifetime.Singleton)
