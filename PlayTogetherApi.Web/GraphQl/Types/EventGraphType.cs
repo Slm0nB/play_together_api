@@ -11,7 +11,7 @@ namespace PlayTogetherApi.Web.GraphQl.Types
 {
     public class EventGraphType : EventBaseGraphType
     {
-        public EventGraphType() : base()
+        public EventGraphType()
         {
             Name = "Event";
 

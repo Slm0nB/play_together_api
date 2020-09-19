@@ -7,13 +7,14 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
-using GraphQL;
 using GraphQL.Server;
 using GraphQL.Server.Ui.Playground;
+using GraphQL.Server.Internal;
 using ElastiLog;
 using ElastiLog.Middleware;
 using PlayTogetherApi.Data;
@@ -57,7 +58,7 @@ namespace PlayTogetherApi.Web
             services
                 .AddGraphQL(options => {
                     options.EnableMetrics = false;
-                    options.ExposeExceptions = false;
+                    options.ExposeExceptions = true;
                 })
                 .AddNewtonsoftJson(deserializerSettings => { }, serializerSettings => { }) // For everything else
             //  .AddErrorInfoProvider(opt => opt.ExposeExceptionStackTrace = Environment.IsDevelopment())
@@ -65,6 +66,7 @@ namespace PlayTogetherApi.Web
                 .AddWebSockets()
                 .AddGraphTypes(typeof(PlayTogetherSchema), ServiceLifetime.Singleton)
                 .AddUserContextBuilder(httpContext => new PlayTogetherUserContext { User = httpContext.User });
+            services.Replace(ServiceDescriptor.Transient(typeof(IGraphQLExecuter<PlayTogetherSchema>), typeof(PlayTogetherGraphQLExecutor)));
 
             services
                 .AddCors(options =>
