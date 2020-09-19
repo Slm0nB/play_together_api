@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using GraphQL.Server;
 using GraphQL.Server.Ui.Playground;
+using GraphQL.Server.Ui.Voyager;
 using GraphQL.Server.Internal;
 using ElastiLog;
 using ElastiLog.Middleware;
@@ -60,6 +61,7 @@ namespace PlayTogetherApi.Web
             services
                 .AddGraphQL(options => {
                     options.EnableMetrics = false;
+                    options.UnhandledExceptionDelegate = context => { };
                 })
                 .AddNewtonsoftJson(deserializerSettings => { }, serializerSettings => { }) // For everything else
                 .AddErrorInfoProvider(opt => opt.ExposeExceptionStackTrace = Environment.IsDevelopment())
@@ -129,6 +131,7 @@ namespace PlayTogetherApi.Web
             app.UseGraphQLWebSockets<PlayTogetherSchema>();
             app.UseGraphQL<PlayTogetherSchema>();
             app.UseGraphQLPlayground(options: new GraphQLPlaygroundOptions() { Path = "/" });
+            app.UseGraphQLVoyager(options: new GraphQLVoyagerOptions() { Path = "/voyager" });
 
             app.UseMvc();
         }
