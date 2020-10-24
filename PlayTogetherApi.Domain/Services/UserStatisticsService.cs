@@ -139,7 +139,7 @@ namespace PlayTogetherApi.Services
 
                 return model;
             }
-            catch(Exception ex)
+            catch(Exception)
             {
                 return null;
             }

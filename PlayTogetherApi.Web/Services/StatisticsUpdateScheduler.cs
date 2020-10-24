@@ -41,7 +41,7 @@ namespace PlayTogetherApi.Services
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
 
             }

@@ -25,7 +25,7 @@ namespace PlayTogetherApi.Test
         /// so the service that updates it doens't have to compute it any more.
         /// </summary>
         [TestMethod]
-        public async Task TestStatisticsCleanUp()
+        public void TestStatisticsCleanUp()
         {
             IDisposable sub1 = null;
             try

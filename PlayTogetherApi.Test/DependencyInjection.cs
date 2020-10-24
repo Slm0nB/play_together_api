@@ -43,7 +43,7 @@ namespace PlayTogetherApi.Test
 
             services.AddDbContext<PlayTogetherDbContext>(opt =>
             {
-                opt.UseInMemoryDatabase();
+                opt.UseInMemoryDatabase("mydb");
             });
 
             return services.BuildServiceProvider();

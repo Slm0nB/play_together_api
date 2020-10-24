@@ -115,7 +115,7 @@ namespace PlayTogetherApi.Web.GraphQl
                            TotalEventsQuery = db.Events
                        };
                    }
-                   catch(Exception ex)
+                   catch(Exception)
                    {
                        throw;
                    }

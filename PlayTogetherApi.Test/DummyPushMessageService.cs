@@ -15,7 +15,7 @@ namespace PlayTogetherApi.Services
         {
         }
 
-        public Task<string> PushMessageAsync<T>(string name, string title, string body, T payload = null, params string[] recipients) where T : class
+        public override Task<string> PushMessageAsync<T>(string name, string title, string body, T payload = null, params string[] recipients) where T : class
         {
             return Task.FromResult(String.Empty);
         }
