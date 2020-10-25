@@ -18,7 +18,7 @@ namespace PlayTogetherApi.Web.GraphQl
         {
             Name = "Query";
 
-            Field<SystemStatisticsGraphType>("system", resolve: context => context);
+            Field<SystemGraphType>("system", resolve: context => context);
 
             FieldAsync<EventCollectionGraphType>(
                "events",
