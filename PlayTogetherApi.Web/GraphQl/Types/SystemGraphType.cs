@@ -1,7 +1,10 @@
 ﻿using System.Linq;
-using GraphQL.Types;
-using PlayTogetherApi.Services;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
+using GraphQL.Types;
+using PlayTogetherApi.Data;
+using PlayTogetherApi.Services;
 
 namespace PlayTogetherApi.Web.GraphQl.Types
 {
@@ -28,7 +31,8 @@ namespace PlayTogetherApi.Web.GraphQl.Types
                 resolve: context =>
                 {
                     var prefix = "Database=";
-                    var connectionString = configuration.GetSection("PlayTogetherConnectionString")?.Value;
+                    var db = context.RequestServices.GetService<PlayTogetherDbContext>();
+                    var connectionString = db.Database.GetDbConnection().ConnectionString;
                     var dbName = connectionString?.Split(';').FirstOrDefault(n => n.StartsWith(prefix));
                     return dbName?.Substring(prefix.Length);
                 });
